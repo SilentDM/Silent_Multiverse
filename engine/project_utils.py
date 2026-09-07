@@ -299,35 +299,18 @@ def carregar_estrutura_projeto():
     return "\n".join(resultado)
 
 def carregar_projeto(is_dm: bool = True):
-    caminho=Path(CAMINHO_PROJETO)
+    caminho = Path(CAMINHO_PROJETO)
     if not caminho.exists():
         print(f"⚠️ Alerta: Pasta '{PASTA_PROJETO}' não encontrada.")
         return ""
     
-    # Retrieve all Markdown files recursively
-    all_files = list(caminho.rglob("*.md"))
-    
-    # Group files by parent directory and base name (ignoring version suffixes like _v1, _v2)
-    groups = {}
-    for f in all_files:
-        base_name = re.sub(r'_v\d+$', '', f.stem)
-        key = (f.parent, base_name)
-        if key not in groups:
-            groups[key] = []
-        groups[key].append(f)
-        
-    # Isolate the highest available version of each document
-    latest_files = []
-    for key, files in groups.items():
-        def get_version(path):
-            match = re.search(r'_v(\d+)$', path.stem)
-            return int(match.group(1)) if match else 0
-        
-        files.sort(key=get_version, reverse=True)
-        latest_files.append(files[0]) # Newest/expanded revision goes first
-
     conteudo_total = []
-    for f_path in latest_files:
+    
+    # Itera diretamente sobre todos os .md canônicos do cofre
+    for f_path in sorted(caminho.rglob("*.md")):
+        if any(ignore in f_path.parts for ignore in IGNORELIST):
+            continue
+
         try:
             with open(f_path, "r", encoding="utf-8") as file_obj:
                 content = file_obj.read()
@@ -337,16 +320,15 @@ def carregar_projeto(is_dm: bool = True):
                     content = file_obj.read()
             except Exception:
                 continue
-        
-        # Verify if the file is clean of TODO markers
-        if (any(tag in content for tag in TAG_ALVO)
-            or any(ignore in content for ignore in IGNORELIST)
-            ):
-            #print(f"Excluindo '{f_path.name}' do conhecimento por possuir tags TODO ou Rascunho ou Template.")
+
+        # Ignora arquivos que possuam tags de TODO ou marcações ignoradas
+        if any(tag in content for tag in TAG_ALVO) or any(ignore in content for ignore in IGNORELIST):
             continue
+
         content_filtrado = sf.filtrar_conteudo_por_permissao(content, is_dm=is_dm)
         if not content_filtrado:
             continue            
+
         conteudo_total.append(f"\n==== {f_path.name} ====\n{content_filtrado}\n")
         
     return "\n\n".join(conteudo_total)

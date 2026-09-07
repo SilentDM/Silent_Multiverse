@@ -16,36 +16,55 @@ def marcar_processamento(caminho, ativo: bool):
     else:
         ARQUIVOS_EM_PROCESSAMENTO.discard(caminho_abs)
 
-def arquivar_versao_antiga(caminho_original):
+def obter_proximo_caminho_historico(caminho_original):
     """
-    Move a versão antiga/original de um arquivo para a pasta logs/history/,
-    preservando a estrutura de subpastas.
+    Descobre o próximo nome versionado para arquivar dentro de logs/history/,
+    preservando a hierarquia de subpastas do projeto.
+    Exemplo: logs/history/Reinos/reinado_phaeton_v01.md
+    """
+    caminho_obj = Path(caminho_original).resolve()
+    pasta_historico = pu.PASTA_LOGS / "history"
+
+    try:
+        relativo = caminho_obj.relative_to(pu.CAMINHO_PROJETO)
+        destino_dir = pasta_historico / relativo.parent
+    except ValueError:
+        destino_dir = pasta_historico
+
+    destino_dir.mkdir(parents=True, exist_ok=True)
+
+    # Nome base sempre limpo sem sufixos
+    nome_base = re.sub(r'_v\d+$', '', caminho_obj.stem)
+    extensao = caminho_obj.suffix or ".md"
+    maior_versao = 0
+
+    # Varre a pasta de histórico procurando versões existentes
+    for arq in destino_dir.glob(f"{nome_base}_v*{extensao}"):
+        match = re.search(r'_v(\d+)$', arq.stem, flags=re.IGNORECASE)
+        if match:
+            maior_versao = max(maior_versao, int(match.group(1)))
+
+    nova_versao = maior_versao + 1
+    return destino_dir / f"{nome_base}_v{nova_versao:02d}{extensao}"
+
+def arquivar_versao_para_historico(caminho_original):
+    """
+    Copia a versão atual do arquivo para a pasta de histórico com sufixo de versão.
+    Usamos shutil.copy2 em vez de move para garantir que, se a escrita da nova versão
+    falhar logo a seguir, o arquivo original permaneça intacto.
     """
     try:
         caminho_original = Path(caminho_original)
         if not caminho_original.exists():
-            return
+            return None
 
-        pasta_historico = pu.PASTA_LOGS / "history"
-        try:
-            relativo = caminho_original.relative_to(pu.CAMINHO_PROJETO)
-            destino_dir = pasta_historico / relativo.parent
-        except ValueError:
-            destino_dir = pasta_historico
-
-        destino_dir.mkdir(parents=True, exist_ok=True)
-        destino_arquivo = destino_dir / caminho_original.name
-
-        # 🛡️ Se o arquivo já existir no histórico, remove antes para o shutil.move não falhar no Windows
-        if destino_arquivo.exists():
-            try:
-                destino_arquivo.unlink()
-            except Exception:
-                pass
-
-        shutil.move(str(caminho_original), str(destino_arquivo))
+        destino_arquivo = obter_proximo_caminho_historico(caminho_original)
+        shutil.copy2(str(caminho_original), str(destino_arquivo))
+        print(f"📦 Backup arquivado no histórico: {destino_arquivo.name}")
+        return destino_arquivo
     except Exception as e:
-        print(f"Erro ao arquivar versão antiga ({caminho_original.name}): {e}")
+        print(f"Erro ao arquivar versão no histórico ({caminho_original.name}): {e}")
+        return None
 
 def obter_arquivos_relacionados(titulo):
     relacionados = []
@@ -84,22 +103,6 @@ def obter_arquivos_relacionados(titulo):
         conteudo for _, conteudo, _ in relacionados
     )
 
-def obter_proximo_nome_versao(caminho_original):
-    caminho_obj = Path(caminho_original)
-    diretorio = caminho_obj.parent
-    nome_base = re.sub(r'_v\d+$', '', caminho_obj.stem)
-    extensao = caminho_obj.suffix or ".md"
-    maior_versao = 0
-    
-    if diretorio.exists():
-        for arquivo in diretorio.glob(f"{nome_base}_v*{extensao}"):
-            match = re.search(r'_v(\d+)$', arquivo.stem)
-            if match:
-                maior_versao = max(maior_versao, int(match.group(1)))
-                
-    nova_versao = maior_versao + 1
-    return (diretorio / f"{nome_base}_v{nova_versao:02d}{extensao}")
-    
 def carregar_diretrizes_estilo():
     """Carrega e unifica as diretrizes de estilo contidas na pasta designada."""
     pasta_estilo = pu.CAMINHO_ESTILO
@@ -237,12 +240,11 @@ TEXTO GERADO:
                 
                 if texto_final:
                     texto_limpo = remover_markdown_fences(texto_final)
-                    novo_arquivo_path = obter_proximo_nome_versao(arquivo)
                     
-                    with open(novo_arquivo_path, 'w', encoding='utf-8') as f:
+                    with open(arquivo, 'w', encoding='utf-8') as f:
                         f.write(texto_limpo)
-                    arquivar_versao_antiga(arquivo)
-                    print(f"Nova versão gerada com sucesso: {novo_arquivo_path.name}")
+                    arquivar_versao_para_historico(arquivo)
+                    print(f"Arquivo atualizado!")
                 else:
                     print(f"O retorno do modelo para {arquivo.name} foi vazio.")
                 

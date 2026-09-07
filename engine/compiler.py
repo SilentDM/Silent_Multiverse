@@ -96,7 +96,6 @@ def _obter_estrutura_ordenada(caminho_raiz):
     estrutura = []
 
     def navegar(pasta_atual):
-        # Lê os itens na ordem manual definida pelo usuário no Explorer
         itens_ordenados = pu.obter_itens_ordenados(pasta_atual)
         
         arquivos_md = []
@@ -109,31 +108,10 @@ def _obter_estrutura_ordenada(caminho_raiz):
             elif item_path.is_file() and item.lower().endswith(".md"):
                 arquivos_md.append(item_path)
 
-        # Agrupa arquivos por nome base para filtrar apenas a maior versão (ex: _v02 sobrepõe _v01)
-        grupos_versao = {}
-        for f in arquivos_md:
-            nome_base = re.sub(r'_v\d+$', '', f.stem, flags=re.IGNORECASE)
-            if nome_base not in grupos_versao:
-                grupos_versao[nome_base] = []
-            grupos_versao[nome_base].append(f)
-
-        arquivos_finais = []
-        visitados = set()
-        for f in arquivos_md:
-            nome_base = re.sub(r'_v\d+$', '', f.stem, flags=re.IGNORECASE)
-            if nome_base not in visitados:
-                visitados.add(nome_base)
-                versoes = grupos_versao[nome_base]
-                def get_version(p):
-                    m = re.search(r'_v(\d+)$', p.stem, flags=re.IGNORECASE)
-                    return int(m.group(1)) if m else 0
-                versoes.sort(key=get_version, reverse=True)
-                arquivos_finais.append(versoes[0])
-
-        if arquivos_finais:
+        if arquivos_md:
             relativo = pasta_atual.relative_to(caminho_raiz)
             nome_capitulo = str(relativo) if str(relativo) != "." else "Visão Geral do Mundo"
-            estrutura.append((nome_capitulo, arquivos_finais))
+            estrutura.append((nome_capitulo, arquivos_md))
 
         for sub in subpastas:
             navegar(sub)

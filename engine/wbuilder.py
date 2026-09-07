@@ -94,14 +94,12 @@ Responda apenas um número.
         print(f"Erro ao determinar iterações: {e}")
         print("Iterations Concluído!")
         return numero
-
 class Action(BaseModel):
     type: Literal["CreateFolder", "CreateFile", "ImproveFile"]
     path: str
     priority: int
     objective: str
     template: Optional[Literal["aventura", "cidade", "local", "npc", "reinado", "nenhum"]] = "nenhum"
-
 class ActionPlan(BaseModel):
     actions: List[Action]
 
@@ -410,20 +408,16 @@ Retorne apenas o conteúdo final do arquivo.
         if texto_expandido:
             texto_limpo = ex.remover_markdown_fences(texto_expandido)
             
-            # 🛡️ 2. Calcula o próximo nome de versão (se o original sumiu, vira _v01.md)
-            novo_arquivo_path = ex.obter_proximo_nome_versao(arquivo)
-            novo_arquivo_path.parent.mkdir(parents=True, exist_ok=True)
+            # 1. Se o arquivo já existe, faz o backup versionado no histórico
+            if arquivo.exists():
+                ex.arquivar_versao_para_historico(arquivo)
 
-            with open(novo_arquivo_path, "w", encoding="utf-8") as f:
+            # 2. Salva a nova versão diretamente no nome estável original
+            arquivo.parent.mkdir(parents=True, exist_ok=True)
+            with open(arquivo, "w", encoding="utf-8") as f:
                 f.write(texto_limpo)
 
-            # Arquiva o original caso ele ainda exista
-            if arquivo.exists():
-                ex.arquivar_versao_antiga(arquivo)
-                print(f"Nova versão criada: {novo_arquivo_path.name}")
-            else:
-                print(f"O arquivo original foi deletado durante a geração. Resultado recuperado e salvo como: {novo_arquivo_path.name}")
-
+            print(f"✅ Arquivo aprimorado com sucesso: {arquivo.name}")
             return True
         else:
             print(f"O retorno do modelo para {arquivo.name} foi vazio.")
