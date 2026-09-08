@@ -2,8 +2,20 @@ import os, re, shutil
 from pathlib import Path
 import core.ai_utils as au
 import engine.project_utils as pu
+from pydantic import BaseModel, Field
 
 ARQUIVOS_EM_PROCESSAMENTO = set()
+
+class RevisaoLore(BaseModel):
+    aprovado: bool = Field(
+        description="True se o texto estiver 100% coerente com o lore; False se precisou de correções."
+    )
+    critica: str = Field(
+        description="Breve explicação técnica das incoerências encontradas ou confirmação de conformidade."
+    )
+    texto_final: str = Field(
+        description="O conteúdo Markdown COMPLETO do documento. Se aprovado, deve conter o texto revisado integralmente, sem comentários ou pareceres dentro dele."
+    )
 
 def esta_em_processamento(caminho) -> bool:
     caminho_abs = str(Path(caminho).resolve())
@@ -148,47 +160,38 @@ def processar_arquivo_unico(path):
     try:
         estilo_contexto = carregar_diretrizes_estilo()
         instrucoes_globais = f"""
-    Você é um Mestre de Mesa (DM) de D&D experiente e escritor de fantasia sombria (Dark Fantasy).
-    Seu objetivo é preencher lacunas de desenvolvimento do cenário de {pu.PASTA_PROJETO}.
-    # Diretrizes e Regras Adicionais do Projeto:
-    {estilo_contexto}
-    """
+Você é um Mestre de Mesa (DM) de RPG experiente e escritor de fantasia.
+Seu objetivo é preencher lacunas de desenvolvimento do cenário de {pu.PASTA_PROJETO}.
+# Diretrizes e Regras Adicionais do Projeto:
+{estilo_contexto}
+"""
         arquivo = Path(path)
         with open(arquivo, 'r', encoding='utf-8') as f:
             linhas = f.readlines()
             conteudo = "".join(linhas)
-            titulo = arquivo.stem
-            titulo = re.sub(r'_v\d+$', '', titulo.lower())
+            titulo = re.sub(r'_v\d+$', '', arquivo.stem.lower())
 
         tag_encontrada = next((tag for tag in pu.TAG_ALVO if tag in conteudo), None)
-        if tag_encontrada:
-            print(f"\n=====\nTag encontrada no arquivo:\n{arquivo.name}\n=====")
-            info_locais = ""
-            grupos_locais = {}
-            for arq_p in arquivo.parent.glob("*.md"):
-                base = nome_base(arq_p)
-                if base != nome_base(arquivo):
-                    if base not in grupos_locais:
-                        grupos_locais[base] = []
-                    grupos_locais[base].append(arq_p)
+        if not tag_encontrada:
+            return
 
-            for base, lista_vers in grupos_locais.items():
-                def _ver(p):
-                    m = re.search(r'_v(\d+)$', p.stem, flags=re.IGNORECASE)
-                    return int(m.group(1)) if m else 0
-                lista_vers.sort(key=_ver, reverse=True)
-                arq_mais_recente = lista_vers[0]
-                
+        print(f"\n=====\nTag encontrada no arquivo:\n{arquivo.name}\n=====")
+        
+        # 1. Montagem do contexto local de arquivos vizinhos
+        info_locais = ""
+        for arq_p in arquivo.parent.glob("*.md"):
+            if arq_p.resolve() != arquivo.resolve():
                 try:
-                    with open(arq_mais_recente, "r", encoding="utf-8") as f:
+                    with open(arq_p, "r", encoding="utf-8") as f:
                         conteudo_local = f.read()
                         if not any(tag in conteudo_local for tag in pu.TAG_ALVO) and "status: rascunho" not in conteudo_local.lower():
-                            info_locais += conteudo_local + "\n\n"
+                            info_locais += f"--- {arq_p.name} ---\n{conteudo_local}\n\n"
                 except Exception:
                     pass
 
-            info_importante = obter_arquivos_relacionados(titulo)
-            prompt_conteudo = f"""
+        info_importante = obter_arquivos_relacionados(titulo)
+
+        prompt_conteudo = f"""
 <contexto_local>
 {info_locais}
 </contexto_local>
@@ -202,57 +205,97 @@ def processar_arquivo_unico(path):
 </arquivo_alvo>
 
 <instrucao_tarefa>
-Identifique a tag '{tag_encontrada}' dentro da tag <arquivo_alvo>.
+Identifique a tag '{tag_encontrada}' dentro de <arquivo_alvo>.
 Substitua essa tag pelo conteúdo expandido, mantendo total coesão com <contexto_local> e <arquivos_relacionados>.
 </instrucao_tarefa>
 
 <regras_de_resposta>
 1. Retorne APENAS o conteúdo final do arquivo editado em Markdown.
-2. Não inclua comentários, prefácios nem tags XML na sua resposta final.
+2. Não inclua comentários, notas ou tags XML na sua resposta.
 3. FORMATAÇÃO E WIKILINKS:
     - Organize o texto com títulos (#, ##, ###).
     - Use citações (> texto) para caixas de lore, rumores, manuscritos ou diários.
     - Use negrito (**palavra**) em termos e itens de destaque.
-    - CRIE WIKILINKS [[Nome do Conceito]]: Sempre que mencionar personagens, cidades, locais, facções, deuses ou relíquias do universo, envolva o nome em colchetes duplos (ex: [[Reino de Lucius]], [[Mestre Varis]], [[Catedral de Prata]]).
+    - CRIE WIKILINKS [[Nome do Conceito]]: Sempre que citar personagens, cidades, locais, facções, deuses ou relíquias do universo, envolva o nome em colchetes duplos.
 </regras_de_resposta>
 """
-            try:
-                with open(pu.log_path("Prompts.txt"), 'w', encoding='utf-8') as f:
-                    f.write(f"Alterando Arquivo: {arquivo.name}\n")
-                    f.write(prompt_conteudo + '\n')
-                
-                texto_bruto = au.ask_ai(contents=prompt_conteudo, system_instruction=instrucoes_globais, temperature=0.7)
 
-                prompt_revisao = f"""
-Você é o Editor de Lore de {pu.PASTA_PROJETO}.
-Revise o texto gerado abaixo e garanta que ele NÃO contradiga a história já estabelecida no cache.
-Se encontrar incoerências com o tom ou com a lore existente, corrija-as. Caso contrário, devolva o texto exato.
+        try:
+            with open(pu.log_path("Prompts.txt"), 'w', encoding='utf-8') as f:
+                f.write(f"Alterando Arquivo: {arquivo.name}\n")
+                f.write(prompt_conteudo + '\n')
+            
+            # --- ETAPA 1: GERAÇÃO CRIATIVA (ESCRITOR) ---
+            print(f"Gerando expansão para {arquivo.name}...")
+            texto_bruto = au.ask_ai(
+                contents=prompt_conteudo,
+                system_instruction=instrucoes_globais,
+                temperature=0.7
+            )
 
-TEXTO GERADO:
-{texto_bruto}
+            if not texto_bruto or not str(texto_bruto).strip():
+                print(f"⚠️ O retorno do modelo para {arquivo.name} foi vazio.")
+                return
+
+            texto_bruto_limpo = remover_markdown_fences(str(texto_bruto))
+
+            # --- ETAPA 2: VALIDAÇÃO E REVISÃO ESTRUTURADA (EDITOR) ---
+            print(f"Revisando consistência de lore para {arquivo.name}...")
+            prompt_revisao = f"""
+Você é o Editor-Chefe de Lore de {pu.PASTA_PROJETO}.
+Analise o texto gerado abaixo confrontando-o com o compêndio de lore fornecido no contexto de mundo.
+
+DIRETRIZES DE REVISÃO:
+- Avalie se há contradições com datas, personagens, locais ou tom já estabelecidos.
+- Se houver inconsistências: corrija-as diretamente no campo 'texto_final'.
+- Se o texto estiver coerente e aprovado: preencha o campo 'texto_final' integralmente com o texto recebido.
+- IMPORTANTE: O campo 'texto_final' deve conter EXCLUSIVAMENTE o conteúdo Markdown do artigo. NUNCA coloque relatórios, justificativas, pareceres ou avisos como "Status: Aprovado" dentro de 'texto_final'. Use o campo 'critica' para suas observações técnicas.
+
+TEXTO GERADO PARA REVISÃO:
+{texto_bruto_limpo}
 """
-                texto_final = au.ask_ai(
-                    contents=prompt_revisao,
-                    system_instruction="Você é um editor de texto rigoroso focado em consistência de worldbuilding.",
-                    temperature=0.2,
-                    use_world_context=True
-                )
-                
-                if texto_final:
-                    texto_limpo = remover_markdown_fences(texto_final)
-                    
-                    with open(arquivo, 'w', encoding='utf-8') as f:
-                        f.write(texto_limpo)
-                    arquivar_versao_para_historico(arquivo)
-                    print(f"Arquivo atualizado!")
+            revisao_resultado = au.ask_ai(
+                contents=prompt_revisao,
+                system_instruction="Você é um validador rigoroso de consistência de universos fictícios. Responda estritamente através do schema JSON.",
+                temperature=0.1,
+                response_schema=RevisaoLore,
+                use_world_context=True
+            )
+
+            conteudo_salvar = None
+            try:
+                json_str = remover_markdown_fences(str(revisao_resultado))
+                revisao_obj = RevisaoLore.model_validate_json(json_str)
+
+                print(f"\n📋 [Parecer do Editor para {arquivo.name}]:")
+                print(f"   Status: {'APROVADO' if revisao_obj.aprovado else 'CORRIGIDO COM ALTERAÇÕES'}")
+                print(f"   Observações: {revisao_obj.critica}")
+
+                # Validação defensiva do texto final
+                if revisao_obj.texto_final and len(revisao_obj.texto_final.strip()) > 50:
+                    conteudo_salvar = remover_markdown_fences(revisao_obj.texto_final)
                 else:
-                    print(f"O retorno do modelo para {arquivo.name} foi vazio.")
-                
+                    print("⚠️ Revisor retornou texto_final vazio ou inválido. Usando texto da primeira etapa como fallback.")
+                    conteudo_salvar = texto_bruto_limpo
+
             except Exception as e:
-                print(f"❌ Erro ao processar {arquivo.name}: {e}")
+                print(f"⚠️ Falha ao decodificar JSON de revisão ({e}). Usando texto original gerado como fallback seguro.")
+                conteudo_salvar = texto_bruto_limpo
+
+            # --- ETAPA 3: PERSISTÊNCIA COMPATÍVEL COM OBSIDIAN ---
+            if conteudo_salvar:
+                # 1. Arquiva versão anterior no histórico (_v01.md, _v02.md...)
+                arquivar_versao_para_historico(arquivo)
+
+                # 2. Mantém o nome limpo no cofre para não quebrar Wikilinks [[...]]
+                with open(arquivo, 'w', encoding='utf-8') as f:
+                    f.write(conteudo_salvar)
+                print(f"✅ Arquivo atualizado com sucesso: {arquivo.name}")
+
+        except Exception as e:
+            print(f"❌ Erro ao processar {arquivo.name}: {e}")
 
     finally:
-        # Libera o arquivo do set ao finalizar
         ARQUIVOS_EM_PROCESSAMENTO.discard(caminho_abs)
 
 def processar_arquivos():
