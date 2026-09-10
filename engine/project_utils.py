@@ -14,7 +14,10 @@ PASTA_EXPORTS = (BASE_DIR / "exports").resolve()
 PASTA_TEMPLATES = (BASE_DIR / "Templates").resolve()
 PASTA_ESTILO = os.getenv("PASTA_ESTILO", "Style")
 CAMINHO_ESTILO = (BASE_DIR / PASTA_ESTILO).resolve()
+PASTA_DISCORD_KNOWLEDGE = (BASE_DIR / "Discord_Knowledge").resolve()
+PASTA_DISCORD_KNOWLEDGE.mkdir(parents=True, exist_ok=True)
 PROJECT_ROOT = BASE_DIR
+
 
 # Variáveis globais mutáveis do projeto ativo
 CAMINHO_PROJETO = None
@@ -446,3 +449,22 @@ def criar_backup_projeto():
                         total_arquivos += 1
 
     return caminho_destino, total_arquivos
+
+def carregar_conhecimento_discord(guild_id: str = "global") -> str:
+    """Carrega todos os arquivos .md gerados pelo scraper para o servidor especificado."""
+    pasta_servidor = PASTA_DISCORD_KNOWLEDGE / f"server_{guild_id}"
+    if not pasta_servidor.exists():
+        # Fallback para pasta global se não houver pasta específica
+        pasta_servidor = PASTA_DISCORD_KNOWLEDGE
+
+    conteudo = []
+    for arq in sorted(pasta_servidor.glob("*.md")):
+        try:
+            with open(arq, "r", encoding="utf-8", errors="ignore") as f:
+                texto = f.read().strip()
+                if texto:
+                    conteudo.append(f"=== CANAL DISCORD: #{arq.stem} ===\n{texto}")
+        except Exception as e:
+            print(f"Erro ao ler conhecimento do Discord ({arq.name}): {e}")
+
+    return "\n\n".join(conteudo)

@@ -19,6 +19,20 @@ from PIL import Image
 
 SETTINGS_FILE = pu.PASTA_LOGS / "settings.json"
 
+def _obter_caminho_icone():
+        """Busca o ícone tanto embutido no PyInstaller (_MEIPASS) quanto local em desenvolvimento."""
+        # 1. Se estiver rodando como .exe (PyInstaller extrai em _MEIPASS)
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            caminho_embutido = Path(sys._MEIPASS) / "icon.ico"
+            if caminho_embutido.exists():
+                return caminho_embutido
+
+        # 2. Se estiver rodando via script .py ou se o ícone estiver na mesma pasta do .exe
+        caminho_base = pu.BASE_DIR / "icon.ico"
+        if caminho_base.exists():
+            return caminho_base
+
+        return None
 
 class SilentDesktopApp:
     
@@ -31,7 +45,7 @@ class SilentDesktopApp:
         self.root.state("zoomed")  # Windows
         self.root.configure(bg="#121212")
         
-        caminho_icone = self._obter_caminho_icone()
+        caminho_icone = _obter_caminho_icone()
         if caminho_icone:
             try:
                 self.root.iconbitmap(str(caminho_icone))
@@ -939,6 +953,13 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
             self.log_activity("Iniciando bot do Discord em segundo plano...")
             from bot.dbot import discordclient
 
+            # 🟢 Registra o callback para a UI ser atualizada quando os servidores forem descobertos
+            def _atualizar_ui_guilds(guilds_info):
+                self.root.after(0, lambda: self.options_pane.atualizar_lista_servidores(guilds_info))
+                self.root.after(0, lambda: self.toast(f"🏰 {len(guilds_info)} servidor(es) do Discord sincronizados!"))
+
+            discordclient.callback_guilds = _atualizar_ui_guilds
+
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             self.discord_loop = loop
@@ -1184,25 +1205,11 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
     # ------------------------------------------------------------------
     # BANDEJA DO SISTEMA (SYSTEM TRAY)
     # ------------------------------------------------------------------
-    def _obter_caminho_icone():
-            """Busca o ícone tanto embutido no PyInstaller (_MEIPASS) quanto local em desenvolvimento."""
-            # 1. Se estiver rodando como .exe (PyInstaller extrai em _MEIPASS)
-            if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-                caminho_embutido = Path(sys._MEIPASS) / "icon.ico"
-                if caminho_embutido.exists():
-                    return caminho_embutido
 
-            # 2. Se estiver rodando via script .py ou se o ícone estiver na mesma pasta do .exe
-            caminho_base = pu.BASE_DIR / "icon.ico"
-            if caminho_base.exists():
-                return caminho_base
-
-            return None
-    
     def setup_system_tray(self):
         """Inicializa o ícone oculto ao lado do relógio do Windows."""
         try:
-            caminho_icone = self._obter_caminho_icone()
+            caminho_icone = _obter_caminho_icone()
             if caminho_icone:
                 image = Image.open(caminho_icone)
             else:
