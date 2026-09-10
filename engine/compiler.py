@@ -31,6 +31,26 @@ def _markdown_para_html(md_texto: str) -> str:
 
     for linha in texto.splitlines():
         linha_str = linha.strip()
+        
+        match_callout = re.match(r'^>\s*\[!(\w+)\]\s*(.*)$', linha_str, re.IGNORECASE)
+        if match_callout:
+            tipo = match_callout.group(1).lower()
+            titulo_callout = match_callout.group(2) or tipo.title()
+            
+            # Mapeia cores/ícones do tema
+            cores = {
+                "quote": "#60a5fa",
+                "warning": "#f59e0b",
+                "danger": "#ef4444",
+                "tip": "#10b981",
+                "summary": "#8b5cf6"
+            }
+            cor = cores.get(tipo, "#d97706")
+            
+            html_linhas.append(f'<div class="callout callout-{tipo}" style="border-left: 4px solid {cor}; background: #18181c; padding: 12px; margin: 15px 0; border-radius: 4px;">')
+            html_linhas.append(f'<strong style="color: {cor}; text-transform: uppercase; font-size: 0.9rem;">{titulo_callout}</strong>')
+            em_blockquote = True
+            continue
 
         if em_lista and not (linha_str.startswith("- ") or linha_str.startswith("* ")):
             html_linhas.append("</ul>")
@@ -39,7 +59,6 @@ def _markdown_para_html(md_texto: str) -> str:
         if em_blockquote and not linha_str.startswith(">"):
             html_linhas.append("</div>")
             em_blockquote = False
-
         if linha_str.startswith("### "):
             html_linhas.append(f"<h3>{linha_str[4:]}</h3>")
         elif linha_str.startswith("## "):

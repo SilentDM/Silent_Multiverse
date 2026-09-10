@@ -605,7 +605,6 @@ class ExplorerFrame(ttk.Frame):
                 self.log_callback(f"Falha ao auto-salvar {self.current_file}: {e}")
 
     def on_select(self, event=None):
-        """Seleciona e carrega o arquivo no editor de forma blindada."""
         try:
             selected_item = self.tree.selection()
             if not selected_item:
@@ -616,6 +615,24 @@ class ExplorerFrame(ttk.Frame):
                 return
 
             novo_caminho = str(item_values[0])
+
+            # 🛡️ TRAVA MECÂNICA: Se o arquivo estiver sendo processado pela IA, BLOQUEIA a abertura!
+            if os.path.isfile(novo_caminho) and wb.ex.esta_em_processamento(novo_caminho):
+                nome_arq = os.path.basename(novo_caminho)
+                self.toast(f"⏳ '{nome_arq}' está sendo processado pela IA. Abertura bloqueada!")
+                
+                # Se o arquivo a ser bloqueado for o que estava na tela, limpa e desativa
+                if self.current_file and os.path.abspath(self.current_file) == os.path.abspath(novo_caminho):
+                    if self.autosave_timer:
+                        self.after_cancel(self.autosave_timer)
+                        self.autosave_timer = None
+                    self.current_file = None
+                    self.editor.config(state=tk.NORMAL)
+                    self.editor.delete("1.0", tk.END)
+                    self.editor.insert("1.0", f"--- ⏳ ARQUIVO BLOQUEADO ---\n\n'{nome_arq}' está sendo gerado/melhorado pela IA.\nAguarde a conclusão para editar.")
+                    self.editor.config(state=tk.DISABLED)
+                return
+
             if self.current_file and os.path.abspath(self.current_file) == os.path.abspath(novo_caminho):
                 return
 
@@ -624,33 +641,25 @@ class ExplorerFrame(ttk.Frame):
                 self.after_cancel(self.autosave_timer)
                 self.autosave_timer = None
 
-            # Salva o arquivo anterior se existir
-            try:
-                self.save_current_file()
-            except Exception as e:
-                self.log_callback(f"Erro ao salvar arquivo anterior: {e}")
-
+            # Salva o arquivo anterior se ele NÃO estiver em processamento
             if arquivo_anterior and os.path.isfile(arquivo_anterior):
-                try:
-                    self.process_saved_file(arquivo_anterior)
-                except Exception as e:
-                    self.log_callback(f"Erro ao processar arquivo salvo: {e}")
+                if not wb.ex.esta_em_processamento(arquivo_anterior):
+                    try:
+                        self.save_current_file()
+                    except Exception as e:
+                        self.log_callback(f"Erro ao salvar arquivo anterior: {e}")
 
             # Se for um ARQUIVO no disco
             if os.path.isfile(novo_caminho):
                 self.current_file = novo_caminho
-
-                # Registra no histórico sem travar o leitor caso falhe
                 try:
                     self._add_to_history(novo_caminho)
                 except Exception as e:
                     self.log_callback(f"Erro ao adicionar ao histórico: {e}")
 
-                # 1. Habilita o editor
                 self.editor.config(state=tk.NORMAL)
                 self.editor.delete("1.0", tk.END)
 
-                # 2. Leitura do arquivo
                 texto = ""
                 try:
                     with open(novo_caminho, "r", encoding="utf-8", errors="ignore") as f:
@@ -658,10 +667,8 @@ class ExplorerFrame(ttk.Frame):
                 except Exception as e:
                     self.log_callback(f"Erro ao ler arquivo {novo_caminho}: {e}")
 
-                # 3. Insere o texto garantidamente
                 self.editor.insert("1.0", texto)
 
-                # 4. Ajustes visuais secundários
                 try:
                     self.editor.edit_reset()
                 except Exception:
@@ -691,27 +698,51 @@ class ExplorerFrame(ttk.Frame):
     def process_saved_file(self, path):
         if self.auto_expander_callback and not self.auto_expander_callback():
             return
+
+        caminho_abs = os.path.abspath(path)
+        if wb.ex.esta_em_processamento(caminho_abs):
+            return
+
         try:
             with open(path, "r", encoding="utf-8", errors="ignore") as f:
                 texto = f.read()
+
             if any(tag in texto for tag in pu.TAG_ALVO):
                 nome_arq = os.path.basename(path)
 
-                if getattr(self, "_processing_auto_expander", False):
-                    return
-                self._processing_auto_expander = True
+                esta_aberto = (self.current_file and os.path.abspath(self.current_file) == caminho_abs)
+                if esta_aberto:
+                    if self.autosave_timer:
+                        self.after_cancel(self.autosave_timer)
+                        self.autosave_timer = None
+                    self.current_file = None
+                    self.editor.config(state=tk.NORMAL)
+                    self.editor.delete("1.0", tk.END)
+                    self.editor.insert(
+                        "1.0", 
+                        f"--- ⏳ EXECUTANDO EXPANDER ---\n\n"
+                        f"Detectada tag TODO em '{nome_arq}'.\n"
+                        f"O arquivo está sendo expandido pela IA. Aguarde..."
+                    )
+                    self.editor.config(state=tk.DISABLED)
 
+                wb.ex.marcar_processamento(caminho_abs, True)
                 self.log_callback(f"'<--TO DO:' encontrado em {nome_arq}")
                 self.toast(f"Tag '<--TO DO:' detectada em '{nome_arq}'! Executando Expander!")
             
                 def _worker():
                     try:
-                        wb.improvefile(path)
+                        wb.ex.processar_arquivo_unico(caminho_abs)
                     finally:
-                        self._processing_auto_expander = False
-                        self.after(0, self.refresh_tree)
+                        wb.ex.marcar_processamento(caminho_abs, False)
+                        def _desbloquear():
+                            self.refresh_tree()
+                            if esta_aberto:
+                                self.select_path_in_tree(caminho_abs)
+                        self.after(0, _desbloquear)
 
                 threading.Thread(target=_worker, daemon=True).start()
+
         except Exception as e:
             self.log_callback(f"Erro analisando TODO: {e}")
 
@@ -756,6 +787,7 @@ class ExplorerFrame(ttk.Frame):
             if os.path.isfile(caminho) and caminho.lower().endswith(".md"):
                 self.context_menu.add_separator()
                 self.context_menu.add_command(label="✨ Melhorar com IA (ImproveFile)", command=lambda: self.run_improve_file(caminho))
+                self.context_menu.add_command(label="🎲 Gerar Aventura D&D (5-Room Dungeon)", command=lambda: self.run_generate_adventure(caminho))
             
             self.context_menu.post(event.x_root, event.y_root)
 
@@ -766,9 +798,10 @@ class ExplorerFrame(ttk.Frame):
 
     def run_improve_file(self, caminho):
         nome_arq = os.path.basename(caminho)
+        caminho_abs = os.path.abspath(caminho)
 
-        # 🛡️ Trava de execução em duplicidade
-        if wb.ex.esta_em_processamento(caminho):
+        # 🛡️ 1. Checa se já está em processamento
+        if wb.ex.esta_em_processamento(caminho_abs):
             self.toast(f"'{nome_arq}' já está sendo processado pela IA! Aguarde a conclusão.")
             return
 
@@ -782,24 +815,122 @@ class ExplorerFrame(ttk.Frame):
 
         motivo = motivo.strip() or "Melhorar a qualidade, riqueza de detalhes, estilo e coesão do arquivo com o restante do universo."
 
-        if self.current_file and os.path.abspath(self.current_file) == os.path.abspath(caminho):
+        # 🛡️ 2. FECHAMENTO E EJENÇÃO DO EDITOR:
+        esta_aberto = (self.current_file and os.path.abspath(self.current_file) == caminho_abs)
+        if esta_aberto:
+            # Cancela timer pendente para não salvar nada no limbo
+            if self.autosave_timer:
+                self.after_cancel(self.autosave_timer)
+                self.autosave_timer = None
+
+            # Salva o arquivo no disco com as alterações manuais do usuário antes da IA intervir
             self.save_current_file()
 
+            # Desvincula o arquivo do editor e fecha o painel
+            self.current_file = None
+            self.editor.config(state=tk.NORMAL)
+            self.editor.delete("1.0", tk.END)
+            self.editor.insert(
+                "1.0", 
+                f"--- ⏳ ARQUIVO EM PROCESSAMENTO PELA IA ---\n\n"
+                f"Arquivo: {nome_arq}\n"
+                f"Status: Executando ImproveFile em segundo plano...\n"
+                f"A edição e o auto-save estão temporariamente suspensos.\n"
+                f"O documento será reaberto automaticamente assim que a IA finalizar."
+            )
+            self.editor.config(state=tk.DISABLED)
+
+        # Marca imediatamente como em processamento ANTES da thread iniciar
+        wb.ex.marcar_processamento(caminho_abs, True)
         self.toast(f"Executando ImproveFile em '{nome_arq}'...")
         self.log_callback(f"Iniciando ImproveFile manual para: {nome_arq}")
 
         def _worker():
             try:
-                sucesso = wb.improvefile(caminho, reason=motivo)
+                # O improvefile faz a chamada e gerencia o histórico
+                sucesso = wb.improvefile(caminho_abs, reason=motivo)
                 if sucesso:
                     self.log_callback(f"✅ ImproveFile concluído para: {nome_arq}")
                     self.toast(f"Nova versão criada para '{nome_arq}'!")
-                    self.after(0, self.refresh_tree)
                 else:
                     self.toast(f"ImproveFile cancelado ou sem alterações para '{nome_arq}'.")
             except Exception as e:
                 self.log_callback(f"Erro ao executar ImproveFile: {e}")
                 self.toast(f"Erro ao melhorar '{nome_arq}'.")
+            finally:
+                # Libera o arquivo do lock mecânico
+                wb.ex.marcar_processamento(caminho_abs, False)
+
+                # 🟢 RETORNA PARA A UI NA THREAD PRINCIPAL:
+                def _desbloquear_e_atualizar():
+                    self.refresh_tree()
+                    # Se o arquivo estava aberto na tela antes do processo, reabre agora com os dados novos!
+                    if esta_aberto:
+                        self.select_path_in_tree(caminho_abs)
+
+                self.after(0, _desbloquear_e_atualizar)
+
+        threading.Thread(target=_worker, daemon=True).start()
+    
+    def run_generate_adventure(self, caminho):
+        nome_arq = os.path.basename(caminho)
+        caminho_abs = os.path.abspath(caminho)
+
+        if wb.ex.esta_em_processamento(caminho_abs):
+            self.toast(f"'{nome_arq}' já está sendo processado pela IA! Aguarde.")
+            return
+
+        motivo = simpledialog.askstring(
+            "Gerar Aventura 5-Room Dungeon",
+            f"Qual é o objetivo ou gancho da aventura para '{nome_arq}'?\n(Ex: Perseguição a uma bruxa no pântano, resgate nas catacumbas):",
+            parent=self
+        )
+        if motivo is None:
+            return
+
+        motivo = motivo.strip() or f"Criar uma aventura desafiadora e imersiva de D&D 5e temática sobre {nome_arq}."
+
+        # Ejeção segura do editor para não haver sobrescrita
+        esta_aberto = (self.current_file and os.path.abspath(self.current_file) == caminho_abs)
+        if esta_aberto:
+            if self.autosave_timer:
+                self.after_cancel(self.autosave_timer)
+                self.autosave_timer = None
+            self.save_current_file()
+            self.current_file = None
+            self.editor.config(state=tk.NORMAL)
+            self.editor.delete("1.0", tk.END)
+            self.editor.insert(
+                "1.0", 
+                f"--- 🎲 GERANDO AVENTURA D&D 5E ---\n\n"
+                f"Arquivo: {nome_arq}\n"
+                f"A IA está construindo a dungeon de 5 salas, fichas e testes com CD.\n"
+                f"Aguarde alguns instantes..."
+            )
+            self.editor.config(state=tk.DISABLED)
+
+        wb.ex.marcar_processamento(caminho_abs, True)
+        self.toast(f"🎲 Construindo Aventura 5-Room em '{nome_arq}'...")
+        self.log_callback(f"Iniciando geração de aventura estruturada para: {nome_arq}")
+
+        def _worker():
+            try:
+                sucesso = wb.gerar_aventura_completa(caminho_abs, reason=motivo)
+                if sucesso:
+                    self.log_callback(f"✅ Aventura 5-Room gerada com sucesso para: {nome_arq}")
+                    self.toast(f"Aventura criada em '{nome_arq}'!")
+                else:
+                    self.toast(f"Falha ou cancelamento ao gerar aventura em '{nome_arq}'.")
+            except Exception as e:
+                self.log_callback(f"Erro na geração da aventura: {e}")
+                self.toast(f"Erro ao gerar aventura em '{nome_arq}'.")
+            finally:
+                wb.ex.marcar_processamento(caminho_abs, False)
+                def _finalizar():
+                    self.refresh_tree()
+                    if esta_aberto:
+                        self.select_path_in_tree(caminho_abs)
+                self.after(0, _finalizar)
 
         threading.Thread(target=_worker, daemon=True).start()
     
@@ -1120,6 +1251,11 @@ class ExplorerFrame(ttk.Frame):
 
         caminho = item_values[0]
         if os.path.isfile(caminho):
+            # 🛡️ TRAVA: Não abre externamente se estiver processando
+            if wb.ex.esta_em_processamento(caminho):
+                self.toast(f"⏳ '{os.path.basename(caminho)}' está sendo alterado pela IA. Aguarde para abrir.")
+                return
+
             try:
                 self.log_callback(f"Abrindo nativamente: {os.path.basename(caminho)}")
                 if os.name == 'nt':

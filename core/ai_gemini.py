@@ -67,49 +67,88 @@ def _criterio_ordenacao_eficiencia(m: dict):
     # -score_qualidade -> decrescente (desempate pela capacidade do modelo)
     return (-taxa_sucesso, tempo_resposta, -score_qualidade)
 
-def _calcular_score_modelo(model_name: str, max_tokens: int) -> int:
+def _modelo_eh_invalido_para_lore(model_name: str, max_input: int, supported_methods: list = None) -> bool:
+    """Verifica se o modelo deve ser imediatamente ignorado."""
+    name = model_name.lower()
+
+    # 1. Filtros de tarefas que não geram texto narrativo
+    termos_proibidos = [
+        "embedding", "robotics", "aqa", "realtime", "tts", "stt",
+        "vision", "imagen", "audio", "medlm", "imagen", "veo"
+    ]
+    if any(t in name for t in termos_proibidos):
+        return True
+
+    # 2. Ignora modelos de geração puramente ultraleves ou subdimensionados para lore densa
+    if "8b" in name or "nano" in name:
+        return True
+
+    # 3. Descarta modelos que não têm contexto mínimo para carregar um compêndio (mínimo 64k tokens)
+    if max_input > 0 and max_input < 64_000:
+        return True
+
+    # 4. Checagem de métodos suportados (se fornecido pela API)
+    if supported_methods and "generateContent" not in supported_methods:
+        return True
+
+    return False
+
+def _calcular_score_modelo(model_name: str, max_input_tokens: int, max_output_tokens: int = 0) -> int:
+    """
+    Pontuação técnica baseada nas necessidades reais de Worldbuilding:
+    Profundidade narrativa, coerência lógica e capacidade de contexto.
+    """
     name = model_name.lower()
     score = 0
-    if max_tokens >= 1_000_000:
-        score += 5000
-    elif max_tokens >= 500_000:
-        score += 3000
-    elif max_tokens >= 128_000:
-        score += 1000
+
+    # --- 1. CAPACIDADE DE CONTEXTO (MUNDO GIGANTE) ---
+    if max_input_tokens >= 1_000_000:
+        score += 6000   # Consegue absorver dezenas de livros de lore sem perda de atenção
+    elif max_input_tokens >= 500_000:
+        score += 3500
+    elif max_input_tokens >= 128_000:
+        score += 2000
     else:
         score -= 2000
 
-    if "pro" in name:
-        score += 4000
-    elif "thinking" in name or "reasoning" in name:
-        score += 3500
-    elif "flash" in name and "8b" not in name:
+    # --- 2. CAPACIDADE DE SAÍDA (CAPÍTULOS LONGOS) ---
+    if max_output_tokens >= 8192:
         score += 1500
-    elif "flash-8b" in name or "lite" in name:
-        score += 200
-
-    if "2.5" in name:
-        score += 1000
-    elif "2.0" in name:
+    elif max_output_tokens >= 4096:
         score += 800
+
+    # --- 3. INTELIGÊNCIA E FAMÍLIA DO MODELO ---
+    # Modelos "Pro" entendem sutileza, subtexto e motivações psicológicas de NPCs
+    if "pro" in name:
+        score += 5000
+
+    # Modelos "Thinking" ou com raciocínio dedicado são perfeitos para auditar consistência
+    if "thinking" in name or "reasoning" in name:
+        score += 4500
+
+    # Modelos Flash normais são excelentes para tarefas rápidas de preenchimento
+    elif "flash" in name:
+        score += 2500
+
+    # Versões geracionais mais novas (prioriza 2.5 > 2.0 > 1.5)
+    if "2.5" in name:
+        score += 2000
+    elif "2.0" in name:
+        score += 1200
     elif "1.5" in name:
-        score += 500
+        score += 600
 
-    if "latest" in name or "preview" in name:
-        score += 300
-    if "exp" in name:
-        score += 200
-
-    if "vision" in name or "imagen" in name or "audio" in name:
-        score -= 5000
+    # Preferência por versões estáveis e oficiais sobre previews instáveis
+    if "preview" in name or "exp" in name:
+        score -= 400
 
     return score
 
 def findmodel(file_path=pu.log_path("models.json")):
-    client = get_gemini_client(timeout_seconds=90)
-    client_fast = get_gemini_client(timeout_seconds=15)
+    # Timeout mais tolerante para a descoberta
+    client_fast = get_gemini_client(timeout_seconds=20)
     
-    if not client:
+    if not client_fast:
         print("Nenhuma GOOGLE_API_KEY configurada. Pulando ranqueamento de modelos.")
         return
 
@@ -128,61 +167,70 @@ def findmodel(file_path=pu.log_path("models.json")):
 
     print("Atualizando compêndio de modelos da API...")
     try:
-        all_models = client.models.list()
+        all_models = client_fast.models.list()
     except Exception as e:
         print(f"Erro ao listar modelos da API: {e}")
         return
 
     working_models = []
+    
+    # Prompt rápido para avaliar se o modelo entende instruções de escrita
+    teste_criativo = "Escreva uma frase de fantasia sombria sobre o [[Reino de Valia]]. Responda apenas a frase."
+
     for model in all_models:
         model_name = model.name
-        max_input_tokens = getattr(model, 'input_token_limit', 0) or 0
-        
-        name_lower = model_name.lower()
-        if any(w in name_lower for w in ["embedding", "robotics", "aqa", "realtime", "tts"]):
-            continue
-        if "gemini" not in name_lower:
+        max_input = getattr(model, 'input_token_limit', 0) or 0
+        max_output = getattr(model, 'output_token_limit', 0) or 0
+        supported_actions = getattr(model, 'supported_actions', []) or getattr(model, 'supported_generation_methods', [])
+
+        # 1. Filtro estrito de descarte
+        if _modelo_eh_invalido_para_lore(model_name, max_input, supported_actions):
             continue
 
+        # 2. Benchmark de latência e execução
         start_time = time.time()
         try:
-            client_fast.models.generate_content(model=model_name, contents="ping")
+            resp = client_fast.models.generate_content(
+                model=model_name, 
+                contents=teste_criativo
+            )
             response_time = round(time.time() - start_time, 4)
-        except Exception:
+            texto_resp = resp.text or ""
+            
+            # Se a resposta foi vazia, descarta
+            if not texto_resp.strip():
+                continue
+
+        except Exception as e:
+            # Modelo instável, sem cota ou com erro de acesso
             continue
 
-        # Apenas registramos se suporta ferramentas como dado informativo,
-        # sem usar isso como critério de prioridade de fila
-        supports_tools = False
-        try:
-            client_fast.models.generate_content(
-                model=model_name,
-                contents="ping",
-                config=types.GenerateContentConfig(tools=[types.Tool(google_search=types.GoogleSearch())])
-            )
-            supports_tools = True
-        except Exception:
-            supports_tools = False
+        # Bônus se respeitou o formato de wikilink [[...]] no mini-teste
+        bonus_instrucao = 500 if "[[" in texto_resp and "]]" in texto_resp else 0
 
-        quality_score = _calcular_score_modelo(model_name, max_input_tokens)
+        quality_score = _calcular_score_modelo(model_name, max_input, max_output) + bonus_instrucao
 
         working_models.append({
             "name": model_name,
             "display_name": getattr(model, "display_name", model_name),
-            "maxinputtokens": max_input_tokens,
+            "maxinputtokens": max_input,
+            "maxoutputtokens": max_output,
             "responsetime": response_time,
-            "supports_tools": supports_tools,
             "quality_score": quality_score,
             "attempts": 1,
             "success": 1
         })
         time.sleep(0.3)
 
-    # 🟢 Nova ordenação focada exclusivamente em Eficiência:
+    if not working_models:
+        print("⚠️ Nenhum modelo compatível respondeu com sucesso ao benchmark.")
+        return
+
+    # Ordena combinando taxa de sucesso inicial, qualidade arquitetural e velocidade
     working_models.sort(key=_criterio_ordenacao_eficiencia)
 
     pu.salvar_json_seguro(file_path, working_models, pu.LOCK_MODELS)
-    print("Lista de modelos ranqueada com foco em eficiência!")
+    print(f"✅ {len(working_models)} modelos válidos ranqueados com sucesso para Worldbuilding!")
 
 def improvemodel(model, success, response_time=None):
     file_path = pu.log_path("models.json")

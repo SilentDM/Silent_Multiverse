@@ -1,4 +1,5 @@
-import json, re
+import re
+import engine.dnd_schemas as dnd
 import engine.expander as ex
 import engine.project_utils as pu
 import core.ai_utils as au
@@ -8,6 +9,7 @@ from typing import Optional
 from pathlib import Path
 from pydantic import BaseModel
 from typing import Literal, List
+
 
 def resolver_caminho(path_str):
     """
@@ -425,6 +427,86 @@ Retorne apenas o conteúdo final do arquivo.
 
     except Exception as e:
         print(f"Erro ao processar {arquivo.name}: {e}")
+        return False
+    finally:
+        ex.marcar_processamento(arquivo, False)
+        
+def gerar_aventura_completa(path, reason="Aventura de D&D 5e"):
+    print(f"🎲 Gerando Aventura 5-Room Dungeon para: {path}\nObjetivo: {reason}")
+    arquivo = resolver_caminho(path)
+
+    if ex.esta_em_processamento(arquivo):
+        print(f"O arquivo '{arquivo.name}' já está em processamento. Abortando.")
+        return False
+
+    if not arquivo.exists() or not arquivo.is_file():
+        print(f"Arquivo não encontrado: {arquivo}")
+        return False
+
+    ex.marcar_processamento(arquivo, True)
+
+    try:
+        with open(arquivo, "r", encoding="utf-8", errors="ignore") as f:
+            conteudo_atual = f.read()
+
+        estilo_contexto = ex.carregar_diretrizes_estilo()
+
+        instrucoes_sistema = f"""
+Você é um Designer Profissional de Aventuras de D&D 5e e escritor veterano.
+Seu objetivo é criar um módulo de aventura completo e envolvente seguindo rigorosamente a estrutura de '5-Room Dungeon'.
+
+# DIRETRIZES DE TOM E ESTILO DO CENÁRIO:
+{estilo_contexto}
+
+# REGRAS OBRIGATÓRIAS DE DESIGN D&D 5e:
+- Contextualize a aventura com o universo carregado no cache (use facções, deuses, vilões ou cidades existentes).
+- CRIE WIKILINKS [[Nome do Conceito]] sempre que citar locais, itens, NPCs ou monstros do universo.
+- No Statblock do monstro/vilão principal, seja preciso nas estatísticas de 5e (CA, PV, ND e ações).
+- Para CADA sala (1 a 5), forneça desfechos claros e distintos para as rolagens de d20 (<=5, 6-10, 11-15, 16-20 e 21+).
+- Responda OBRIGATORIAMENTE seguindo o schema estruturado JSON.
+"""
+
+        prompt_usuario = f"""
+Crie a aventura para o arquivo: {arquivo.name}
+
+OBJETIVO / GANCHO DO MESTRE:
+{reason}
+
+CONTEÚDO PRÉ-EXISTENTE NO ARQUIVO (Use como base ou complete as lacunas):
+{conteudo_atual}
+"""
+
+        # 🟢 AQUI ESTÁ A MÁGICA: Executando o response_schema!
+        resposta_raw = au.ask_ai(
+            contents=prompt_usuario,
+            system_instruction=instrucoes_sistema,
+            temperature=0.7,
+            response_schema=dnd.ModuloAventura5Rooms,
+            use_world_context=True
+        )
+
+        if not resposta_raw:
+            print("⚠️ Resposta da IA foi vazia.")
+            return False
+
+        # Valida o JSON no schema e converte para o Markdown com Callouts
+        json_limpo = ex.remover_markdown_fences(str(resposta_raw))
+        aventura_obj = dnd.ModuloAventura5Rooms.model_validate_json(json_limpo)
+        markdown_final = dnd.aventura_5rooms_para_markdown(aventura_obj)
+
+        # Arquiva a versão anterior no histórico (_v01, _v02...)
+        if arquivo.exists():
+            ex.arquivar_versao_para_historico(arquivo)
+
+        # Salva o novo arquivo no cofre
+        with open(arquivo, "w", encoding="utf-8") as f:
+            f.write(markdown_final)
+
+        print(f"✅ Aventura 5-Room Dungeon gerada com sucesso em: {arquivo.name}")
+        return True
+
+    except Exception as e:
+        print(f"❌ Erro ao gerar aventura estruturada: {e}")
         return False
     finally:
         ex.marcar_processamento(arquivo, False)

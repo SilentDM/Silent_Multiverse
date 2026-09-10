@@ -19,7 +19,9 @@ from PIL import Image
 
 SETTINGS_FILE = pu.PASTA_LOGS / "settings.json"
 
+
 class SilentDesktopApp:
+    
     def __init__(self, root):
         self.root = root
         self.user_name = "Silent Dungeon Master"
@@ -28,7 +30,13 @@ class SilentDesktopApp:
         self.root.minsize(1050, 550)
         self.root.state("zoomed")  # Windows
         self.root.configure(bg="#121212")
-
+        
+        caminho_icone = self._obter_caminho_icone()
+        if caminho_icone:
+            try:
+                self.root.iconbitmap(str(caminho_icone))
+            except Exception as e:
+                print(f"Erro ao aplicar iconbitmap: {e}") 
         self.current_font_size = 11
         self.root.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
         self.setup_dark_style()
@@ -62,6 +70,7 @@ class SilentDesktopApp:
         threading.Thread(target=ag.findmodel, daemon=True).start()
         
         self.setup_system_tray()
+        
 
     # ------------------------------------------------------------------
     # SISTEMA DE OPÇÕES
@@ -1175,16 +1184,30 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
     # ------------------------------------------------------------------
     # BANDEJA DO SISTEMA (SYSTEM TRAY)
     # ------------------------------------------------------------------
+    def _obter_caminho_icone():
+            """Busca o ícone tanto embutido no PyInstaller (_MEIPASS) quanto local em desenvolvimento."""
+            # 1. Se estiver rodando como .exe (PyInstaller extrai em _MEIPASS)
+            if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+                caminho_embutido = Path(sys._MEIPASS) / "icon.ico"
+                if caminho_embutido.exists():
+                    return caminho_embutido
+
+            # 2. Se estiver rodando via script .py ou se o ícone estiver na mesma pasta do .exe
+            caminho_base = pu.BASE_DIR / "icon.ico"
+            if caminho_base.exists():
+                return caminho_base
+
+            return None
+    
     def setup_system_tray(self):
         """Inicializa o ícone oculto ao lado do relógio do Windows."""
         try:
-            icon_path = pu.BASE_DIR / "icon.ico"
-            if icon_path.exists():
-                image = Image.open(icon_path)
+            caminho_icone = self._obter_caminho_icone()
+            if caminho_icone:
+                image = Image.open(caminho_icone)
             else:
                 image = Image.new('RGB', (64, 64), color=(16, 185, 129))
 
-            # Menu de contexto ao clicar com o botão direito no ícone do relógio
             menu = pystray.Menu(
                 item('Abrir Silent Console', self.restore_from_tray, default=True),
                 pystray.Menu.SEPARATOR,
@@ -1198,7 +1221,6 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
                 menu
             )
 
-            # Executa o ícone da bandeja em uma thread separada
             threading.Thread(target=self.tray_icon.run, daemon=True).start()
         except Exception as e:
             print(f"Erro ao inicializar System Tray: {e}")
