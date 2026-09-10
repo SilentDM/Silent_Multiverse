@@ -458,6 +458,8 @@ class SilentDesktopApp:
         self.btn_create_backup.pack(fill=tk.X, padx=10, pady=(10, 5))
         self.btn_delete_memories = ttk.Button(db_box, text="⛔ Excluir Todas as Memórias ⛔", command=self.delete_memories)
         self.btn_delete_memories.pack(fill=tk.X, padx=10, pady=(0, 10))
+        self.btn_abrir_pasta_dados_nexus = ttk.Button(db_box, text="📂 Abrir Pasta de Dados (.silent_data)", command=self.abrir_pasta_dados_nexus)
+        self.btn_abrir_pasta_dados_nexus.pack(fill=tk.X, padx=10, pady=(0, 5))
 
         self.wb_boxes = [stop_box, audit_box, expander_box, export_box, wb_box, db_box]
         self.render_wb_grid()
@@ -904,6 +906,21 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
         except Exception as e:
             self.log_activity(f"Erro ao excluir memórias: {e}")
             messagebox.showerror("Erro", str(e))
+
+    def abrir_pasta_dados_nexus(self):
+            """Abre a pasta .silent_data nativamente no Windows Explorer."""
+            try:
+                pasta = pu.PASTA_DADOS_NEXUS
+                pasta.mkdir(parents=True, exist_ok=True)
+                if sys.platform == 'win32':
+                    os.startfile(str(pasta))
+                elif sys.platform == 'darwin':
+                    subprocess.call(['open', str(pasta)])
+                else:
+                    subprocess.call(['xdg-open', str(pasta)])
+                self.toast("📂 Abrindo pasta de dados .silent_data...")
+            except Exception as e:
+                self.log_activity(f"Erro ao abrir .silent_data: {e}")
 
     # ------------------------------------------------------------------
     # CONTROLE DE LOGS E ZOOM

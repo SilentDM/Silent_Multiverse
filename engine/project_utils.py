@@ -1,32 +1,62 @@
-import sys, os, re, json, threading, unicodedata, difflib, zipfile
+# Em engine/project_utils.py
+import sys, os, re, json, threading, unicodedata, difflib, zipfile, ctypes, shutil
 import core.secret_filter as sf
 from pathlib import Path
 from datetime import datetime
 
+# Identifica o diretório onde o executável (.exe) ou o script (main.py) está rodando
 if getattr(sys, 'frozen', False):
     BASE_DIR = Path(sys.executable).resolve().parent
 else:
     BASE_DIR = Path(__file__).resolve().parent.parent
 
-PASTA_LOGS = (BASE_DIR / "logs").resolve()
-PASTA_MEMORIES = (BASE_DIR / "memories").resolve()
-PASTA_EXPORTS = (BASE_DIR / "exports").resolve()
-PASTA_TEMPLATES = (BASE_DIR / "Templates").resolve()
-PASTA_ESTILO = os.getenv("PASTA_ESTILO", "Style")
-CAMINHO_ESTILO = (BASE_DIR / PASTA_ESTILO).resolve()
-PASTA_DISCORD_KNOWLEDGE = (BASE_DIR / "Discord_Knowledge").resolve()
-PASTA_DISCORD_KNOWLEDGE.mkdir(parents=True, exist_ok=True)
+# 🟢 PASTA CENTRAL DE DADOS DO NEXUS (Ao lado do executável)
+PASTA_DADOS_NEXUS = (BASE_DIR / ".silent_data").resolve()
+
+# Todas as subpastas agora vivem exclusivamente dentro de .silent_data
+PASTA_LOGS = PASTA_DADOS_NEXUS / "logs"
+PASTA_MEMORIES = PASTA_DADOS_NEXUS / "memories"
+PASTA_EXPORTS = PASTA_DADOS_NEXUS / "exports"
+PASTA_TEMPLATES = PASTA_DADOS_NEXUS / "Templates"
+PASTA_ESTILO_NOME = os.getenv("PASTA_ESTILO", "Style")
+CAMINHO_ESTILO = PASTA_DADOS_NEXUS / PASTA_ESTILO_NOME
+PASTA_DISCORD_KNOWLEDGE = PASTA_DADOS_NEXUS / "Discord_Knowledge"
+
 PROJECT_ROOT = BASE_DIR
 
+def inicializar_estrutura_silent_data():
+    """Garante que a pasta .silent_data e todas as suas subpastas existam."""
+    PASTA_DADOS_NEXUS.mkdir(parents=True, exist_ok=True)
+    
+    for subpasta in [PASTA_LOGS, PASTA_MEMORIES, PASTA_EXPORTS, PASTA_TEMPLATES, CAMINHO_ESTILO, PASTA_DISCORD_KNOWLEDGE]:
+        subpasta.mkdir(parents=True, exist_ok=True)
 
-# Variáveis globais mutáveis do projeto ativo
+    # 🛡️ No Windows, define o atributo nativo de pasta Oculta (Hidden)
+    if sys.platform == "win32":
+        try:
+            # 0x02 = FILE_ATTRIBUTE_HIDDEN
+            ctypes.windll.kernel32.SetFileAttributesW(str(PASTA_DADOS_NEXUS), 0x02)
+        except Exception:
+            pass
+
+inicializar_estrutura_silent_data()
+
+IGNORELIST = [
+    ".silent_data",  
+    ".obsidian",
+    ".git",
+    ".trash",
+    "status: rascunho"
+]
+
+ARQUIVO_ORDEM_GLOBAL = PASTA_LOGS / "folder_orders.json"
+
+
 CAMINHO_PROJETO = None
 PASTA_PROJETO = None
 
-PROJECT_ROOT = BASE_DIR
-
 TAG_ALVO = ["<-- TO DO:", "<-- TO DO", "<-- TODO:", "<-- TODO", "<-- todo","<-- To do:", "<-- to-do:", "<-- to-do", "<-- to do:", "<-- to do","<-- To Do:", "<-- To Do", "<-- To-Do:", "<-- To-Do", "<-- To-do:", "<-- To-do", "<-- Todo:"]
-IGNORELIST = ["Templates", "status: rascunho", ".obsidian", ".git", ".trash"]
+
 
 # Sinalizador global de cancelamento
 _CANCEL_EVENT = threading.Event()
@@ -35,12 +65,38 @@ STOP_WORDS = {
     "de", "da", "do", "das", "dos", "em", "no", "na", "nos", "nas", 
     "o", "a", "os", "as", "e", "the", "of", "and", "in", "on", "para", "com"}
 
-ARQUIVO_ORDEM_GLOBAL = PASTA_LOGS / "folder_orders.json"
-
 # --- TRAVAS DE CONCORRÊNCIA PARA ARQUIVOS COMPARTILHADOS ---
 LOCK_MODELS = threading.Lock()
 LOCK_CHANGELOG = threading.Lock()
 LOCK_FOLDER_ORDERS = threading.Lock()
+
+def sincronizar_templates_e_estilo_iniciais():
+    """Se a pasta de Templates ou Style em .silent_data estiver vazia, copia os modelos embutidos."""
+    # Origem dos modelos embutidos pelo PyInstaller ou no código-fonte
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        origem_base = Path(sys._MEIPASS)
+    else:
+        origem_base = BASE_DIR
+
+    # Sincroniza Templates se a pasta estiver vazia
+    origem_templates = origem_base / "Templates"
+    if origem_templates.exists() and not any(PASTA_TEMPLATES.glob("*.md")):
+        for arq in origem_templates.glob("*.md"):
+            try:
+                shutil.copy2(arq, PASTA_TEMPLATES / arq.name)
+            except Exception:
+                pass
+
+    # Sincroniza Style se a pasta estiver vazia
+    origem_style = origem_base / "Style"
+    if origem_style.exists() and not any(CAMINHO_ESTILO.glob("*.md")):
+        for arq in origem_style.glob("*.md"):
+            try:
+                shutil.copy2(arq, CAMINHO_ESTILO / arq.name)
+            except Exception:
+                pass
+
+sincronizar_templates_e_estilo_iniciais()
 
 def obter_projetos_recentes():
     """Retorna a lista de caminhos de projetos recentes salvos nas configurações."""
@@ -401,50 +457,35 @@ def obter_itens_ordenados(caminho_pasta):
     return sorted(todos_itens, key=lambda x: x.lower())
 
 def criar_backup_projeto():
-    """
-    Reúne e compacta todas as pastas de conteúdo do usuário em um arquivo .zip
-    salvo na raiz do volume de disco em uso (ex: C:\\, E:\\, F:\\).
-    """
-    # Pastas que serão incluídas no backup
-    pastas_para_backup = [
-        ("exports", PASTA_EXPORTS),
-        ("logs", PASTA_LOGS),
-        ("memories", PASTA_MEMORIES),
-        ("Templates", PASTA_TEMPLATES),
-        (PASTA_ESTILO, CAMINHO_ESTILO),
-        (PASTA_PROJETO, CAMINHO_PROJETO),
-    ]
-
-    # Nome do arquivo de backup com data e hora
+    """Compacta a pasta de controle .silent_data e o projeto ativo em um arquivo .zip."""
     data_str = datetime.now().strftime("%Y%m%d_%H%M%S")
     nome_zip = f"backup_{PASTA_PROJETO}_{data_str}.zip"
 
-    # Raiz do volume (ex: C:\ ou E:\)
     raiz_volume = Path(BASE_DIR.anchor)
     caminho_destino = raiz_volume / nome_zip
 
-    # Teste de permissão de escrita na raiz do disco
+    # Testa permissão de escrita na raiz do disco (ex: D:\ ou E:\), senão salva na pasta do app
     try:
         teste_perm = raiz_volume / f".test_perm_{data_str}"
         teste_perm.touch()
         teste_perm.unlink()
     except (PermissionError, OSError):
-        # Se não houver permissão de admin na raiz do C:\, salva na pasta do programa
         caminho_destino = BASE_DIR / nome_zip
 
-    # Criação do arquivo .zip
+    pastas_para_backup = [
+        (".silent_data", PASTA_DADOS_NEXUS),
+        (PASTA_PROJETO, CAMINHO_PROJETO)
+    ]
+
     total_arquivos = 0
     with zipfile.ZipFile(caminho_destino, "w", zipfile.ZIP_DEFLATED) as zipf:
-        for nome_pasta_rel, pasta_path in pastas_para_backup:
-            if pasta_path.exists() and pasta_path.is_dir():
+        for nome_rel, pasta_path in pastas_para_backup:
+            if pasta_path and pasta_path.exists() and pasta_path.is_dir():
                 for arq in pasta_path.rglob("*"):
                     if arq.is_file():
-                        # Evita incluir backups zip antigos dentro do novo zip
                         if arq.name.startswith("backup_") and arq.suffix == ".zip":
                             continue
-                        
-                        # Preserva a estrutura interna de pastas dentro do .zip
-                        rel_path = Path(nome_pasta_rel) / arq.relative_to(pasta_path)
+                        rel_path = Path(nome_rel) / arq.relative_to(pasta_path)
                         zipf.write(arq, arcname=rel_path)
                         total_arquivos += 1
 

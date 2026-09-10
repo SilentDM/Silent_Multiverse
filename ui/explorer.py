@@ -5,6 +5,14 @@ from pathlib import Path
 import engine.project_utils as pu
 import engine.wbuilder as wb
 
+try:
+    from tkinterweb import HtmlFrame
+    TKINTERWEB_DISPONIVEL = True
+except ImportError:
+    TKINTERWEB_DISPONIVEL = False
+
+import engine.preview_renderer as prev
+
 class NewFileDialog(tk.Toplevel):
     """Janela modal para criar um novo arquivo definindo nome e template."""
     def __init__(self, parent, templates_disponiveis):
@@ -65,9 +73,6 @@ class ExplorerFrame(ttk.Frame):
         self.autosave_timer = None
         self.clipboard_item = None
 
-        # Histórico de navegação (Voltar / Avançar)
-        #self.history_back = []
-        #self.history_forward = []
         self.history = []
         self.history_index = -1
         self._navigating_history = False
@@ -107,30 +112,53 @@ class ExplorerFrame(ttk.Frame):
         # SUBCOLUNA B: Editor de Texto com Barra de Navegação Superior
         self.editor_frame = ttk.Frame(self.pane)
         self.pane.add(self.editor_frame, weight=2)
+        
+        # Estado da visualização
+        self.modo_preview = False
 
         # Barra Superior de Ferramentas / Navegação
         editor_header = ttk.Frame(self.editor_frame)
         editor_header.pack(fill=tk.X, padx=5, pady=(5, 2))
 
-        self.btn_nav_back = ttk.Button(editor_header, text="◀ Voltar", width=8, command=self.go_back)
+        self.btn_nav_back = ttk.Button(editor_header, text="< Voltar", width=8, command=self.go_back)
         self.btn_nav_back.pack(side=tk.LEFT, padx=(0, 2))
 
-        self.btn_nav_forward = ttk.Button(editor_header, text="Avançar ▶", width=8, command=self.go_forward)
+        self.btn_nav_forward = ttk.Button(editor_header, text="Avançar >", width=8, command=self.go_forward)
         self.btn_nav_forward.pack(side=tk.LEFT, padx=(0, 8))
 
         self.lbl_editor_title = ttk.Label(editor_header, text="Editor Dinâmico", font=("Segoe UI", 9, "bold"), foreground="#10b981",anchor="center")
         self.lbl_editor_title.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        # 🟢 Botão de Navegador Externo (ainda disponível caso queira imprimir em PDF no Edge/Chrome)
+        self.btn_browser = ttk.Button(editor_header, text="Browser", width=10, command=self.abrir_preview_obsidian)
+        self.btn_browser.pack(side=tk.RIGHT, padx=(2, 0))
+
+        # 🟢 Botão de Alternância Interno [Editar / Visualizar]
+        self.btn_toggle_preview = ttk.Button(editor_header, text="Visualizar", width=13, command=self.alternar_modo_preview)
+        self.btn_toggle_preview.pack(side=tk.RIGHT, padx=(2, 2))
+
+        # Container onde o Editor e o Preview disputam o espaço
+        self.view_container = ttk.Frame(self.editor_frame)
+        self.view_container.pack(fill=tk.BOTH, expand=True, padx=5, pady=(2, 5))
+        
         # ScrolledText do Editor
         self.editor = scrolledtext.ScrolledText(
-            self.editor_frame, wrap=tk.WORD, font=("Consolas", 12), undo=True,
+            self.view_container,  # 🟢 CORREÇÃO: Colocado dentro de self.view_container
+            wrap=tk.WORD, font=("Consolas", 12), undo=True,
             bg="#1e1e1e", fg="#e3e3e3", insertbackground="white",
             selectbackground="#0f766e", selectforeground="white", bd=0, highlightthickness=0
         )
-        self.editor.pack(fill=tk.BOTH, expand=True, padx=5, pady=(2, 5))
-
-        #self.editor.insert("1.0", "--- Selecione um arquivo para visualizar e editar ---")
+        self.editor.pack(fill=tk.BOTH, expand=True)
         self.editor.config(state=tk.DISABLED)
         self.editor.bind("<KeyRelease>", self.on_key_release)
+        
+        # 2. Widget HtmlFrame do Preview Interno (tkinterweb)
+        if TKINTERWEB_DISPONIVEL:
+            self.html_preview = HtmlFrame(self.view_container, messages_enabled=False)
+            try:
+                self.html_preview.configure(background="#1e1e20")
+            except Exception:
+                pass
 
         # Syntax Highlighting
         self.editor.tag_configure("md_h1", font=("Consolas", 15, "bold"), foreground="#10b981")
@@ -283,6 +311,74 @@ class ExplorerFrame(ttk.Frame):
             self.after(50, self._reset_navigating_flag)
 
         return "break"
+
+    def abrir_preview_obsidian(self):
+        """Salva o arquivo atual e gera a visualização HTML idêntica ao Obsidian no navegador."""
+        if not self.current_file or not os.path.isfile(self.current_file):
+            self.toast("⚠️ Selecione um arquivo Markdown para visualizar o Preview.")
+            return
+
+        try:
+            # 1. Salva o texto que o usuário acabou de digitar
+            self.save_current_file()
+
+            import engine.preview_renderer as prev
+            self.toast("👁️ Gerando Preview no estilo Obsidian...")
+
+            # 2. Gera o HTML com Callouts, Tabelas, Banners e Propriedades
+            caminho_html = prev.gerar_preview_documento(Path(self.current_file))
+
+            # 3. Abre instantaneamente no navegador padrão do computador
+            if os.name == 'nt':
+                os.startfile(str(caminho_html))
+            elif sys.platform == 'darwin':
+                subprocess.call(('open', str(caminho_html)))
+            else:
+                subprocess.call(('xdg-open', str(caminho_html)))
+
+            self.log_callback(f"Preview gerado com sucesso: {os.path.basename(self.current_file)}")
+
+        except Exception as e:
+            self.log_callback(f"Erro ao abrir Preview: {e}")
+            self.toast("❌ Falha ao gerar visualização do arquivo.")
+
+    def alternar_modo_preview(self):
+        """Alterna suavemente entre o editor de texto puro e a página renderizada estilo Obsidian."""
+        if not TKINTERWEB_DISPONIVEL:
+            self.toast("⚠️ Instale 'tkinterweb' via terminal: pip install tkinterweb")
+            return
+
+        if not self.current_file or not os.path.isfile(self.current_file):
+            self.toast("Selecione um arquivo para visualizar.")
+            return
+
+        self.modo_preview = not self.modo_preview
+
+        if self.modo_preview:
+            # Salva antes de renderizar
+            self.save_current_file()
+            conteudo_texto = self.editor.get("1.0", tk.END)
+
+            caminho_arq = Path(self.current_file)
+            html_renderizado = prev.gerar_html_string_preview(conteudo_texto, caminho_arq)
+
+            # Esconde o editor e mostra o preview
+            self.editor.pack_forget()
+            self.html_preview.pack(fill=tk.BOTH, expand=True)
+            self.html_preview.load_html(html_renderizado)
+
+            self.btn_toggle_preview.config(text="Editar")
+            self.lbl_editor_title.config(text=f"Visualizando: {os.path.basename(self.current_file)}", foreground="#38bdf8")
+            self.toast("👁️ Modo Visualização ativado.")
+
+        else:
+            # Esconde o preview e traz o editor de volta
+            self.html_preview.pack_forget()
+            self.editor.pack(fill=tk.BOTH, expand=True)
+
+            self.btn_toggle_preview.config(text="Visualizar")
+            self.lbl_editor_title.config(text=f"Editando: {os.path.basename(self.current_file)}", foreground="#10b981")
+            self.editor.focus_set()
 
     def _reset_navigating_flag(self):
         self._is_navigating = False
@@ -652,6 +748,17 @@ class ExplorerFrame(ttk.Frame):
             # Se for um ARQUIVO no disco
             if os.path.isfile(novo_caminho):
                 self.current_file = novo_caminho
+                nome_base_arquivo = os.path.basename(novo_caminho)
+                if getattr(self, "modo_preview", False):
+                    self.lbl_editor_title.config(
+                        text=f"👁️ Visualizando: {nome_base_arquivo}", 
+                        foreground="#38bdf8"
+                    )
+                else:
+                    self.lbl_editor_title.config(
+                        text=f"✏️ Editando: {nome_base_arquivo}", 
+                        foreground="#10b981"
+                    )
                 try:
                     self._add_to_history(novo_caminho)
                 except Exception as e:
@@ -683,10 +790,24 @@ class ExplorerFrame(ttk.Frame):
                     self.update_stats()
                 except Exception:
                     pass
+                if getattr(self, "modo_preview", False) and TKINTERWEB_DISPONIVEL and self.html_preview:
+                    html_renderizado = prev.gerar_html_string_preview(texto, Path(novo_caminho))
+                    self.html_preview.load_html(html_renderizado)
+                    
+                if self.modo_preview and TKINTERWEB_DISPONIVEL and self.html_preview:
+                    html_renderizado = prev.gerar_html_string_preview(texto, Path(novo_caminho))
+                    self.html_preview.load_html(html_renderizado)
 
             # Se for uma PASTA / DIRETÓRIO
             else:
                 self.current_file = None
+                nome_pasta = os.path.basename(novo_caminho)
+                
+                # 🟢 Opcional: Atualiza o título para indicar que uma pasta está selecionada
+                self.lbl_editor_title.config(
+                    text=f"📁 Diretório: {nome_pasta}", 
+                    foreground="#888888"
+                )
                 self.editor.config(state=tk.NORMAL)
                 self.editor.delete("1.0", tk.END)
                 self.editor.insert("1.0", f"--- Diretório Selecionado: {os.path.basename(novo_caminho)} ---")
@@ -1112,6 +1233,9 @@ class ExplorerFrame(ttk.Frame):
                     self.refresh_tree()
 
                     if esta_aberto:
+                        prefixo_modo = "👁️ Visualizando: " if getattr(self, "modo_preview", False) else "✏️ Editando: "
+                        cor_modo = "#38bdf8" if getattr(self, "modo_preview", False) else "#10b981"
+                        self.lbl_editor_title.config(text=f"{prefixo_modo}{novo_nome}", foreground=cor_modo)
                         self.select_path_in_tree(novo_caminho)
                 except Exception as e:
                     messagebox.showerror("Erro", f"Falha ao Renomear: {e}")
