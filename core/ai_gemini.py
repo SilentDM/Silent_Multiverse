@@ -1,5 +1,6 @@
 import os, threading, time, json, concurrent.futures
 import engine.project_utils as pu
+import ui.settings as st
 from typing import Any, Optional, Type
 from pydantic import BaseModel
 from google import genai
@@ -74,7 +75,7 @@ def _modelo_eh_invalido_para_lore(model_name: str, max_input: int, supported_met
     # 1. Filtros de tarefas que não geram texto narrativo
     termos_proibidos = [
         "embedding", "robotics", "aqa", "realtime", "tts", "stt",
-        "vision", "imagen", "audio", "medlm", "imagen", "veo"
+        "vision", "imagen", "audio", "medlm", "imagen", "veo", "transcribe"
     ]
     if any(t in name for t in termos_proibidos):
         return True
@@ -241,10 +242,12 @@ def improvemodel(model, success, response_time=None):
     if not data:
         return
 
+    cfg = st.carregar_configuracoes()
+    modo_manual = (cfg.get("modelos_modo_ordenacao", "automatico") == "manual")
+
     for m in data:
         if m.get("name") == model:
             if response_time is not None and success:
-                # Média móvel ponderada simples para amortecer oscilações de rede
                 tempo_anterior = m.get("responsetime", response_time)
                 m["responsetime"] = round((tempo_anterior * 0.7) + (response_time * 0.3), 4)
                 
@@ -252,11 +255,32 @@ def improvemodel(model, success, response_time=None):
             m["success"] = m.get("success", 0) + (1 if success else 0)
             m["quality_score"] = _calcular_score_modelo(m["name"], m.get("maxinputtokens", 0))
             
-            # 🟢 Reordena a fila inteira dinamicamente com base no desempenho real
-            data.sort(key=_criterio_ordenacao_eficiencia)
+            if not modo_manual:
+                data.sort(key=_criterio_ordenacao_eficiencia)
             
             pu.salvar_json_seguro(file_path, data, pu.LOCK_MODELS)
             return
+
+def reordenar_modelos_manualmente(nova_ordem_nomes: list):
+    """Reordena o models.json de acordo com a lista de nomes informada pelo usuário."""
+    file_path = pu.log_path("models.json")
+    data = pu.ler_json_seguro(file_path, pu.LOCK_MODELS, padrao=[])
+    if not data:
+        return
+
+    mapa_modelos = {m["name"]: m for m in data}
+    lista_reordenada = []
+
+    # 1. Adiciona na ordem que o usuário escolheu
+    for nome in nova_ordem_nomes:
+        if nome in mapa_modelos:
+            lista_reordenada.append(mapa_modelos.pop(nome))
+
+    # 2. Se sobrou algum modelo novo não listado, adiciona ao final
+    for m in mapa_modelos.values():
+        lista_reordenada.append(m)
+
+    pu.salvar_json_seguro(file_path, lista_reordenada, pu.LOCK_MODELS)
 
 def generate_content_with_fallback(contents: Any, config: types.GenerateContentConfig, cache_model: Optional[str] = None) -> Any:
     # 🟢 Timeout estendido para 90 segundos nas gerações reais

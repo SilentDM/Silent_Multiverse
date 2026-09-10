@@ -1285,17 +1285,45 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
         
         title_box = ttk.Frame(header_frame)
         title_box.pack(side=tk.LEFT)
-        ttk.Label(title_box, text="Performance dos Modelos Gemini", font=("Segoe UI", 14, "bold"), foreground="#10b981").pack(anchor=tk.W)
-        ttk.Label(title_box, text="Dashboard dos modelos Gemini classificados por eficiência.", font=("Segoe UI", 9), foreground="#888888").pack(anchor=tk.W, pady=(3, 0))
+        ttk.Label(title_box, text="Ordem de Uso dos Modelos Gemini", font=("Segoe UI", 14, "bold"), foreground="#10b981").pack(anchor=tk.W)
+        ttk.Label(title_box, text="Defina quais modelos a IA deve priorizar nas requisições.", font=("Segoe UI", 9), foreground="#888888").pack(anchor=tk.W, pady=(3, 0))
         
         btn_frame = ttk.Frame(header_frame)
         btn_frame.pack(side=tk.RIGHT)
 
-        btn_run_test = ttk.Button(btn_frame, text="⚡ Testar Modelos Agora", command=self.run_findmodel_thread)
+        btn_run_test = ttk.Button(btn_frame, text="⚡ Benchmark de Modelos", command=self.run_findmodel_thread)
         btn_run_test.pack(side=tk.LEFT, padx=(0, 5))
 
         btn_refresh = ttk.Button(btn_frame, text="🔄 Atualizar Tela", command=self.refresh_models_cards)
         btn_refresh.pack(side=tk.LEFT)
+
+        # 🟢 BARRA DE MODO DE ORDENAÇÃO: AUTOMÁTICO VS MANUAL
+        control_bar = ttk.Frame(frame)
+        control_bar.pack(fill=tk.X, padx=18, pady=(0, 10))
+
+        ttk.Label(control_bar, text="Modo de Seleção:", font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT, padx=(0, 10))
+
+        cfg = st.carregar_configuracoes()
+        modo_salvo = cfg.get("modelos_modo_ordenacao", "automatico")
+        self.var_modo_modelos = tk.StringVar(value=modo_salvo)
+
+        rb_auto = ttk.Radiobutton(
+            control_bar, 
+            text="⚡ Automático (Ranqueado por Eficiência e Menor Latência)", 
+            value="automatico", 
+            variable=self.var_modo_modelos,
+            command=self._on_modo_modelos_change
+        )
+        rb_auto.pack(side=tk.LEFT, padx=(0, 15))
+
+        rb_manual = ttk.Radiobutton(
+            control_bar, 
+            text="🛠️ Manual (Ordem Personalizada pelo Usuário)", 
+            value="manual", 
+            variable=self.var_modo_modelos,
+            command=self._on_modo_modelos_change
+        )
+        rb_manual.pack(side=tk.LEFT)
 
         # Área de rolagem vertical (Canvas + Scrollbar)
         self.models_canvas = tk.Canvas(frame, bg="#121212", highlightthickness=0, bd=0)
@@ -1320,6 +1348,183 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
         self.last_rendered_cols = 0
 
         return frame
+
+    def _on_modo_modelos_change(self):
+        novo_modo = self.var_modo_modelos.get()
+        cfg = st.carregar_configuracoes()
+        cfg["modelos_modo_ordenacao"] = novo_modo
+        st.salvar_configuracoes(cfg)
+
+        if novo_modo == "automatico":
+            self.toast("⚡ Modo Automático ativado! Reordenando por eficiência...")
+            # Reordena por eficiência
+            file_path = pu.log_path("models.json")
+            data = pu.ler_json_seguro(file_path, pu.LOCK_MODELS, padrao=[])
+            if data:
+                data.sort(key=ag._criterio_ordenacao_eficiencia)
+                pu.salvar_json_seguro(file_path, data, pu.LOCK_MODELS)
+        else:
+            self.toast("🛠️ Modo Manual ativado! Use as setas dos cards para definir a ordem.")
+
+        self.refresh_models_cards()
+
+    def mover_modelo_ordem(self, index_atual: int, delta: int):
+        """Move um modelo para cima (delta = -1) ou para baixo (delta = 1) no modo manual."""
+        if not self.current_models_list:
+            return
+
+        novo_index = index_atual + delta
+        if 0 <= novo_index < len(self.current_models_list):
+            # Troca de posição na lista
+            lista = list(self.current_models_list)
+            lista[index_atual], lista[novo_index] = lista[novo_index], lista[index_atual]
+
+            # Salva a nova ordem
+            nomes_ordenados = [m["name"] for m in lista]
+            ag.reordenar_modelos_manualmente(nomes_ordenados)
+
+            cfg = st.carregar_configuracoes()
+            cfg["ordem_manual_modelos"] = nomes_ordenados
+            st.salvar_configuracoes(cfg)
+
+            self.refresh_models_cards()
+
+    def tornar_modelo_principal(self, index_atual: int):
+        """Move o modelo diretamente para a posição #1 (Principal)."""
+        if not self.current_models_list or index_atual == 0:
+            return
+
+        lista = list(self.current_models_list)
+        item = lista.pop(index_atual)
+        lista.insert(0, item)
+
+        nomes_ordenados = [m["name"] for m in lista]
+        ag.reordenar_modelos_manualmente(nomes_ordenados)
+
+        cfg = st.carregar_configuracoes()
+        cfg["ordem_manual_modelos"] = nomes_ordenados
+        st.salvar_configuracoes(cfg)
+
+        self.toast(f"⭐ '{item.get('display_name') or item['name']}' agora é o modelo Principal!")
+        self.refresh_models_cards()
+
+    def _render_model_card_grid(self, parent, model_data, rank, row, col):
+        """Constrói um cartão individual com controles manuais de ordenação."""
+        try:
+            is_top = (rank == 1)
+            border_color = "#10b981" if is_top else "#2d2d2d"
+            card_bg = "#18181c"
+            modo_manual = (self.var_modo_modelos.get() == "manual")
+            total_modelos = len(self.current_models_list)
+            model_index = rank - 1
+
+            card = tk.Frame(parent, bg=card_bg, highlightbackground=border_color, highlightthickness=1)
+            card.grid(row=row, column=col, sticky="nsew", padx=6, pady=6)
+
+            accent_bar = tk.Frame(card, bg="#10b981" if is_top else "#0f766e", width=4)
+            accent_bar.pack(side=tk.LEFT, fill=tk.Y)
+
+            content = tk.Frame(card, bg=card_bg)
+            content.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+            # Cabeçalho do Card
+            header_row = tk.Frame(content, bg=card_bg)
+            header_row.pack(fill=tk.X)
+
+            rank_text = "⭐ #1 ESCOLHA PRINCIPAL" if is_top else f"#{rank} FALLBACK"
+            rank_fg = "#10b981" if is_top else "#888888"
+            tk.Label(header_row, text=rank_text, bg=card_bg, fg=rank_fg, font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
+
+            # 🟢 BOTÕES DE ORDENAÇÃO MANUAL NO TOPO DO CARD
+            if modo_manual:
+                btn_box = tk.Frame(header_row, bg=card_bg)
+                btn_box.pack(side=tk.RIGHT)
+
+                if not is_top:
+                    btn_star = tk.Button(
+                        btn_box, text="⭐ #1", bg="#252526", fg="#f59e0b", font=("Segoe UI", 7, "bold"),
+                        bd=0, padx=4, pady=0, activebackground="#333333", activeforeground="#ffffff",
+                        command=lambda idx=model_index: self.tornar_modelo_principal(idx)
+                    )
+                    btn_star.pack(side=tk.LEFT, padx=1)
+
+                if rank > 1:
+                    btn_up = tk.Button(
+                        btn_box, text="▲", bg="#252526", fg="#ffffff", font=("Segoe UI", 7, "bold"),
+                        bd=0, padx=4, pady=0, activebackground="#333333", activeforeground="#ffffff",
+                        command=lambda idx=model_index: self.mover_modelo_ordem(idx, -1)
+                    )
+                    btn_up.pack(side=tk.LEFT, padx=1)
+
+                if rank < total_modelos:
+                    btn_down = tk.Button(
+                        btn_box, text="▼", bg="#252526", fg="#ffffff", font=("Segoe UI", 7, "bold"),
+                        bd=0, padx=4, pady=0, activebackground="#333333", activeforeground="#ffffff",
+                        command=lambda idx=model_index: self.mover_modelo_ordem(idx, 1)
+                    )
+                    btn_down.pack(side=tk.LEFT, padx=1)
+
+            display_name = model_data.get("display_name") or model_data.get("name", "Modelo")
+            tk.Label(content, text=display_name, bg=card_bg, fg="#ffffff", font=("Segoe UI", 11, "bold"), anchor="w").pack(fill=tk.X, pady=(4, 0))
+            
+            name_id = model_data.get("name", "")
+            tk.Label(content, text=name_id, bg=card_bg, fg="#666666", font=("Consolas", 8), anchor="w").pack(fill=tk.X, pady=(0, 8))
+
+            metrics_grid = tk.Frame(content, bg=card_bg)
+            metrics_grid.pack(fill=tk.X, pady=(4, 0))
+            metrics_grid.columnconfigure(0, weight=1)
+            metrics_grid.columnconfigure(1, weight=1)
+
+            # Tempo Médio
+            resp_time = model_data.get("responsetime") or 0.0
+            try:
+                resp_str = f"{float(resp_time):.2f}s"
+            except Exception:
+                resp_str = "0.00s"
+
+            col1 = tk.Frame(metrics_grid, bg=card_bg)
+            col1.grid(row=0, column=0, sticky="w", pady=2)
+            tk.Label(col1, text="⚡ Tempo Médio", bg=card_bg, fg="#aaaaaa", font=("Segoe UI", 8)).pack(anchor=tk.W)
+            tk.Label(col1, text=resp_str, bg=card_bg, fg="#60a5fa", font=("Segoe UI", 9, "bold")).pack(anchor=tk.W)
+
+            # Taxa de Sucesso
+            attempts = model_data.get("attempts") or 1
+            success = model_data.get("success") or 0
+            try:
+                attempts = int(attempts)
+                success = int(success)
+                rate = (success / max(1, attempts) * 100)
+            except Exception:
+                rate = 0.0
+
+            rate_color = "#10b981" if rate >= 80 else "#f59e0b" if rate >= 50 else "#ef4444"
+
+            col2 = tk.Frame(metrics_grid, bg=card_bg)
+            col2.grid(row=0, column=1, sticky="w", pady=2)
+            tk.Label(col2, text="Sucesso", bg=card_bg, fg="#aaaaaa", font=("Segoe UI", 8)).pack(anchor=tk.W)
+            tk.Label(col2, text=f"{rate:.0f}% ({success}/{attempts})", bg=card_bg, fg=rate_color, font=("Segoe UI", 9, "bold")).pack(anchor=tk.W)
+
+            # Max Tokens
+            tokens = model_data.get("maxinputtokens") or 0
+            try:
+                tokens_str = f"{int(tokens):,}"
+            except Exception:
+                tokens_str = "0"
+
+            col3 = tk.Frame(metrics_grid, bg=card_bg)
+            col3.grid(row=1, column=0, sticky="w", pady=2)
+            tk.Label(col3, text="Max Tokens", bg=card_bg, fg="#aaaaaa", font=("Segoe UI", 8)).pack(anchor=tk.W)
+            tk.Label(col3, text=tokens_str, bg=card_bg, fg="#e3e3e3", font=("Segoe UI", 9, "bold")).pack(anchor=tk.W)
+
+            # Qualidade / Score
+            score_val = model_data.get("quality_score") or 0
+            col4 = tk.Frame(metrics_grid, bg=card_bg)
+            col4.grid(row=1, column=1, sticky="w", pady=2)
+            tk.Label(col4, text="Score Base", bg=card_bg, fg="#aaaaaa", font=("Segoe UI", 8)).pack(anchor=tk.W)
+            tk.Label(col4, text=f"{score_val:,}", bg=card_bg, fg="#d97706", font=("Segoe UI", 9, "bold")).pack(anchor=tk.W)
+
+        except Exception as e:
+            print(f"Erro ao renderizar cartão de modelo: {e}")
 
     def _on_models_canvas_resize(self, event):
         """Redimensiona o container e recalcula o grid quando a janela muda de tamanho."""
@@ -1418,93 +1623,6 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
             col = (idx - 1) % num_cols
             self._render_model_card_grid(self.models_scroll_frame, model, rank=idx, row=row, col=col)
 
-    def _render_model_card_grid(self, parent, model_data, rank, row, col):
-        """Constrói um cartão individual formatado para o layout em Grid."""
-        try:
-            is_top = (rank == 1)
-            border_color = "#10b981" if is_top else "#2d2d2d"
-            card_bg = "#18181c"
-
-            card = tk.Frame(parent, bg=card_bg, highlightbackground=border_color, highlightthickness=1)
-            card.grid(row=row, column=col, sticky="nsew", padx=6, pady=6)
-
-            accent_bar = tk.Frame(card, bg="#10b981" if is_top else "#0f766e", width=4)
-            accent_bar.pack(side=tk.LEFT, fill=tk.Y)
-
-            content = tk.Frame(card, bg=card_bg)
-            content.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-            header_row = tk.Frame(content, bg=card_bg)
-            header_row.pack(fill=tk.X)
-
-            rank_text = "#1 PRINCIPAL" if is_top else f"#{rank} FALLBACK"
-            rank_fg = "#10b981" if is_top else "#888888"
-            tk.Label(header_row, text=rank_text, bg=card_bg, fg=rank_fg, font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
-
-            display_name = model_data.get("display_name") or model_data.get("name", "Modelo")
-            tk.Label(content, text=display_name, bg=card_bg, fg="#ffffff", font=("Segoe UI", 11, "bold"), anchor="w").pack(fill=tk.X, pady=(2, 0))
-            
-            name_id = model_data.get("name", "")
-            tk.Label(content, text=name_id, bg=card_bg, fg="#666666", font=("Consolas", 8), anchor="w").pack(fill=tk.X, pady=(0, 8))
-
-            metrics_grid = tk.Frame(content, bg=card_bg)
-            metrics_grid.pack(fill=tk.X, pady=(4, 0))
-            metrics_grid.columnconfigure(0, weight=1)
-            metrics_grid.columnconfigure(1, weight=1)
-
-            # Tempo Médio
-            resp_time = model_data.get("responsetime") or 0.0
-            try:
-                resp_str = f"{float(resp_time):.2f}s"
-            except Exception:
-                resp_str = "0.00s"
-
-            col1 = tk.Frame(metrics_grid, bg=card_bg)
-            col1.grid(row=0, column=0, sticky="w", pady=2)
-            tk.Label(col1, text="⚡ Tempo Médio", bg=card_bg, fg="#aaaaaa", font=("Segoe UI", 8)).pack(anchor=tk.W)
-            tk.Label(col1, text=resp_str, bg=card_bg, fg="#60a5fa", font=("Segoe UI", 9, "bold")).pack(anchor=tk.W)
-
-            # Taxa de Sucesso
-            attempts = model_data.get("attempts") or 1
-            success = model_data.get("success") or 0
-            try:
-                attempts = int(attempts)
-                success = int(success)
-                rate = (success / max(1, attempts) * 100)
-            except Exception:
-                rate = 0.0
-
-            rate_color = "#10b981" if rate >= 80 else "#f59e0b" if rate >= 50 else "#ef4444"
-
-            col2 = tk.Frame(metrics_grid, bg=card_bg)
-            col2.grid(row=0, column=1, sticky="w", pady=2)
-            tk.Label(col2, text="Sucesso", bg=card_bg, fg="#aaaaaa", font=("Segoe UI", 8)).pack(anchor=tk.W)
-            tk.Label(col2, text=f"{rate:.0f}% ({success}/{attempts})", bg=card_bg, fg=rate_color, font=("Segoe UI", 9, "bold")).pack(anchor=tk.W)
-
-            # Max Tokens
-            tokens = model_data.get("maxinputtokens") or 0
-            try:
-                tokens_str = f"{int(tokens):,}"
-            except Exception:
-                tokens_str = "0"
-
-            col3 = tk.Frame(metrics_grid, bg=card_bg)
-            col3.grid(row=1, column=0, sticky="w", pady=2)
-            tk.Label(col3, text="Max Tokens", bg=card_bg, fg="#aaaaaa", font=("Segoe UI", 8)).pack(anchor=tk.W)
-            tk.Label(col3, text=tokens_str, bg=card_bg, fg="#e3e3e3", font=("Segoe UI", 9, "bold")).pack(anchor=tk.W)
-
-            # Busca Online
-            supports_tools = bool(model_data.get("supports_tools", False))
-            tools_str = "Sim" if supports_tools else "Não"
-            tools_fg = "#34d399" if supports_tools else "#666666"
-
-            col4 = tk.Frame(metrics_grid, bg=card_bg)
-            col4.grid(row=1, column=1, sticky="w", pady=2)
-            tk.Label(col4, text="Busca Online", bg=card_bg, fg="#aaaaaa", font=("Segoe UI", 8)).pack(anchor=tk.W)
-            tk.Label(col4, text=tools_str, bg=card_bg, fg=tools_fg, font=("Segoe UI", 9, "bold")).pack(anchor=tk.W)
-
-        except Exception as e:
-            print(f"Erro ao renderizar cartão de modelo: {e}")
 
     # ------------------------------------------------------------------
     # ABA Do Manual sobre o programa
