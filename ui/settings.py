@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import ttk
 from pathlib import Path
 import engine.project_utils as pu
-from ui.setup_env import atualizar_env
+import ui.setup_env as se
 
 SETTINGS_FILE = pu.PASTA_LOGS / "settings.json"
 
@@ -294,59 +294,61 @@ class OptionsFrame(ttk.Frame):
             self.log_callback(f"Erro ao disparar sincronização: {e}")
 
     def _build_boxes(self):
-        # 1. Credenciais (.env)
-        cred_box = ttk.LabelFrame(self.scroll_frame, text=" Credenciais de API e Discord (.env) ")
+        # 1. Credenciais no Cofre do Windows
+        cred_box = ttk.LabelFrame(self.scroll_frame, text=" Credenciais Seguras (Cofre do Windows) ")
         
         ttk.Label(cred_box, text="Provedor de IA Ativo:").pack(anchor=tk.W, padx=10, pady=(8, 2))
         self.combo_provider = ttk.Combobox(
             cred_box, state="readonly",
             values=list(PROVEDORES_IA.keys()), font=("Segoe UI", 10)
         )
-        provider_atual_env = os.getenv("AI_PROVIDER", "gemini").strip().lower()
+        provider_atual = se.obter_credencial("AI_PROVIDER", "gemini").lower()
         provider_label = next(
-            (label for label, val in PROVEDORES_IA.items() if val == provider_atual_env),
+            (label for label, val in PROVEDORES_IA.items() if val == provider_atual),
             "Gemini"
         )
         self.combo_provider.set(provider_label)
         self.combo_provider.pack(fill=tk.X, padx=10, pady=(0, 4))
         self.combo_provider.bind("<<ComboboxSelected>>", self._on_provider_change)
-        ttk.Label(
-            cred_box,
-            text="⚠️ Requer reiniciar o programa para o novo provedor ter efeito.",
-            foreground="#f59e0b", font=("Segoe UI", 8, "italic")
-        ).pack(anchor=tk.W, padx=10, pady=(0, 10))
-        
-        ttk.Separator(cred_box, orient="horizontal").pack(fill=tk.X, padx=10, pady=(0, 8))
+
+        ttk.Separator(cred_box, orient="horizontal").pack(fill=tk.X, padx=10, pady=(4, 8))
+
         # --- Gemini ---
         ttk.Label(cred_box, text="Gemini", font=("Segoe UI", 9, "bold"), foreground="#10b981").pack(anchor=tk.W, padx=10)
-        ttk.Label(cred_box, text="Chave da API Gemini:").pack(anchor=tk.W, padx=10, pady=(4, 2))
+        ttk.Label(cred_box, text="Chave da API Gemini:").pack(anchor=tk.W, padx=10, pady=(2, 2))
         self.entry_gemini_key = ttk.Entry(cred_box, show="*", font=("Segoe UI", 10))
         self.entry_gemini_key.pack(fill=tk.X, padx=10, pady=(0, 8))
+        # Carrega valor existente do cofre
+        self.entry_gemini_key.insert(0, se.obter_credencial("GOOGLE_API_KEY"))
 
         # --- Claude ---
         ttk.Label(cred_box, text="Claude (Anthropic)", font=("Segoe UI", 9, "bold"), foreground="#10b981").pack(anchor=tk.W, padx=10)
-        ttk.Label(cred_box, text="Token da API Claude:").pack(anchor=tk.W, padx=10, pady=(4, 2))
+        ttk.Label(cred_box, text="Token da API Claude:").pack(anchor=tk.W, padx=10, pady=(2, 2))
         self.entry_claude_key = ttk.Entry(cred_box, show="*", font=("Segoe UI", 10))
         self.entry_claude_key.pack(fill=tk.X, padx=10, pady=(0, 8))
+        self.entry_claude_key.insert(0, se.obter_credencial("CLAUDE_TOKEN"))
 
         # --- OpenAI (Pro) ---
         ttk.Label(cred_box, text="OpenAI (Pro)", font=("Segoe UI", 9, "bold"), foreground="#10b981").pack(anchor=tk.W, padx=10)
-        ttk.Label(cred_box, text="Chave da API OpenAI:").pack(anchor=tk.W, padx=10, pady=(4, 2))
+        ttk.Label(cred_box, text="Chave da API OpenAI:").pack(anchor=tk.W, padx=10, pady=(2, 2))
         self.entry_openai_key = ttk.Entry(cred_box, show="*", font=("Segoe UI", 10))
         self.entry_openai_key.pack(fill=tk.X, padx=10, pady=(0, 10))
+        self.entry_openai_key.insert(0, se.obter_credencial("PRO_API_KEY"))
 
         ttk.Separator(cred_box, orient="horizontal").pack(fill=tk.X, padx=10, pady=(0, 8))
 
         # --- Discord ---
-        ttk.Label(cred_box, text="Token Bot Discord:").pack(anchor=tk.W, padx=10, pady=(4, 2))
+        ttk.Label(cred_box, text="Token Bot Discord:").pack(anchor=tk.W, padx=10, pady=(2, 2))
         self.entry_discord_key = ttk.Entry(cred_box, show="*", font=("Segoe UI", 10))
         self.entry_discord_key.pack(fill=tk.X, padx=10, pady=(0, 6))
+        self.entry_discord_key.insert(0, se.obter_credencial("DISCORD_TOKEN"))
 
-        ttk.Label(cred_box, text="ID do Mestre no Discord (MESTRE_DISCORD_ID):").pack(anchor=tk.W, padx=10, pady=(4, 2))
+        ttk.Label(cred_box, text="IDs dos Mestres no Discord (separados por vírgula):").pack(anchor=tk.W, padx=10, pady=(4, 2))
         self.entry_discord_dmid = ttk.Entry(cred_box, font=("Segoe UI", 10))
         self.entry_discord_dmid.pack(fill=tk.X, padx=10, pady=(0, 10))
+        self.entry_discord_dmid.insert(0, se.obter_credencial("MESTRE_DISCORD_ID"))
 
-        btn_salvar_env = ttk.Button(cred_box, text="Salvar Credenciais", command=self._salvar_credenciais_env)
+        btn_salvar_env = ttk.Button(cred_box, text="🔒 Salvar Credenciais no Cofre", command=self._salvar_credenciais_env)
         btn_salvar_env.pack(anchor=tk.E, padx=10, pady=(0, 10))
 
         # 2. Bot do Discord - Regras e Gatilho
@@ -397,50 +399,31 @@ class OptionsFrame(ttk.Frame):
         valor_env = PROVEDORES_IA.get(label_escolhido, "gemini")
         self.settings["ai_provider_ativo"] = label_escolhido
         salvar_configuracoes(self.settings)
-        atualizar_env({"AI_PROVIDER": valor_env})
+        
+        # 🟢 Atualiza no cofre em vez de no .env
+        se.salvar_credencial("AI_PROVIDER", valor_env)
 
         if self.log_callback:
-            self.log_callback(f"Provedor de IA alterado para: {label_escolhido} (AI_PROVIDER={valor_env})")
+            self.log_callback(f"Provedor de IA alterado para: {label_escolhido}")
         if self.toast_callback:
-            self.toast_callback(f"🤖 Provedor '{label_escolhido}' salvo! Reinicie o programa para aplicar.")
+            self.toast_callback(f"🤖 Provedor '{label_escolhido}' ativado!")
 
     def _salvar_credenciais_env(self):
-        gemini_key = self.entry_gemini_key.get().strip()
-        claude_key = self.entry_claude_key.get().strip()
-        openai_key = self.entry_openai_key.get().strip()
-        discord_key = self.entry_discord_key.get().strip()
-        discord_dmid = self.entry_discord_dmid.get().strip()
+        novos_valores = {
+            "GOOGLE_API_KEY": self.entry_gemini_key.get().strip(),
+            "CLAUDE_TOKEN": self.entry_claude_key.get().strip(),
+            "PRO_API_KEY": self.entry_openai_key.get().strip(),
+            "DISCORD_TOKEN": self.entry_discord_key.get().strip(),
+            "MESTRE_DISCORD_ID": self.entry_discord_dmid.get().strip(),
+        }
 
-        novos_valores = {}
-
-        if gemini_key:
-            novos_valores["GOOGLE_API_KEY"] = gemini_key
-        if claude_key:
-            novos_valores["CLAUDE_TOKEN"] = claude_key
-        if openai_key:
-            novos_valores["PRO_API_KEY"] = openai_key
-        if discord_key:
-            novos_valores["DISCORD_TOKEN"] = discord_key
-        if discord_dmid:
-            novos_valores["MESTRE_DISCORD_ID"] = discord_dmid
-
-        if not novos_valores:
-            if self.toast_callback:
-                self.toast_callback("⚠️ Nenhum campo de credencial foi preenchido.")
-            return
-
-        atualizar_env(novos_valores)
-
-        self.entry_gemini_key.delete(0, tk.END)
-        self.entry_claude_key.delete(0, tk.END)
-        self.entry_openai_key.delete(0, tk.END)
-        self.entry_discord_key.delete(0, tk.END)
-        self.entry_discord_dmid.delete(0, tk.END)
+        # Salva tudo de forma criptografada no keyring nativo
+        se.atualizar_credenciais_em_lote(novos_valores)
 
         if self.log_callback:
-            self.log_callback("✅ Credenciais salvas com sucesso no arquivo .env!")
+            self.log_callback("🔒 Credenciais salvas com sucesso no Cofre do Windows!")
         if self.toast_callback:
-            self.toast_callback("💾 Credenciais atualizadas no .env com sucesso!")
+            self.toast_callback("💾 Credenciais criptografadas e salvas com sucesso!")
 
     def _salvar_campos_discord(self, event):
         prefixo = self.var_prefix.get().strip() or "!ao"

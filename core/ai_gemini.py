@@ -6,9 +6,6 @@ from pydantic import BaseModel
 from google import genai
 from google.genai import types, errors
 import core.cache_gemini as cg
-from dotenv import load_dotenv
-
-load_dotenv(pu.PROJECT_ROOT / ".env")
 
 _api_lock = threading.Lock()
 
@@ -17,7 +14,6 @@ DEFAULT_TEMPERATURE = 0.6
 DEFAULT_CONTENTS = "Please repeat: I did not receive a correct prompt, your coding has failed somewhere."
 MAX_TOKENS = 20480
 
-# Em core/ai_gemini.py
 
 def get_gemini_client(timeout_seconds: Optional[int] = 90):
     """

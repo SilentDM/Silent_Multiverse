@@ -1,15 +1,16 @@
-# bot/dbot.py
 import os, asyncio, time
 import discord
 import ui.settings as st
 import engine.project_utils as pu
 import bot.dice_roller as dice
 import bot.bot_actions as actions
-from dotenv import load_dotenv
+import ui.setup_env as se
 
-load_dotenv()
-TOKEN = os.getenv("DISCORD_TOKEN")
-MESTRE_DISCORD_ID = int(os.getenv("MESTRE_DISCORD_ID") or "0")
+# 🟢 Garante que as chaves do cofre estejam carregadas
+se.carregar_todas_credenciais()
+
+TOKEN = os.getenv("DISCORD_TOKEN", "").strip()
+MESTRE_DISCORD_IDS = os.getenv("MESTRE_DISCORD_ID", "").strip()
 DISCORD_ENABLED = bool(TOKEN)
 
 USER_COOLDOWNS = {}
@@ -122,7 +123,7 @@ if DISCORD_ENABLED:
 
             # SINCRONIZAÇÃO MANUAL DISPARADA PELO MESTRE (!ao sincronizar)
             if prompt.lower() in ["sincronizar", "sync"]:
-                if not actions.verificar_permissao_mestre(message, config, MESTRE_DISCORD_ID):
+                if not actions.verificar_permissao_mestre(message, config, MESTRE_DISCORD_IDS):
                     await message.reply("⛔ Apenas Mestres podem disparar a sincronização de conhecimento.")
                     return
 
@@ -158,7 +159,7 @@ if DISCORD_ENABLED:
             USER_COOLDOWNS[userid] = agora
 
             # PERMISSÃO DE MESTRE
-            eh_mestre = actions.verificar_permissao_mestre(message, config, MESTRE_DISCORD_ID)
+            eh_mestre = actions.verificar_permissao_mestre(message, config, MESTRE_DISCORD_IDS)
 
             # DIGITANDO... + CHAMADA DA IA
             async with message.channel.typing():

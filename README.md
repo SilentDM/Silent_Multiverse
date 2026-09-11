@@ -90,7 +90,7 @@ python -m venv venv
 > .\venv\Scripts\Activate.ps1
 
 3. **Instale as dependências:**
-> pip install google-genai discord.py python-dotenv pydantic openai anthropic pystray Pillow
+> pip install google-genai discord.py python-dotenv pydantic openai anthropic pystray Pillow tkinterweb
 
 4. **Execute a aplicação:**
 - Crie um arquivo run.vbs
