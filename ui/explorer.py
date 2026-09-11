@@ -909,6 +909,7 @@ class ExplorerFrame(ttk.Frame):
                 self.context_menu.add_separator()
                 self.context_menu.add_command(label="✨ Melhorar com IA (ImproveFile)", command=lambda: self.run_improve_file(caminho))
                 self.context_menu.add_command(label="🎲 Gerar Aventura D&D (5-Room Dungeon)", command=lambda: self.run_generate_adventure(caminho))
+                self.context_menu.add_command(label="📜 Gerar Testes de Conhecimento (Lore Checks)", command=lambda: self.run_generate_lore_checks(caminho))
             
             self.context_menu.post(event.x_root, event.y_root)
 
@@ -1045,6 +1046,67 @@ class ExplorerFrame(ttk.Frame):
             except Exception as e:
                 self.log_callback(f"Erro na geração da aventura: {e}")
                 self.toast(f"Erro ao gerar aventura em '{nome_arq}'.")
+            finally:
+                wb.ex.marcar_processamento(caminho_abs, False)
+                def _finalizar():
+                    self.refresh_tree()
+                    if esta_aberto:
+                        self.select_path_in_tree(caminho_abs)
+                self.after(0, _finalizar)
+
+        threading.Thread(target=_worker, daemon=True).start()
+    
+    def run_generate_lore_checks(self, caminho):
+        nome_arq = os.path.basename(caminho)
+        caminho_abs = os.path.abspath(caminho)
+
+        if wb.ex.esta_em_processamento(caminho_abs):
+            self.toast(f"'{nome_arq}' já está sendo processado pela IA!")
+            return
+
+        foco = simpledialog.askstring(
+            "Testes de Conhecimento (Lore Checks)",
+            f"Deseja focar em algo específico para as CDs de '{nome_arq}'?\n(Ex: 'Focar na história política e métodos ilegais' ou deixe em branco):",
+            parent=self
+        )
+        if foco is None:
+            return
+
+        foco = foco.strip() or "Cobrir origens, política, rumores e segredos operacionais da entidade."
+
+        esta_aberto = (self.current_file and os.path.abspath(self.current_file) == caminho_abs)
+        if esta_aberto:
+            if self.autosave_timer:
+                self.after_cancel(self.autosave_timer)
+                self.autosave_timer = None
+            self.save_current_file()
+            self.current_file = None
+            self.editor.config(state=tk.NORMAL)
+            self.editor.delete("1.0", tk.END)
+            self.editor.insert(
+                "1.0", 
+                f"--- 🎲 GERANDO TABELAS DE LORE CHECKS ---\n\n"
+                f"Documento: {nome_arq}\n"
+                f"A IA está calibrando as faixas de DC (≤5 até 25+) de acordo com a lore...\n"
+                f"Aguarde alguns instantes..."
+            )
+            self.editor.config(state=tk.DISABLED)
+
+        wb.ex.marcar_processamento(caminho_abs, True)
+        self.toast(f"📜 Calibrando testes de perícia para '{nome_arq}'...")
+        self.log_callback(f"Iniciando geração de Lore Checks para: {nome_arq}")
+
+        def _worker():
+            try:
+                sucesso = wb.gerar_tabelas_de_conhecimento(caminho_abs, foco_especifico=foco)
+                if sucesso:
+                    self.log_callback(f"✅ Testes de conhecimento anexados em: {nome_arq}")
+                    self.toast(f"Tabelas de perícia prontas em '{nome_arq}'!")
+                else:
+                    self.toast(f"Falha ao gerar testes de perícia para '{nome_arq}'.")
+            except Exception as e:
+                self.log_callback(f"Erro ao gerar testes: {e}")
+                self.toast("Erro ao processar testes.")
             finally:
                 wb.ex.marcar_processamento(caminho_abs, False)
                 def _finalizar():

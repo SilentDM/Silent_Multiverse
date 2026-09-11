@@ -9,6 +9,7 @@ import engine.wbuilder as wb
 import engine.project_utils as pu
 import ui.explorer as expl
 import ui.gui_logger as gl
+import ui.roleplay_frame as rp
 import ui.settings as st
 import ui.setup_env as se
 import tkinter as tk
@@ -246,6 +247,7 @@ class SilentDesktopApp:
             ("editor", "Editor"),
             ("worldbuilder", "WorldBuilders"),
             ("chat", "Converse com Ao"),
+            ("roleplay", "Roleplay"), 
             ("options", "Opções"),
             ("models", "Performance Gemini"),
         ]
@@ -292,6 +294,7 @@ class SilentDesktopApp:
         self.pages["worldbuilder"] = self._build_worldbuilder_page(content_area)
         self.pages["chat"] = self._build_chat_page(content_area)
         self.pages["log"] = self._build_log_page(content_area)
+        self.pages["roleplay"] = rp.RoleplayFrame(content_area, self.log_activity, self.toast, self._page_header) 
         self.pages["options"] = self.options_pane
         self.pages["models"] = self._build_models_page(content_area)
         self.pages["manual"] = self._build_manual_page(content_area)  # 📖 Nova página de Manual

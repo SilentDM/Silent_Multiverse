@@ -1,6 +1,7 @@
 import re
 import engine.dnd_schemas as dnd
 import engine.expander as ex
+import engine.knowledge_schemas as ks
 import engine.project_utils as pu
 import core.ai_utils as au
 import core.cache_gemini as cg
@@ -435,10 +436,6 @@ def gerar_aventura_completa(path, reason="Aventura de D&D 5e"):
     print(f"🎲 Gerando Aventura 5-Room Dungeon para: {path}\nObjetivo: {reason}")
     arquivo = resolver_caminho(path)
 
-    if ex.esta_em_processamento(arquivo):
-        print(f"O arquivo '{arquivo.name}' já está em processamento. Abortando.")
-        return False
-
     if not arquivo.exists() or not arquivo.is_file():
         print(f"Arquivo não encontrado: {arquivo}")
         return False
@@ -510,3 +507,79 @@ CONTEÚDO PRÉ-EXISTENTE NO ARQUIVO (Use como base ou complete as lacunas):
         return False
     finally:
         ex.marcar_processamento(arquivo, False)
+        
+def gerar_tabelas_de_conhecimento(path, foco_especifico="Todas as informações relevantes"):
+    print(f"🎲 Gerando Verificações de Conhecimento (Lore Checks) para: {path}")
+    arquivo = resolver_caminho(path)
+
+    if not arquivo.exists() or not arquivo.is_file():
+        print(f"Arquivo inválido: {arquivo}")
+        return False
+
+    # 🟢 REMOVIDO: a checagem dupla de 'ex.esta_em_processamento(arquivo)' aqui,
+    # pois o ui/explorer.py já marcou o arquivo para proteger o editor.
+
+    try:
+        with open(arquivo, "r", encoding="utf-8", errors="ignore") as f:
+            conteudo_atual = f.read()
+
+        estilo_contexto = ex.carregar_diretrizes_estilo()
+
+        instrucoes_sistema = f"""
+Você é um Designer Especialista em D&D 5e e Mestre veterano.
+Seu objetivo é ler o documento fornecido e transformá-lo em tabelas práticas de 'Teste de Conhecimento' (Lore Checks).
+
+REGRAS DE CONSTRUÇÃO DE TESTES (D&D 5e):
+1. Escolha as perícias que realmente fazem sentido para o assunto do documento (ex: História, Arcanismo, Religião, Natureza ou Investigação).
+2. Para CADA perícia, construa a escala gradual:
+   - '≤ 5': O que qualquer pessoa do povo sabe (rumores comuns, lendas urbanas, às vezes com um detalhe folclórico falso).
+   - '6 a 10': Fatos evidentes (líder público, endereço do QG, mercadoria básica).
+   - '11 a 15': Conhecimento profissional ou de quem estuda o assunto (monopólios, custos, alianças públicas).
+   - '16 a 20': Conhecimento privilegiado de quem frequenta bastidores ou círculos de poder (tensões internas, subornos, métodos velados).
+   - '21 a 25': Segredos guardados a sete chaves que só espiões de elite ou estudiosos mestres sabem (rotas ocultas, traições iminentes).
+   - '26+': O maior mistério da entidade (caso haja algo marcado como segredo no arquivo).
+3. Use linguagem direta, pronta para ser narrada aos jogadores.
+4. CRIE WIKILINKS [[Nome]] em itens, cidades, deuses ou NPCs citados.
+"""
+
+        prompt_usuario = f"""
+DOCUMENTO ALVO ({arquivo.name}):
+{conteudo_atual}
+
+DIRETRIZ DO MESTRE:
+{foco_especifico}
+
+Crie as tabelas de Verificação de Conhecimento estruturadas no schema JSON para que o Mestre possa consultar na hora do jogo.
+"""
+
+        resposta_raw = au.ask_ai(
+            contents=prompt_usuario,
+            system_instruction=instrucoes_sistema,
+            temperature=0.5,
+            response_schema=ks.CompendioConhecimento,
+            use_world_context=True
+        )
+
+        if not resposta_raw:
+            print("⚠️ Resposta da IA foi vazia.")
+            return False
+
+        json_limpo = ex.remover_markdown_fences(str(resposta_raw))
+        compendio_obj = ks.CompendioConhecimento.model_validate_json(json_limpo)
+        tabelas_markdown = ks.compendio_para_markdown(compendio_obj)
+
+        # Arquiva versão no histórico antes de alterar
+        ex.arquivar_versao_para_historico(arquivo)
+
+        # Anexa a tabela ao final do arquivo atual
+        conteudo_final = conteudo_atual.rstrip() + "\n" + tabelas_markdown + "\n"
+
+        with open(arquivo, "w", encoding="utf-8") as f:
+            f.write(conteudo_final)
+
+        print(f"✅ Tabelas de Lore Checks anexadas com sucesso em: {arquivo.name}")
+        return True
+
+    except Exception as e:
+        print(f"❌ Erro ao gerar tabelas de conhecimento: {e}")
+        return False
