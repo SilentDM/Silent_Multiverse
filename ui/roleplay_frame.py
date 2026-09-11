@@ -2,7 +2,12 @@ import tkinter as tk
 from tkinter import ttk, simpledialog, scrolledtext, messagebox
 import threading
 import engine.persona_engine as pe
+import core.ai_image as aimg
 from engine.persona_schemas import PersonaRoleplay, persona_para_markdown
+from PIL import Image, ImageTk
+from pathlib import Path
+
+
 
 class RoleplayFrame(ttk.Frame):
     def __init__(self, parent, log_callback, toast_callback, page_header_callback):
@@ -34,6 +39,13 @@ class RoleplayFrame(ttk.Frame):
         self.btn_nova_persona = ttk.Button(top_bar, text="➕ Nova Persona", command=self.modal_criar_persona)
         self.btn_nova_persona.pack(side=tk.RIGHT)
 
+        self.portrait_container = tk.Frame(self.left_frame, bg="#18181c")
+        self.portrait_container.pack(fill=tk.X, padx=10, pady=(6, 2))
+        self.lbl_portrait = tk.Label(self.portrait_container, bg="#18181c")
+        self.lbl_portrait.pack(anchor="center")
+        self.btn_gerar_portrait = ttk.Button(self.left_frame, text="🎨 Gerar Retrato do NPC", command=self.disparar_geracao_portrait)
+        self.btn_gerar_portrait.pack(fill=tk.X, padx=10, pady=(2, 6))
+        self._foto_tk = None
         # Editor de Ficha / Características
         ttk.Label(self.left_frame, text="Características & Mentalidade:", font=("Segoe UI", 8, "bold"), foreground="#888888").pack(anchor=tk.W, padx=10, pady=(4, 2))
         
@@ -123,6 +135,8 @@ class RoleplayFrame(ttk.Frame):
 
         self.chat_display.see(tk.END)
         self.chat_display.config(state=tk.DISABLED)
+        caminho_salvo = dados.get("portrait_path")
+        self._atualizar_foto_portrait(caminho_salvo)
 
     def modal_criar_persona(self):
         nome = simpledialog.askstring("Nova Persona", "Nome do Personagem ou Entidade:", parent=self)
@@ -188,5 +202,59 @@ class RoleplayFrame(ttk.Frame):
                 self.after(0, _atualizar)
             except Exception as e:
                 self.log_callback(f"Erro no diálogo de roleplay: {e}")
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _atualizar_foto_portrait(self, caminho_img):
+        """Carrega e exibe o retrato na coluna esquerda."""
+        if caminho_img and Path(caminho_img).exists():
+            try:
+                pil_img = Image.open(caminho_img)
+                # Redimensiona para caber com elegância na coluna esquerda
+                pil_img = pil_img.resize((150, 150), Image.Resampling.LANCZOS)
+                self._foto_tk = ImageTk.PhotoImage(pil_img)
+                
+                self.lbl_portrait.config(image=self._foto_tk)
+                self.lbl_portrait.pack(anchor="center", pady=(4, 6))
+                self.btn_gerar_portrait.config(text="🔄 Recriar Retrato")
+                return
+            except Exception as e:
+                print(f"Erro ao carregar portrait: {e}")
+
+        # Se não há imagem
+        self._foto_tk = None
+        self.lbl_portrait.config(image="")
+        self.lbl_portrait.pack_forget()
+        self.btn_gerar_portrait.config(text="🎨 Gerar Retrato do NPC")
+
+    def disparar_geracao_portrait(self):
+        if not self.current_persona:
+            self.toast("⚠️ Selecione ou crie um personagem primeiro!")
+            return
+
+        dados, historico = pe.carregar_persona(self.current_persona)
+        self.toast(f"🎨 Gerando retrato para '{self.current_persona}'...")
+        self.btn_gerar_portrait.config(state=tk.DISABLED)
+
+        nome_npc = dados.get("nome", self.current_persona)
+        psico = dados.get("psicologia_e_temperamento", "")
+        aparencia = dados.get("tom_de_voz_e_estilo_fala", "")
+
+        def _worker():
+            try:
+                caminho = aimg.gerar_portrait_persona(
+                    nome=nome_npc,
+                    psicologia=psico,
+                    aparencia=aparencia
+                )
+                if caminho:
+                    dados["portrait_path"] = str(caminho)
+                    pe.salvar_persona(self.current_persona, dados, historico)
+                    self.after(0, lambda: self._atualizar_foto_portrait(caminho))
+                    self.toast(f"🖼️ Retrato de '{nome_npc}' concluído!")
+                else:
+                    self.toast("⚠️ Não foi possível gerar a imagem (verifique logs/cota).")
+            finally:
+                self.after(0, lambda: self.btn_gerar_portrait.config(state=tk.NORMAL))
 
         threading.Thread(target=_worker, daemon=True).start()

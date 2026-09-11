@@ -56,12 +56,14 @@ class Sala3Reviravolta(BaseModel):
     dilema_moral: str = Field(description="A escolha difícil entre duas opções conflitantes")
     teste_d20: TabelaResultadosD20
 
+
 class Sala4Climax(BaseModel):
     titulo_sala: str = Field(description="Nome do covil/câmara do combate principal")
     narracao: str = Field(description="Descrição épica e opressiva do confronto final")
     efeito_ambiental_covil: str = Field(description="Ação do covil que dispara na Iniciativa 20 a cada rodada")
     interacao_dinamica: str = Field(description="Elementos do cenário que os jogadores podem destruir ou usar")
     teste_d20: TabelaResultadosD20
+    mapa_imagem: Optional[str] = Field(default=None, description="Nome do arquivo da imagem gerada do battlemap")
 
 class Sala5Consequencias(BaseModel):
     titulo_sala: str = Field(description="Nome do local de rescaldo/saída")
@@ -180,8 +182,15 @@ def aventura_5rooms_para_markdown(adv: ModuloAventura5Rooms) -> str:
     s4 = adv.sala4
     linhas.append(f"## SALA 4: {s4.titulo_sala} (O Clímax)")
     linhas.append("> [!quote] Narração para os Jogadores")
-    for l in s4.narracao.splitlines(): linhas.append(f"> {l}")
-    linhas.append(f"\n- **Efeito do Covil (Iniciativa 20):** {s4.efeito_ambiental_covil}")
+    for l in s4.narracao.splitlines(): 
+        linhas.append(f"> {l}")
+    linhas.append("")
+
+    if getattr(s4, "mapa_imagem", None):
+        linhas.append(f"> [!tip] 🗺️ Mapa Tático da Câmara")
+        linhas.append(f"> ![[{s4.mapa_imagem}]]\n")
+
+    linhas.append(f"- **Efeito do Covil (Iniciativa 20):** {s4.efeito_ambiental_covil}")
     linhas.append(f"- **Interação Tática de Cenário:** {s4.interacao_dinamica}\n")
     linhas.append(formatar_tabela_d20(s4.teste_d20, "SALA 4"))
     linhas.append("---\n")

@@ -3,6 +3,7 @@ import engine.dnd_schemas as dnd
 import engine.expander as ex
 import engine.knowledge_schemas as ks
 import engine.project_utils as pu
+import core.ai_image as aimg
 import core.ai_utils as au
 import core.cache_gemini as cg
 import ui.settings as st  
@@ -489,8 +490,40 @@ CONTEÚDO PRÉ-EXISTENTE NO ARQUIVO (Use como base ou complete as lacunas):
         # Valida o JSON no schema e converte para o Markdown com Callouts
         json_limpo = ex.remover_markdown_fences(str(resposta_raw))
         aventura_obj = dnd.ModuloAventura5Rooms.model_validate_json(json_limpo)
+
+        # 🟢 TENTA GERAR O BATTLEMAP DA SALA 4 (CLÍMAX)
+        try:
+            import core.ai_image as aimg
+            import shutil
+            
+            s4 = aventura_obj.sala4
+            print(f"🎨 [BATTLEMAP] Gerando mapa tático para: {s4.titulo_sala}...")
+            
+            mapa_path = aimg.gerar_battlemap_boss(
+                nome_sala=s4.titulo_sala,
+                descricao_ambiente=s4.narracao
+            )
+            
+            if mapa_path and Path(mapa_path).exists():
+                # Copia para a pasta onde o .md da aventura está salvo
+                destino_final = arquivo.parent / mapa_path.name
+                shutil.copy2(mapa_path, destino_final)
+
+                # 🟢 Atribui ao campo do schema (sem sujar s4.narracao!)
+                s4.mapa_imagem = mapa_path.name
+                print(f"✅ [BATTLEMAP] Imagem vinculada à Sala 4: {mapa_path.name}")
+        except Exception as e:
+            print(f"⚠️ Aviso: Battlemap ignorado: {e}")
+
+        # Serializa para o Markdown final já com o mapa no lugar correto
         markdown_final = dnd.aventura_5rooms_para_markdown(aventura_obj)
 
+        if arquivo.exists():
+            ex.arquivar_versao_para_historico(arquivo)
+
+        with open(arquivo, "w", encoding="utf-8") as f:
+            f.write(markdown_final)      
+        
         # Arquiva a versão anterior no histórico (_v01, _v02...)
         if arquivo.exists():
             ex.arquivar_versao_para_historico(arquivo)

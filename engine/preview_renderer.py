@@ -2,217 +2,6 @@ import re, os
 from pathlib import Path
 import engine.project_utils as pu
 
-CSS_OBSIDIAN_THEME_OLD = """
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Cinzel:wght@600;800&display=swap');
-
-:root {
-    --bg-primary: #1e1e20;
-    --bg-secondary: #26262a;
-    --bg-tertiary: #18181a;
-    --text-normal: #dcddde;
-    --text-muted: #999ba0;
-    --accent-emerald: #10b981;
-    --accent-gold: #d97706;
-    --accent-blue: #38bdf8;
-    --border-color: #36363a;
-}
-
-body {
-    background-color: var(--bg-primary);
-    color: var(--text-normal);
-    font-family: 'Inter', -apple-system, sans-serif;
-    line-height: 1.6;
-    margin: 0;
-    padding: 0;
-}
-
-.container {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 40px 24px 80px 24px;
-}
-
-/* Banner de Capa */
-.banner-container {
-    width: 100%;
-    height: 240px;
-    overflow: hidden;
-    position: relative;
-    border-radius: 8px;
-    margin-bottom: 24px;
-    background: linear-gradient(135deg, #10b98122, #38bdf822);
-}
-
-.banner-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* Painel de Propriedades (Obsidian Properties) */
-.properties-box {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 28px;
-}
-
-.properties-header {
-    font-size: 0.85rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--text-muted);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.property-row {
-    display: flex;
-    align-items: center;
-    padding: 6px 0;
-    border-bottom: 1px solid #323236;
-    font-size: 0.9rem;
-}
-
-.property-row:last-child {
-    border-bottom: none;
-}
-
-.property-key {
-    width: 130px;
-    color: var(--text-muted);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.85rem;
-}
-
-.property-val {
-    flex: 1;
-    color: #e4e4e7;
-    font-weight: 500;
-}
-
-.property-tag {
-    background: #10b98122;
-    color: #34d399;
-    border: 1px solid #10b98155;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    display: inline-block;
-    margin-right: 4px;
-}
-
-/* Títulos */
-h1 { font-size: 2.2rem; color: #ffffff; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
-h2 { font-size: 1.5rem; color: var(--accent-emerald); margin-top: 32px; border-bottom: 1px solid #2d2d30; padding-bottom: 6px; }
-h3 { font-size: 1.2rem; color: var(--accent-blue); margin-top: 24px; }
-
-/* Callouts Nativos do Obsidian */
-.callout {
-    border-radius: 6px;
-    margin: 16px 0;
-    padding: 14px 16px;
-    background: var(--bg-secondary);
-    border-left: 4px solid var(--accent-emerald);
-}
-
-.callout-title {
-    font-weight: 700;
-    text-transform: uppercase;
-    font-size: 0.85rem;
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.callout-quote { border-left-color: #60a5fa; }
-.callout-quote .callout-title { color: #60a5fa; }
-
-.callout-warning { border-left-color: #f59e0b; }
-.callout-warning .callout-title { color: #f59e0b; }
-
-.callout-danger { border-left-color: #ef4444; }
-.callout-danger .callout-title { color: #ef4444; }
-
-.callout-tip { border-left-color: #10b981; }
-.callout-tip .callout-title { color: #10b981; }
-
-.callout-summary { border-left-color: #a855f7; }
-.callout-summary .callout-title { color: #a855f7; }
-
-/* Tabelas */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-    font-size: 0.95rem;
-}
-
-th, td {
-    padding: 10px 14px;
-    border: 1px solid var(--border-color);
-    text-align: left;
-}
-
-th {
-    background-color: var(--bg-secondary);
-    color: var(--accent-emerald);
-    font-weight: 600;
-}
-
-tr:nth-child(even) {
-    background-color: var(--bg-tertiary);
-}
-
-/* Wikilinks */
-.wikilink {
-    color: var(--accent-blue);
-    text-decoration: none;
-    font-weight: 500;
-    background: #38bdf815;
-    padding: 2px 6px;
-    border-radius: 4px;
-    border-bottom: 1px solid #38bdf855;
-}
-
-.wikilink:hover {
-    background: #38bdf833;
-    text-decoration: underline;
-}
-
-/* Imagens */
-img {
-    max-width: 100%;
-    border-radius: 6px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    margin: 16px 0;
-}
-
-blockquote {
-    border-left: 3px solid var(--accent-gold);
-    background: #111827;
-    margin: 16px 0;
-    padding: 10px 18px;
-    color: #d1d5db;
-    font-style: italic;
-    border-radius: 0 4px 4px 0;
-}
-
-hr {
-    border: none;
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--border-color), transparent);
-    margin: 32px 0;
-}
-"""
-
-# Em engine/preview_renderer.py
-
 CSS_OBSIDIAN_THEME = """
 html {
     background-color: #1e1e20 !important;
@@ -531,6 +320,43 @@ def _markdown_para_html_rico(conteudo_md: str, caminho_base_arquivo: Path) -> st
     html = re.sub(r'\*(.*?)\*', r'<em>\1</em>', html)
 
     # Wikilinks Obsidian [[Alvo|Alias]] ou [[Alvo]]
+    def _sub_img_wiki(m):
+        nome_img = m.group(1).strip()
+        # Busca a imagem: 1º ao lado da nota, 2º na pasta do projeto, 3º em .nexus_data/images/
+        locais_busca = [
+            caminho_base_arquivo.parent / nome_img,
+            Path(pu.CAMINHO_PROJETO) / nome_img,
+            pu.PASTA_DADOS_NEXUS / "images" / nome_img
+        ]
+        
+        caminho_encontrado = None
+        for loc in locais_busca:
+            if loc.exists() and loc.is_file():
+                caminho_encontrado = loc
+                break
+
+        if caminho_encontrado:
+            # as_uri() converte para file:///C:/... que o navegador e o tkinterweb entendem
+            uri = caminho_encontrado.resolve().as_uri()
+            return f'<div style="text-align:center; margin:16px 0;"><img src="{uri}" alt="{nome_img}" style="max-width:100%; border-radius:8px; border:1px solid #36363a; box-shadow:0 4px 20px rgba(0,0,0,0.6);"><br><small style="color:#888;">🗺️ {nome_img}</small></div>'
+        else:
+            return f'<div style="border:1px dashed #ef4444; padding:10px; color:#ef4444; margin:10px 0;">⚠️ Imagem não encontrada: {nome_img}</div>'
+
+    # 🟢 1º Trata ![[imagem.png]]
+    html = re.sub(r'!\s*\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]', _sub_img_wiki, html)
+
+    # 🟢 2º Trata sintaxe padrão Markdown ![](imagem.png)
+    def _sub_img_md(m):
+        src = m.group(1).strip()
+        caminho_img = caminho_base_arquivo.parent / src
+        if not caminho_img.exists():
+            caminho_img = pu.PASTA_DADOS_NEXUS / "images" / src
+        uri = caminho_img.resolve().as_uri() if caminho_img.exists() else src
+        return f'<div style="text-align:center; margin:16px 0;"><img src="{uri}" alt="imagem" style="max-width:100%; border-radius:8px; border:1px solid #36363a;"><br></div>'
+
+    html = re.sub(r'!\[.*?\]\((.*?)\)', _sub_img_md, html)
+
+    # 🟢 3º SÓ DEPOIS trata Wikilinks comuns de texto [[Nome_da_Nota]]
     def _sub_wiki(m):
         alvo = m.group(1).strip()
         alias = m.group(2).strip() if m.group(2) else alvo
@@ -538,18 +364,9 @@ def _markdown_para_html_rico(conteudo_md: str, caminho_base_arquivo: Path) -> st
 
     html = re.sub(r'\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]', _sub_wiki, html)
 
-    # Imagens do Obsidian ![[imagem.png]] ou ![](caminho.png)
-    def _sub_img(m):
-        nome_img = m.group(1).strip()
-        # Tenta resolver o caminho relativo ou na pasta do projeto
-        caminho_img = caminho_base_arquivo.parent / nome_img
-        if not caminho_img.exists():
-            caminho_img = Path(pu.CAMINHO_PROJETO) / nome_img
-        uri = caminho_img.as_uri() if caminho_img.exists() else nome_img
-        return f'<img src="{uri}" alt="{nome_img}">'
-
-    html = re.sub(r'!\[\[(.*?)\]\]', _sub_img, html)
-    html = re.sub(r'!\[.*?\]\((.*?)\)', _sub_img, html)
+    # 4. Formatações de Negrito e Itálico
+    html = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html)
+    html = re.sub(r'\*(.*?)\*', r'<em>\1</em>', html)
 
     return html
 
