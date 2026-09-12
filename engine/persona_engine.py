@@ -35,24 +35,27 @@ def carregar_persona(nome: str) -> tuple[dict, list]:
         print(f"Erro ao carregar persona {nome}: {e}")
         return {}, []
 
+# Em engine/persona_engine.py -> atualizar a função forjar_nova_persona:
+
 def forjar_nova_persona(nome_personagem: str, descricao_direta: str) -> str:
     """
-    Usa o bundle completo do mundo para derivar a psicologia profunda do personagem.
+    Usa o bundle completo do mundo para derivar a psicologia profunda e a aparência visual do personagem.
     """
-    estilo_contexto = pu.CAMINHO_ESTILO
     prompt_usuario = f"""
-Crie a mente completa para roleplay do seguinte personagem:
+Crie a mente completa e a ficha visual de roleplay para o seguinte personagem:
 NOME: {nome_personagem}
-DIRETRIZES DO ESCRITOR / MESTRE: {descricao_direta}
+DIRETRIZES DO MESTRE: {descricao_direta}
 
-Analise todo o contexto do mundo para entender onde ele vive, quais deuses ele teme,
-a quais facções ele se submete ou se opõe, e como seu tom de fala reflete sua história.
+INSTRUÇÕES ADICIONAIS:
+1. Analise o contexto do mundo para inferir ou harmonizar a raça, vestimentas, deuses cultuados e facção do personagem.
+2. Defina com precisão os traços visuais em Português (gênero, raça, cabelo, olhos, tom de pele, roupas e marcas).
+3. No campo 'prompt_visual_ingles', crie um prompt em INGLÊS no estilo profissional de concept art de fantasia sombria, descrevendo a aparência facial, olhar, cabelo e vestimentas do personagem.
 """
 
     instrucoes_sistema = """
-Você é um psicólogo de personagens e diretor teatral para ficção e RPG.
-Sua missão é criar uma psique rica, cheia de nuances, manias de fala e motivações vivas.
-Responda ESTRITAMENTE seguindo o schema JSON.
+Você é um diretor de elenco, psicólogo de personagens e concept artist sênior para universos de fantasia.
+Sua missão é criar uma entidade crível, com traços físicos marcantes e personalidade profunda.
+Responda ESTRITAMENTE através do schema JSON fornecido.
 """
 
     resposta_raw = au.ask_ai(
@@ -63,11 +66,9 @@ Responda ESTRITAMENTE seguindo o schema JSON.
         use_world_context=True
     )
 
-    # Valida e converte
     persona_obj = PersonaRoleplay.model_validate_json(str(resposta_raw))
     dados_dict = persona_obj.model_dump()
-    
-    # Salva no arquivo .json
+
     salvar_persona(persona_obj.nome, dados_dict, historico_chat=[])
     return persona_obj.nome
 

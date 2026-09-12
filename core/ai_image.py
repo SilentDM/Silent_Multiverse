@@ -104,14 +104,41 @@ def gerar_imagem_com_fallback(prompt: str, width: int = 768, height: int = 768) 
         return None
 
 
-def gerar_portrait_persona(nome: str, psicologia: str, aparencia: str) -> Path:
-    """Retrato quadrado (1:1) focado em busto/rosto."""
-    prompt = (
-        f"Fantasy RPG character portrait bust of {nome}, {aparencia}, "
-        f"expression and mood: {psicologia}, highly detailed face, dark fantasy art, "
-        "dramatic lighting, digital concept art, trending on artstation, 8k"
-    )
-    return gerar_imagem_com_fallback(prompt, width=768, height=768)
+# Em core/ai_image.py -> substituir gerar_portrait_persona:
+
+def gerar_portrait_persona(nome: str, dados_persona: dict) -> Path:
+    """
+    Gera um retrato (1:1) do personagem.
+    Prioriza o prompt em inglês gerado pela IA no schema, ou monta o prompt combinando os dados físicos.
+    """
+    prompt_ingles = dados_persona.get("prompt_visual_ingles", "").strip()
+
+    if prompt_ingles and len(prompt_ingles) > 25:
+        # Usa o prompt de arte em inglês já formatado
+        prompt_final = prompt_ingles
+        if "dark fantasy" not in prompt_final.lower():
+            prompt_final += ", dark fantasy aesthetic, dramatic lighting, highly detailed face portrait bust, 8k"
+    else:
+        # Fallback de montagem direta caso o campo esteja vazio
+        genero = dados_persona.get("genero", "character")
+        raca = dados_persona.get("raca", "human")
+        cabelo = dados_persona.get("cabelo", "dark hair")
+        olhos = dados_persona.get("olhos", "piercing eyes")
+        pele = dados_persona.get("tom_de_pele", "pale skin")
+        vestes = dados_persona.get("vestimentas_e_acessorios", "traveling clothes")
+        marcas = dados_persona.get("tracos_marcantes", "")
+        psico = dados_persona.get("psicologia_e_temperamento", "")
+
+        prompt_final = (
+            f"Fantasy RPG character portrait bust of {nome}, a {raca} {genero}. "
+            f"Facial details: {pele}, {olhos}, {cabelo}. "
+            f"Clothing and accessories: {vestes}. Distinctive features: {marcas}. "
+            f"Mood and expression: {psico}. "
+            "Dark fantasy concept art, dramatic rim lighting, highly detailed face, neutral background, masterpiece, 8k"
+        )
+
+    print(f"🎨 [PORTRAIT-PROMPT]: {prompt_final[:100]}...")
+    return gerar_imagem_com_fallback(prompt_final, width=768, height=768)
 
 
 def gerar_battlemap_boss(nome_sala: str, descricao_ambiente: str) -> Path:

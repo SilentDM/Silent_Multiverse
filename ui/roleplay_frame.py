@@ -1,13 +1,11 @@
 import tkinter as tk
-from tkinter import ttk, simpledialog, scrolledtext, messagebox
-import threading
+from tkinter import ttk, simpledialog, scrolledtext, messagebox, filedialog
+import threading, os, sys, shutil, subprocess
 import engine.persona_engine as pe
 import core.ai_image as aimg
 from engine.persona_schemas import PersonaRoleplay, persona_para_markdown
 from PIL import Image, ImageTk
 from pathlib import Path
-
-
 
 class RoleplayFrame(ttk.Frame):
     def __init__(self, parent, log_callback, toast_callback, page_header_callback):
@@ -41,11 +39,32 @@ class RoleplayFrame(ttk.Frame):
 
         self.portrait_container = tk.Frame(self.left_frame, bg="#18181c")
         self.portrait_container.pack(fill=tk.X, padx=10, pady=(6, 2))
-        self.lbl_portrait = tk.Label(self.portrait_container, bg="#18181c")
+
+        self.lbl_portrait = tk.Label(self.portrait_container, bg="#18181c", cursor="hand2")
         self.lbl_portrait.pack(anchor="center")
-        self.btn_gerar_portrait = ttk.Button(self.left_frame, text="🎨 Gerar Retrato do NPC", command=self.disparar_geracao_portrait)
+
+        # 🟢 MENU DE CONTEXTO DO RETRATO
+        self.portrait_menu = tk.Menu(self, tearoff=0, bg="#1e1e1e", fg="#e3e3e3", activebackground="#0f766e", activeforeground="white")
+        self.portrait_menu.add_command(label="Abrir Imagem no Sistema", command=self.abrir_portrait_no_sistema)
+        self.portrait_menu.add_command(label="Salvar Imagem Como...", command=self.salvar_portrait_como)
+        self.portrait_menu.add_separator()
+        self.portrait_menu.add_command(label="Mostrar na Pasta de Dados", command=self.revelar_portrait_na_pasta)
+
+        # 🟢 BINDINGS DE MOUSE NA IMAGEM
+        self.lbl_portrait.bind("<Double-1>", lambda e: self.abrir_portrait_no_sistema())
+        self.lbl_portrait.bind("<Button-3>", self._mostrar_menu_portrait)
+        self.lbl_portrait.bind("<Button-2>", self._mostrar_menu_portrait)
+
+        self.btn_gerar_portrait = ttk.Button(
+            self.left_frame, 
+            text="🎨 Gerar Retrato do NPC", 
+            command=self.disparar_geracao_portrait
+        )
         self.btn_gerar_portrait.pack(fill=tk.X, padx=10, pady=(2, 6))
+
+        # Variáveis de controle da imagem atual
         self._foto_tk = None
+        self._caminho_imagem_atual = None
         # Editor de Ficha / Características
         ttk.Label(self.left_frame, text="Características & Mentalidade:", font=("Segoe UI", 8, "bold"), foreground="#888888").pack(anchor=tk.W, padx=10, pady=(4, 2))
         
@@ -209,8 +228,8 @@ class RoleplayFrame(ttk.Frame):
         """Carrega e exibe o retrato na coluna esquerda."""
         if caminho_img and Path(caminho_img).exists():
             try:
-                pil_img = Image.open(caminho_img)
-                # Redimensiona para caber com elegância na coluna esquerda
+                self._caminho_imagem_atual = Path(caminho_img).resolve()
+                pil_img = Image.open(self._caminho_imagem_atual)
                 pil_img = pil_img.resize((150, 150), Image.Resampling.LANCZOS)
                 self._foto_tk = ImageTk.PhotoImage(pil_img)
                 
@@ -221,11 +240,75 @@ class RoleplayFrame(ttk.Frame):
             except Exception as e:
                 print(f"Erro ao carregar portrait: {e}")
 
-        # Se não há imagem
+        # Se não há imagem válida
+        self._caminho_imagem_atual = None
         self._foto_tk = None
         self.lbl_portrait.config(image="")
         self.lbl_portrait.pack_forget()
         self.btn_gerar_portrait.config(text="🎨 Gerar Retrato do NPC")
+
+    def _mostrar_menu_portrait(self, event):
+        """Exibe o menu de contexto do botão direito sobre a foto."""
+        if self._caminho_imagem_atual and Path(self._caminho_imagem_atual).exists():
+            self.portrait_menu.post(event.x_root, event.y_root)
+
+    def abrir_portrait_no_sistema(self):
+        """Abre o arquivo da imagem no visualizador nativo de fotos do Windows."""
+        if not self._caminho_imagem_atual or not Path(self._caminho_imagem_atual).exists():
+            return
+        
+        caminho_str = os.path.normpath(str(self._caminho_imagem_atual))
+        try:
+            if os.name == 'nt':
+                os.startfile(caminho_str)
+            elif sys.platform == 'darwin':
+                subprocess.call(('open', caminho_str))
+            else:
+                subprocess.call(('xdg-open', caminho_str))
+            self.toast("🔍 Abrindo retrato no visualizador do sistema...")
+        except Exception as e:
+            self.log_callback(f"Erro ao abrir imagem: {e}")
+
+    def salvar_portrait_como(self):
+        """Permite que o usuário exporte e salve o retrato em qualquer pasta do computador."""
+        if not self._caminho_imagem_atual or not Path(self._caminho_imagem_atual).exists():
+            return
+
+        nome_sugerido = f"portrait_{self.current_persona.replace(' ', '_').lower()}.png" if self.current_persona else "portrait.png"
+        
+        destino = filedialog.asksaveasfilename(
+            title="Salvar Retrato do NPC Como...",
+            initialfile=nome_sugerido,
+            defaultextension=".png",
+            filetypes=[("Imagem PNG", "*.png"), ("Todos os Arquivos", "*.*")],
+            parent=self
+        )
+
+        if destino:
+            try:
+                shutil.copy2(str(self._caminho_imagem_atual), destino)
+                self.toast(f"💾 Retrato exportado com sucesso!")
+                self.log_callback(f"Retrato de {self.current_persona} salvo em: {destino}")
+            except Exception as e:
+                messagebox.showerror("Erro ao Salvar", f"Falha ao exportar imagem: {e}", parent=self)
+
+    def revelar_portrait_na_pasta(self):
+        """Abre a pasta .nexus_data/images selecionando o arquivo no Windows Explorer."""
+        if not self._caminho_imagem_atual or not Path(self._caminho_imagem_atual).exists():
+            return
+            
+        caminho_str = os.path.normpath(str(self._caminho_imagem_atual))
+        try:
+            if os.name == 'nt':
+                subprocess.run(['explorer', '/select,', caminho_str])
+            elif sys.platform == 'darwin':
+                subprocess.call(['open', '-R', caminho_str])
+            else:
+                pasta = os.path.dirname(caminho_str)
+                subprocess.call(['xdg-open', pasta])
+            self.toast("📂 Revelando imagem na pasta de dados...")
+        except Exception as e:
+            self.log_callback(f"Erro ao revelar imagem no Explorer: {e}")
 
     def disparar_geracao_portrait(self):
         if not self.current_persona:
@@ -233,27 +316,22 @@ class RoleplayFrame(ttk.Frame):
             return
 
         dados, historico = pe.carregar_persona(self.current_persona)
-        self.toast(f"🎨 Gerando retrato para '{self.current_persona}'...")
-        self.btn_gerar_portrait.config(state=tk.DISABLED)
-
         nome_npc = dados.get("nome", self.current_persona)
-        psico = dados.get("psicologia_e_temperamento", "")
-        aparencia = dados.get("tom_de_voz_e_estilo_fala", "")
+
+        self.toast(f"🎨 Gerando retrato para '{nome_npc}'...")
+        self.btn_gerar_portrait.config(state=tk.DISABLED)
 
         def _worker():
             try:
-                caminho = aimg.gerar_portrait_persona(
-                    nome=nome_npc,
-                    psicologia=psico,
-                    aparencia=aparencia
-                )
+                # 🟢 Passa o dicionário completo com os atributos físicos e o prompt_visual_ingles
+                caminho = aimg.gerar_portrait_persona(nome_npc, dados)
                 if caminho:
                     dados["portrait_path"] = str(caminho)
                     pe.salvar_persona(self.current_persona, dados, historico)
                     self.after(0, lambda: self._atualizar_foto_portrait(caminho))
                     self.toast(f"🖼️ Retrato de '{nome_npc}' concluído!")
                 else:
-                    self.toast("⚠️ Não foi possível gerar a imagem (verifique logs/cota).")
+                    self.toast("⚠️ Não foi possível gerar a imagem no momento.")
             finally:
                 self.after(0, lambda: self.btn_gerar_portrait.config(state=tk.NORMAL))
 
