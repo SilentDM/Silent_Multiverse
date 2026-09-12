@@ -68,6 +68,7 @@ DEFAULT_SETTINGS = {
     "modelos_modo_ordenacao": "automatico",  # "automatico" ou "manual"
     "ordem_manual_modelos": []  # ID_SERVIDOR: { config_especifica }
 }
+
 DEFAULT_SETTINGS.update(CONFIG_PADRAO_DISCORD)
 
 PROVEDORES_IA = {

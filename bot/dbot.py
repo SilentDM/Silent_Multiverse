@@ -56,14 +56,14 @@ if DISCORD_ENABLED:
             if hasattr(discordclient, "callback_guilds"):
                 discordclient.callback_guilds(guilds_info)
 
-            print(f'🏰 Servidores Conectados: {guilds_info}')
+            print(f'Servidores Conectados: {guilds_info}')
 
             import bot.discord_scraper as scraper
             config = st.obter_configuracao_servidor()
             asyncio.create_task(scraper.varrer_e_salvar_canais_conhecimento(discordclient, config))
 
         except Exception as e:
-            print(f"⚠️ Erro ao registrar servidores / disparar scraper: {e}")
+            print(f"Erro ao registrar servidores / disparar scraper: {e}")
 
         config = st.obter_configuracao_servidor()
         prefixo = config.get("discord_prefix", "!ao")
@@ -94,11 +94,11 @@ if DISCORD_ENABLED:
         content_lower = content.lower()
 
         # 2. ROLADOR RÁPIDO (!r 1d20+5 ou !rolar 2d6)
-        if content_lower.startswith("!r ") or content_lower.startswith("!rolar "):
-            expr = content.split(" ", 1)[1] if " " in content else ""
-            res = dice.rolar_dados(expr)
-            await message.reply(res)
-            return
+        if dice.eh_comando_dado(content):
+            resposta_dados = dice.processar_rolagem(content)
+            if resposta_dados:
+                await message.reply(resposta_dados)
+                return
 
         # 3. VERIFICAÇÃO DO GATILHO / PREFIXO
         if content_lower.startswith(prefixo_lower):
@@ -124,10 +124,10 @@ if DISCORD_ENABLED:
             # SINCRONIZAÇÃO MANUAL DISPARADA PELO MESTRE (!ao sincronizar)
             if prompt.lower() in ["sincronizar", "sync"]:
                 if not actions.verificar_permissao_mestre(message, config, MESTRE_DISCORD_IDS):
-                    await message.reply("⛔ Apenas Mestres podem disparar a sincronização de conhecimento.")
+                    await message.reply("Apenas Mestres podem disparar a sincronização de conhecimento.")
                     return
 
-                print(f"🔄 [DISCORD-TRACE] Mestre '{user_name}' disparou !ao sincronizar...")
+                print(f"[DISCORD-TRACE] Mestre '{user_name}' disparou !ao sincronizar...")
                 async with message.channel.typing():
                     import bot.discord_scraper as scraper
                     total_arq, total_msg = await scraper.varrer_e_salvar_canais_conhecimento(discordclient, config)
