@@ -67,8 +67,6 @@ def _criterio_ordenacao_eficiencia(m: dict):
 def _modelo_eh_invalido_para_lore(model_name: str, max_input: int, supported_methods: list = None) -> bool:
     """Verifica se o modelo deve ser imediatamente ignorado."""
     name = model_name.lower()
-
-    # 1. Filtros de tarefas que não geram texto narrativo
     termos_proibidos = [
         "embedding", "robotics", "aqa", "realtime", "tts", "stt",
         "vision", "imagen", "audio", "medlm", "imagen", "veo", "transcribe"
@@ -76,15 +74,12 @@ def _modelo_eh_invalido_para_lore(model_name: str, max_input: int, supported_met
     if any(t in name for t in termos_proibidos):
         return True
 
-    # 2. Ignora modelos de geração puramente ultraleves ou subdimensionados para lore densa
     if "8b" in name or "nano" in name:
         return True
 
-    # 3. Descarta modelos que não têm contexto mínimo para carregar um compêndio (mínimo 64k tokens)
     if max_input > 0 and max_input < 64_000:
         return True
 
-    # 4. Checagem de métodos suportados (se fornecido pela API)
     if supported_methods and "generateContent" not in supported_methods:
         return True
 
@@ -142,7 +137,6 @@ def _calcular_score_modelo(model_name: str, max_input_tokens: int, max_output_to
     return score
 
 def findmodel(file_path=pu.log_path("models.json")):
-    # Timeout mais tolerante para a descoberta
     client_fast = get_gemini_client(timeout_seconds=20)
     
     if not client_fast:
@@ -171,7 +165,6 @@ def findmodel(file_path=pu.log_path("models.json")):
 
     working_models = []
     
-    # Prompt rápido para avaliar se o modelo entende instruções de escrita
     teste_criativo = "Escreva uma frase de fantasia sombria sobre o [[Reino de Valia]]. Responda apenas a frase."
 
     for model in all_models:
@@ -220,14 +213,14 @@ def findmodel(file_path=pu.log_path("models.json")):
         time.sleep(0.3)
 
     if not working_models:
-        print("⚠️ Nenhum modelo compatível respondeu com sucesso ao benchmark.")
+        print("Nenhum modelo compatível respondeu com sucesso ao benchmark.")
         return
 
     # Ordena combinando taxa de sucesso inicial, qualidade arquitetural e velocidade
     working_models.sort(key=_criterio_ordenacao_eficiencia)
 
     pu.salvar_json_seguro(file_path, working_models, pu.LOCK_MODELS)
-    print(f"✅ {len(working_models)} modelos válidos ranqueados com sucesso para Worldbuilding!")
+    print(f"{len(working_models)} modelos válidos ranqueados com sucesso para Worldbuilding!")
 
 def improvemodel(model, success, response_time=None):
     file_path = pu.log_path("models.json")
@@ -341,7 +334,7 @@ def ask_ai(
     is_dm: Optional[bool] = True
 ) -> str:
     if not os.getenv("GOOGLE_API_KEY", "").strip():
-        return "❌ Nenhuma chave de API da IA (GOOGLE_API_KEY) foi configurada. Acesse a aba 'Opções' para cadastrar sua chave."
+        return "Nenhuma chave de API da IA (GOOGLE_API_KEY) foi configurada. Acesse a aba 'Opções' para cadastrar sua chave."
 
     if not system_instruction:
         system_instruction = DEFAULT_SYSTEM_INSTRUCTION
@@ -377,7 +370,7 @@ def ask_ai(
                     config.cached_content = world_context["id"]
                     cache_model = world_context.get("model")
         except Exception as e:
-            print(f"⚠️ World Context não disponível: {e}")
+            print(f"World Context não disponível: {e}")
         
     with _api_lock:
         response = generate_content_with_fallback(contents_to_send, config, cache_model=cache_model)
