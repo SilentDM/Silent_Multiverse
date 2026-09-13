@@ -60,13 +60,14 @@ class NewFileDialog(tk.Toplevel):
         self.destroy()
 
 class ExplorerFrame(ttk.Frame):
-    def __init__(self, parent, log_callback, toast_callback=None, auto_expander_callback=None, ask_ao_callback=None, stats_callback=None):
+    def __init__(self, parent, log_callback, toast_callback=None, auto_expander_callback=None, ask_ao_callback=None, stats_callback=None, council_callback=None):
         super().__init__(parent)
         self.log_callback = log_callback
         self.toast_callback = toast_callback
         self.auto_expander_callback = auto_expander_callback 
         self.ask_ao_callback = ask_ao_callback
         self.stats_callback = stats_callback
+        self.council_callback = council_callback
         
         self.current_file = None
         self.path_to_item = {}
@@ -867,6 +868,54 @@ class ExplorerFrame(ttk.Frame):
         except Exception as e:
             self.log_callback(f"Erro analisando TODO: {e}")
 
+    def recarregar_arquivo_do_disco(self, caminho):
+        """Força a leitura do arquivo atualizado no disco e recarrega o editor sem travas."""
+        caminho_abs = os.path.abspath(caminho)
+        if not os.path.isfile(caminho_abs):
+            return
+
+        # Cancela qualquer auto-save pendente
+        if self.autosave_timer:
+            self.after_cancel(self.autosave_timer)
+            self.autosave_timer = None
+
+        self.current_file = caminho_abs
+
+        # Lê a nova versão gerada pela IA diretamente do disco
+        texto_novo = ""
+        try:
+            with open(caminho_abs, "r", encoding="utf-8", errors="ignore") as f:
+                texto_novo = f.read()
+        except Exception as e:
+            self.log_callback(f"Erro ao recarregar {caminho_abs}: {e}")
+            return
+
+        # Atualiza o ScrolledText do editor
+        self.editor.config(state=tk.NORMAL)
+        self.editor.delete("1.0", tk.END)
+        self.editor.insert("1.0", texto_novo)
+
+        try:
+            self.editor.edit_reset()
+        except Exception:
+            pass
+
+        self.apply_syntax_highlighting()
+        self.update_stats()
+
+        nome_base = os.path.basename(caminho_abs)
+        if getattr(self, "modo_preview", False):
+            self.lbl_editor_title.config(text=f"👁️ Visualizando: {nome_base}", foreground="#38bdf8")
+            if TKINTERWEB_DISPONIVEL and self.html_preview:
+                html_renderizado = prev.gerar_html_string_preview(texto_novo, Path(caminho_abs))
+                self.html_preview.load_html(html_renderizado)
+        else:
+            self.lbl_editor_title.config(text=f"✏️ Editando: {nome_base}", foreground="#10b981")
+
+        # Seleciona o nó correspondente na árvore
+        self.select_path_in_tree(caminho_abs)
+        self.log_callback(f"Editor recarregado com o conteúdo atualizado de '{nome_base}'.")
+
     # --- MENU DE CONTEXTO ---
     def show_context_menu(self, event):
         iid = self.tree.identify_row(event.y)
@@ -910,6 +959,7 @@ class ExplorerFrame(ttk.Frame):
                 self.context_menu.add_command(label="✨ Melhorar com IA (ImproveFile)", command=lambda: self.run_improve_file(caminho))
                 self.context_menu.add_command(label="🎲 Gerar Aventura D&D (5-Room Dungeon)", command=lambda: self.run_generate_adventure(caminho))
                 self.context_menu.add_command(label="📜 Gerar Testes de Conhecimento (Lore Checks)", command=lambda: self.run_generate_lore_checks(caminho))
+                self.context_menu.add_command(label="🏛️ Consolidar Arquivo com Conselho", command=lambda: self.abrir_no_conselho(caminho))
             
             self.context_menu.post(event.x_root, event.y_root)
 
@@ -1483,6 +1533,32 @@ class ExplorerFrame(ttk.Frame):
             self.editor.focus_set()
             self.on_key_release(None)
             self.toast("Tag To-Do inserida!")
+    
+    def abrir_no_conselho(self, caminho):
+        """Salva o estado atual, descarrega o editor e envia o arquivo para a aba do Conselho."""
+        caminho_abs = os.path.abspath(caminho)
+
+        if self.autosave_timer:
+            self.after_cancel(self.autosave_timer)
+            self.autosave_timer = None
+
+        if self.current_file and os.path.abspath(self.current_file) == caminho_abs:
+            self.save_current_file()
+
+        self.current_file = None
+        self.editor.config(state=tk.NORMAL)
+        self.editor.delete("1.0", tk.END)
+        self.editor.insert(
+            "1.0", 
+            f"--- 🏛️ ARQUIVO EM DELIBERAÇÃO NO CONSELHO ---\n\n"
+            f"Arquivo: {os.path.basename(caminho_abs)}\n"
+            f"Acesse a aba 'Conselho' para deliberar com os especialistas.\n"
+            f"O documento será recarregado automaticamente aqui ao concluir."
+        )
+        self.editor.config(state=tk.DISABLED)
+
+        if hasattr(self, "council_callback") and self.council_callback:
+            self.council_callback(caminho_abs)
     
     def update_stats(self):
         if self.stats_callback and self.current_file:

@@ -7,6 +7,7 @@ import engine.compiler as comp
 import engine.expander as ex
 import engine.wbuilder as wb
 import engine.project_utils as pu
+import ui.council_frame as cf
 import ui.explorer as expl
 import ui.gui_logger as gl
 import ui.roleplay_frame as rp
@@ -248,6 +249,7 @@ class SilentDesktopApp:
             ("worldbuilder", "WorldBuilders"),
             ("chat", "Converse com Ao"),
             ("roleplay", "Roleplay"), 
+            ("council", "Conselho"),   
             ("options", "Opções"),
             ("models", "Performance Gemini"),
         ]
@@ -259,6 +261,7 @@ class SilentDesktopApp:
         # 2. ESPAÇADOR FLEXÍVEL (Empurra os itens abaixo para o rodapé)
         nav_spacer = tk.Frame(sidebar, bg="#0a0a0a")
         nav_spacer.pack(fill=tk.BOTH, expand=True)
+        
 
         # 3. BOTOES NAVEGAÇÃO INFERIOR (No rodapé)
         bottom_nav_items = [
@@ -289,16 +292,24 @@ class SilentDesktopApp:
             self.toast, 
             self._page_header
         )
-
+        self.council_pane = cf.CouncilFrame(
+            content_area, 
+            self.log_activity, 
+            self.toast, 
+            self._page_header,
+            on_consolidation_finished=self._ao_concluir_conselho
+        )
         self.pages["editor"] = self._build_editor_page(content_area)
         self.pages["worldbuilder"] = self._build_worldbuilder_page(content_area)
         self.pages["chat"] = self._build_chat_page(content_area)
         self.pages["log"] = self._build_log_page(content_area)
         self.pages["roleplay"] = rp.RoleplayFrame(content_area, self.log_activity, self.toast, self._page_header) 
+        self.pages["council"] = self.council_pane
         self.pages["options"] = self.options_pane
         self.pages["models"] = self._build_models_page(content_area)
-        self.pages["manual"] = self._build_manual_page(content_area)  # 📖 Nova página de Manual
+        self.pages["manual"] = self._build_manual_page(content_area) 
 
+        self.explorer_pane.council_callback = self.enviar_para_conselho
         for page in self.pages.values():
             page.place(relx=0, rely=0, relwidth=1, relheight=1)
 
@@ -673,6 +684,20 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
 
         ttk.Button(botoes_frame, text="💾 Salvar Relatório (.md)", command=_salvar_relatorio).pack(side=tk.LEFT)
         ttk.Button(botoes_frame, text="Fechar", command=popup.destroy).pack(side=tk.RIGHT)
+
+    def enviar_para_conselho(self, caminho_arquivo):
+            """Recebe o arquivo do explorer e troca para a aba do conselho já carregado."""
+            self.council_pane.carregar_arquivo_para_conselho(caminho_arquivo)
+            self.switch_page("council")
+            self.toast(f"🏛️ Arquivo '{Path(caminho_arquivo).name}' pronto para o Conselho!")
+
+    def _ao_concluir_conselho(self, caminho_arquivo):
+        """Após o Juiz finalizar, troca para a aba do editor e força a leitura do novo arquivo do disco."""
+        self.switch_page("editor")
+        self.explorer_pane.refresh_tree()
+        # 🟢 Força o recarregamento direto do arquivo atualizado no disco!
+        self.explorer_pane.recarregar_arquivo_do_disco(str(caminho_arquivo))
+        self.toast(f"📄 '{Path(caminho_arquivo).name}' consolidado e recarregado no editor!")
 
     # ------------------------------------------------------------------
     # CHAT CONTEXTUAL

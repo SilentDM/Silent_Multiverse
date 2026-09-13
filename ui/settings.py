@@ -65,6 +65,7 @@ DEFAULT_SETTINGS = {
     "ai_provider_ativo": "Gemini",
     "servidores_descobertos": [],
     "servidores": {},
+    "termos_secretos":"",
     "modelos_modo_ordenacao": "automatico",  # "automatico" ou "manual"
     "ordem_manual_modelos": []  # ID_SERVIDOR: { config_especifica }
 }
@@ -391,9 +392,13 @@ class OptionsFrame(ttk.Frame):
         self._criar_opcao_wb(wb_opt_box, "Criar Pastas (CreateFolder):", "wb_allow_create_folder")
         self._criar_opcao_wb(wb_opt_box, "Criar Arquivos (CreateFile):", "wb_allow_create_file")
         self._criar_opcao_wb(wb_opt_box, "Melhorar Arquivos (ImproveFile):", "wb_allow_improve_file")
+        
+
+        secret_box = self._build_secret_terms_box()
+
 
         # Lista organizada dos quadros para o grid responsivo
-        self.boxes = [cred_box, discord_box, tom_box, sistem_box, expander_opt_box, wb_opt_box]
+        self.boxes = [cred_box, discord_box, secret_box, tom_box, sistem_box, expander_opt_box, wb_opt_box]
     
     def _on_provider_change(self, event):
         label_escolhido = self.combo_provider.get()
@@ -572,6 +577,45 @@ class OptionsFrame(ttk.Frame):
         
         cooldown_val = dados.get("discord_cooldown_seconds", "" if target_id != "global" else "15")
         self.var_cooldown.set(str(cooldown_val))
+
+    def _build_secret_terms_box(self):
+        """Quadro de controle de palavras e nomes secretos."""
+        secret_box = ttk.LabelFrame(self.scroll_frame, text=" 🤫 Filtro de Segredos & Nomes Proibidos (Blacklist) ")
+
+        ttk.Label(
+            secret_box,
+            text="Palavras e Nomes Secretos (Separados por vírgula):",
+            font=("Segoe UI", 9, "bold"),
+            foreground="#10b981"
+        ).pack(anchor=tk.W, padx=10, pady=(8, 2))
+
+        ttk.Label(
+            secret_box,
+            text="Qualquer arquivo, título, seção ou parágrafo contendo estes termos será automaticamente ELIMINADO do conhecimento dos jogadores no Discord e no cache de jogadores.",
+            font=("Segoe UI", 8),
+            foreground="#888888",
+            wraplength=420
+        ).pack(anchor=tk.W, padx=10, pady=(0, 6))
+
+        self.var_termos_secretos = tk.StringVar(value=self.settings.get("termos_secretos", ""))
+        entry_termos = ttk.Entry(secret_box, textvariable=self.var_termos_secretos, font=("Segoe UI", 10))
+        entry_termos.pack(fill=tk.X, padx=10, pady=(0, 8))
+        entry_termos.bind("<KeyRelease>", self._salvar_termos_secretos)
+
+        ttk.Label(
+            secret_box,
+            text="💡 Dica: Exemplo: Hastur, Cthulhu, Culto Secreto, Traição do Rei",
+            font=("Segoe UI", 8, "italic"),
+            foreground="#60a5fa"
+        ).pack(anchor=tk.W, padx=10, pady=(0, 10))
+
+        return secret_box
+
+    def _salvar_termos_secretos(self, event=None):
+        """Salva a blacklist de palavras no settings.json em tempo real a cada tecla."""
+        termos = self.var_termos_secretos.get().strip()
+        self.settings["termos_secretos"] = termos
+        salvar_configuracoes(self.settings)
 
     def _salvar_campos_discord(self, event=None):
         """Salva as alterações digitadas na partição correta (global ou servidor específico)."""
