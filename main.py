@@ -1,7 +1,7 @@
 """
 Silent Multiverse Nexus - Ponto de Entrada Principal
 """
-import sys
+import sys, traceback
 import ui.setup_env as se
 import engine.project_utils as pu
 
@@ -16,6 +16,9 @@ def main():
         start_gui()
     except Exception as e:
         print(f"❌ Erro fatal na execução do aplicativo: {e}")
+        print("\n--- DETALHES DO ERRO (TRACEBACK) ---")
+        traceback.print_exc()  # <== ISSO VAI MOSTRAR O ARQUIVO E A LINHA EXATA!
+        print("------------------------------------\n")
         sys.exit(1)
 
 if __name__ == "__main__":

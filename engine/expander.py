@@ -150,11 +150,6 @@ def remover_markdown_fences(texto: str) -> str:
 def processar_arquivo_unico(path):
     caminho_abs = str(Path(path).resolve())
     
-    # 🛡️ Trava de Segurança contra execução em duplicidade / loop
-    if caminho_abs in ARQUIVOS_EM_PROCESSAMENTO:
-        print(f"⚠️ Arquivo {Path(path).name} já está sendo processado pelo Expander. Pulando...")
-        return
-
     ARQUIVOS_EM_PROCESSAMENTO.add(caminho_abs)
 
     try:

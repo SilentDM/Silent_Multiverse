@@ -364,11 +364,6 @@ def improvefile(path, reason="Melhorar o arquivo!"):
     print(f"Vamos melhorar o arquivo: {path}\nMotivo: {reason}")
     arquivo = resolver_caminho(path)
 
-    # 🛡️ 1. Trava de concorrência contra execuções paralelas no mesmo arquivo
-    if ex.esta_em_processamento(arquivo):
-        print(f"O arquivo '{arquivo.name}' já está em processamento pela IA. Ignorando requisição duplicada.")
-        return False
-
     if not arquivo.exists() or not arquivo.is_file():
         print(f"Arquivo não encontrado ou inválido, ação cancelada: {arquivo}")
         return False
