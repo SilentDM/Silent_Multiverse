@@ -187,5 +187,7 @@
   "imagem.log_prompt": "🎨 [PORTRAIT] Prompt: {prompt}...",
   "bot.log_erro_dados": "[DICE] Error processing the roll: {erro}",
   "sistema.log_erro_ram": "Error freeing memory: {erro}",
-  "estilo.log_erro_escrever": "Error writing the tone file in Style: {erro}"
+  "estilo.log_erro_escrever": "Error writing the tone file in Style: {erro}",
+  "update.log_disponivel": "⬆ New version available: {versao} — {url}",
+  "update.log_erro": "ℹ️ Could not check for updates right now ({erro})."
 }

@@ -1,0 +1,11 @@
+# Dependências do programa (versões testadas). Instale com:  pip install -r requirements.txt
+google-genai==2.24.0
+pydantic==2.13.5
+discord.py==2.7.1
+keyring==25.7.0
+pystray==0.19.5
+pillow==12.3.0
+tkinterweb==4.25.4
+# Provedores alternativos (opcionais, sem manutenção ativa)
+anthropic==1.7.0
+openai==3.16.2

@@ -433,7 +433,7 @@ class PaginaEditor(PaginaBase):
         m.delete(0, tk.END)
         eh_md = arq.eh_markdown(caminho)
         if eh_md:
-            m.add_command(label=t("editor.menu_perguntar_ao"), command=lambda: self._perguntar_ao(caminho))
+            m.add_command(label=t("editor.menu_perguntar_silent"), command=lambda: self._perguntar_silent(caminho))
             m.add_separator()
         if arq.eh_pasta(caminho):
             m.add_command(label=t("editor.menu_novo_arquivo"), command=lambda: self._novo_arquivo(caminho))
@@ -654,7 +654,7 @@ class PaginaEditor(PaginaBase):
         else:
             self.app.toast(t("editor.toast_ja_processando", nome=nome))
 
-    def _perguntar_ao(self, caminho):
+    def _perguntar_silent(self, caminho):
         self.salvar_agora()
         self.app.pagina("chat").anexar_arquivo(caminho)
         self.app.mostrar_pagina("chat")

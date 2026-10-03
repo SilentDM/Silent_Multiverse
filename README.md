@@ -1,190 +1,183 @@
 # 🜂 Silent Multiverse Nexus
 
-> **Plataforma Desktop de Worldbuilding, Gestão de Lore para RPG, Conselho Deliberativo com IA e Bot de Discord Integrado.**
+**English** | [Português (Brasil)](README.pt-BR.md)
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)
-![Gemini API](https://img.shields.io/badge/Google%20Gemini-Context%20Caching-orange?style=for-the-badge&logo=google)
-![Discord.py](https://img.shields.io/badge/Discord.py-Bot-5865F2?style=for-the-badge&logo=discord)
-![Obsidian Compatible](https://img.shields.io/badge/Obsidian-Native%20Vault%20Support-7A3EE8?style=for-the-badge&logo=obsidian)
-![Security](https://img.shields.io/badge/Security-Windows%20Keyring-success?style=for-the-badge&logo=windows)
+> **A desktop worldbuilding workshop for tabletop RPG Game Masters: Markdown lore management, AI-assisted writing, a multi-agent council and an integrated Discord bot.**
+
+![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D6?style=for-the-badge&logo=windows)
+![Python](https://img.shields.io/badge/Python-3.14-blue?style=for-the-badge&logo=python)
+![Gemini API](https://img.shields.io/badge/Google%20Gemini-API-orange?style=for-the-badge&logo=google)
+![Discord.py](https://img.shields.io/badge/Discord-Bot-5865F2?style=for-the-badge&logo=discord)
+![Obsidian Compatible](https://img.shields.io/badge/Obsidian-Vault%20Compatible-7A3EE8?style=for-the-badge&logo=obsidian)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-O **Silent Multiverse Nexus** é uma suíte completa de ferramentas desktop para Mestres de RPG, Escritores e Criadores de Cenários. Ele combina a escrita nativa em Markdown compatível com o ecossistema do **Obsidian.md**, automação com modelos de ponta de Inteligência Artificial (Google Gemini, OpenAI, Claude), geração de arte integrada e um Bot de Discord com **filtro mecânico anti-spoiler** e rolador avançado de dados para mesas online.
+**Silent Multiverse Nexus** is a toolkit for Game Masters, writers and setting creators. You write your world in plain Markdown files (fully compatible with **Obsidian**), and the program helps you expand, organize, audit and share it, with Google Gemini doing the heavy lifting and a Discord bot that answers your players **without spoiling your secrets**.
+
+Available in **English** and **Brazilian Portuguese**: the interface and everything the AI writes follow the language you pick.
+
+> Independent, unofficial fan tool, not affiliated with Wizards of the Coast. See the [Legal notice](#legal-notice).
 
 ---
 
-## Principais Funcionalidades
+## ✨ Features
 
-### 1. Integração Nativa com Obsidian.md & Preview Embutido
-* **Compatibilidade com Cofres (Vaults)**: Aponte o programa para qualquer pasta do Obsidian. O Nexus preserva nomes limpos de arquivos para **nunca quebrar Wikilinks (`[[Nota]]`)**.
-* **Modo de Visualização (Preview Estilo Obsidian)**: Alterne instantaneamente entre o editor de texto bruto e a visualização renderizada no tema Dark, com suporte a **Callouts nativos (`> [!quote]`, `> [!danger]`, `> [!tip]`)**, painel visual de propriedades YAML, tabelas de combate e imagens embutidas.
-* **Isolamento Total em `.nexus_data/`**: Todos os dados operacionais (logs, histórico, memórias, imagens e templates) são guardados em uma pasta oculta ao lado do executável, mantendo seu cofre limpo e sem poluição de arquivos de sistema.
+### Editor built for lore
+* Works on any folder of `.md` files, including an existing **Obsidian vault**. File names stay clean, so **`[[Wikilinks]]` never break**.
+* File tree with search, drag and drop, templates, and rename/copy/paste/duplicate.
+* Instant **preview** in a dark theme with Obsidian callouts (`> [!quote]`, `> [!danger]`...), YAML properties, tables and embedded images.
+* Click a wikilink to jump to it, or create the missing file in one click.
+* Auto-save, back/forward history, and protection that **never overwrites a file the AI just changed**.
 
----
+### AI tools (Google Gemini)
+* **Expander**: write `<-- TODO: what you want` anywhere and the AI fills the gap using your whole world as context, then a reviewer checks it for consistency before saving.
+* **WorldBuilder**: give it a goal ("create the three noble houses of the capital") and it plans and executes the work: folders, files from your templates, and improvements, with a live log.
+* **Council**: four specialist agents (Architect, Chronicler, the Voice of the NPCs, Tactics & Chaos) discuss a file; you edit their views, and a Supreme Judge writes the final version.
+* **Lore Audit**: finds contradictions, timeline gaps and geographic inconsistencies.
+* **Improve with AI**, **5-Room Dungeon adventures** (with a statblock and a battlemap of the final room) and **Lore Checks** (knowledge tables with DC ranges), all from a right-click on a file.
+* **Talk to Silent**: chat with the keeper of the Nexus, who knows your whole world, for brainstorming and questions.
+* **Roleplay (Theater of the Mind)**: forge personas for your NPCs from the world context and talk to them in character, with generated portraits.
+* Every file the AI changes is archived first (`_v01`, `_v02`...), so nothing is lost.
 
-### 2. Conselho de Criação & Consolidação (Multi-Agentes em 2 Etapas)
-* **Deliberação Especializada em 4 Painéis**: Clique com o botão direito em qualquer documento para convocar o Conselho:
-  * **Painel 1 (O Arquiteto):** Gera propostas ricas de expansão e novos fatos.
-  * **Painel 2 (O Cronista):** Audita a continuidade contra o cache de 1 milhão de tokens (evita datas conflitantes e NPCs ressuscitados).
-  * **Painel 3 (A Voz dos NPCs):** Identifica os personagens nomeados no texto e gera a reação de cada um em **1ª pessoa**.
-  * **Painel 4 (Tático & Caos):** Define desafios de perícias graduais (D&D 5e) somados a dilemas dramáticos.
-* **Human-in-the-Loop Total**: Você pode editar os textos diretamente dentro de qualquer painel antes da aprovação final.
-* **Síntese Canônica**: O Juiz Supremo compila os painéis revisados no Markdown final, arquiva a versão anterior em `history/` (`_v01`, `_v02`) e grava a nova versão mantendo os links intactos.
+### Discord bot
+* Players ask about the lore with a prefix (e.g. `!silent What is the Silver Cathedral?`) and get answers from the **public** lore only.
+* **Deterministic anti-spoiler filter**: secret files, secret sections and a blacklist of secret words are removed before the AI ever sees the players' context.
+* GM roles and GM user IDs get answers with the full lore.
+* Dice roller: `!r 1d20+5`, `2d20kh1+3`, `4d6kh3`, `3#1d8+2`, composite rolls like `2d12+24+3d8`.
+* Reads your server's rules and announcement channels and links back to them (`🔗 View on Discord`).
+* Per-server settings: prefix, GM roles, allowed and blocked channels, cooldown.
 
----
-
-### 3. Teatro da Mente (Roleplay com Habitantes do Universo)
-* **Converse Diretamente com seus NPCs**: Crie ou forje personas imersivas que absorvem toda a geografia, facções e história do seu mundo.
-* **Fichas Visuais Ricas**: Geração automática de traços físicos detalhados em Português (gênero, raça, olhos, cabelo, roupas e marcas) e mentalidade profunda (fraquezas ocultas, bordões e psicologia).
-* **Diálogos In-Character**: O NPC responde mantendo estritamente sua voz, segredos e objetivos, com histórico de memória individual persistente.
-
----
-
-### 4. Geração de Imagens com Fallback Gracioso
-* **Retratos de Personagens (Portraits 1:1)**: Geração de arte para NPCs na aba de Roleplay com prompts técnicos otimizados em inglês. Menu de contexto interativo para **abrir no visualizador nativo**, **salvar como** ou **mostrar na pasta**.
-* **Mapas Táticos de Combate (Battlemaps 16:9 Top-Down)**: Criação automática de mapas de batalha para masmorras, embutidos diretamente nas notas de aventura com visualização imediata.
-* **Arquitetura Híbrida Inteligente**: Utiliza a infraestrutura oficial do Gemini se houver chave com faturamento ativo, com **chaveamento automático para o motor open-source Pollinations (Flux / SDXL)** caso a cota gratuita do Google esteja sem créditos.
-
----
-
-### 5. Ferramentas Prontas para D&D 5e
-* **Aventuras 5-Room Estruturadas**: Gera módulos completos de masmorra divididos em:
-  1. *Guardião da Entrada*
-  2. *Enigma / Desafio de Perícia*
-  3. *Ponto de Tensão / Reviravolta*
-  4. *O Clímax (com Statblock 5e e Ações de Covil)*
-  5. *Recompensa e Fuga*
-* **Testes de Conhecimento (Lore Checks)**: Transforma qualquer documento (cidade, guilda, item, monstro) em tabelas de consulta rápida para a mesa com faixas graduais de resultado d20:
-  * `≤ 5` (Rumor popular) | `6-10` (Básico) | `11-15` (Operacional) | `16-20` (Especialista) | `21-25` (Segredo de Cúpula) | `26+` (Mistério Central).
+### And also
+* **Sourcebook export**: the whole project as one HTML file with a table of contents and links (print it to PDF).
+* **Project size report**: tokens per folder and file, for both the GM and player contexts.
+* **Backups** to `.zip`, **update check** on startup, tone & mood profiles, and rules-system choice (5e, Tormenta20, Pathfinder 2e or generic).
+* Credentials stored in the **Windows Credential Manager**, never in plain text files.
+* Minimizes to the system tray with low memory use while the bot keeps running.
 
 ---
 
-### 6. Bot de Discord "Ao" & Central de Servidor
-* **Sem Prefixo Obrigatório para Dados**: Reconhece rolagens automaticamente pelo formato padrão de RPG:
-  * Rolagens compostas: `2d12+24+3d8+2d10+1d6`
-  * Filtros de vantagem/desvantagem: `4d6kh3`, `2d20kl1`
-  * Repetições em linhas separadas: `3#d6`, `2#1d20+5 Ataques Múltiplos`
-* **Filtro Mecânico Anti-Spoiler (Segurança 100% Determinística)**:
-  * **Blacklist de Palavras Secretas**: Cadastre termos e nomes proibidos (ex: `Hastur, Cthulhu`). O sistema omite automaticamente do bundle dos jogadores qualquer arquivo, cabeçalho ou parágrafo que mencione essas palavras.
-  * Suporte a tags manuais: `[SEGREDO]`, `status: segredo` e emojis `🤫`.
-* **Raspagem de Regras (Discord Scraper)**: Monitora canais de regras, anúncios e tópicos do Discord, gerando links de referência direta `🔗 [Ver no Discord](URL)` quando a IA cita normas do servidor.
-* **Configuração Multisservidor**: Perfis de prefixos, cargos de Mestre e canais autorizados independentes para cada guilda do Discord.
+## 📋 Markers you can use in your files
 
----
-
-### 7. Segurança Profissional & Performance
-* **Cofre Nativo do Windows (`keyring`)**: Seus tokens de API e chaves do Discord são armazenados diretamente no *Windows Credential Manager* com criptografia de conta do SO. **Zero arquivos `.env` soltos em texto puro na raiz**.
-* **Seletor de Modelos Gemini (Automático vs. Manual)**:
-  * *Modo Automático:* Ranquear modelos por taxa de sucesso e menor tempo de resposta.
-  * *Modo Manual:* Reordene os cartões de IA para priorizar modelos Pro para lore literária, mesmo que sejam mais lentos.
-* **Otimização de RAM no System Tray**: Ao minimizar para a bandeja do relógio do Windows, o aplicativo esvazia o *working set*, reduzindo o consumo de **~120 MB para cerca de 15 MB de RAM** enquanto o bot opera em segundo plano.
-
----
-
-## 📋 Sistema de Marcações do Projeto
-
-| Marcador / Sintaxe | Onde usar | Comportamento |
+| Marker | Where | What it does |
 | :--- | :--- | :--- |
-| `<-- TODO: motivo` | Em qualquer `.md` | O **Expander** preenche a lacuna com IA contextualizada. |
-| `[segredo]` ou `[secret]` | No título de uma seção | Oculta a seção inteira dos jogadores no Discord e no cache. |
-| `status: segredo` ou `status: secret` | No Frontmatter YAML | Oculta o arquivo inteiro das consultas dos jogadores. |
-| `status: rascunho` ou `status: draft` | No Frontmatter YAML | Ignorado pela IA até que você finalize o rascunho. |
-| `Termos Secretos` | Aba Opções (ex: `Hastur`) | Elimina qualquer menção ao nome do conhecimento dos jogadores. |
-| `![[imagem.png]]` | Em qualquer `.md` | Renderiza portraits e battlemaps nativamente no preview. |
+| `<-- TODO: reason` | Anywhere in a `.md` | The **Expander** fills this gap with the AI. |
+| `[secret]` or `[segredo]` | In a heading | Hides the whole section from players. |
+| `status: secret` or `status: segredo` | In the YAML header | Hides the whole file from players. |
+| `<!-- secret -->` or `🤫` | In a paragraph | Hides that paragraph from players. |
+| `status: draft` or `status: rascunho` | In the YAML header | The AI ignores the file until you finish it. |
+| Secret words | Options page (e.g. `Hastur`) | Removes any mention of these names from the players' view. |
+| `[[Note]]`, `![[image.png]]` | Anywhere | Links and images, rendered in the preview and the sourcebook. |
 
-Os marcadores são lidos nos dois idiomas, então projetos antigos continuam funcionando ao trocar o idioma; arquivos novos são criados com o marcador do idioma ativo.
+Markers work in both languages, so existing projects keep working when you switch.
 
 ---
 
-## 🌐 Idioma (PT-BR / EN-US)
+## 🚀 Getting started
 
-Em **Opções → Idioma** você escolhe entre Português (Brasil) e English (US).
+1. Download the latest `SilentMultiverse-<version>-windows.zip` from [**Releases**](../../releases).
+2. Unzip it into any folder (or your Obsidian vault's root) and run `SilentMultiverse.exe`.
+   * If Windows shows "Windows protected your PC", click **More info → Run anyway**. This happens with new programs that don't have a code signature yet.
+3. Get a free Gemini API key at [Google AI Studio](https://aistudio.google.com) ("Get API key").
+4. In the program, go to **Options → Secure Credentials**, paste the key and save.
+5. Choose your language in **Options → Language**, then open your project folder with the 📁 button at the top of the sidebar.
 
-* **IA e conteúdo gerado** mudam na hora: todos os prompts, as descrições dos schemas enviados ao Gemini, os títulos do Markdown gerado (aventuras, testes de conhecimento, fichas, livro compilado) e as respostas do bot do Discord passam a usar o novo idioma na próxima chamada.
-* **A interface** muda ao reiniciar o programa.
-* Seus arquivos de lore, `Templates/` e `Style/` não são traduzidos.
+The built-in **📖 Manual & Guide** page covers every feature, including how to set up the Discord bot.
 
-Os textos ficam na pasta `locale/`:
+**Updating:** when a new version is out, a notice appears in the status bar. Download it and replace `SilentMultiverse.exe` in the same folder. Your projects, settings and the `.silent_data` folder stay as they are.
+
+---
+
+## 🔒 Privacy and costs
+
+* Your files stay on your computer. To answer, the AI receives your project's text and your request, sent to **Google's Gemini API** with **your own key**. The program has no server and collects nothing.
+* On Gemini's **free tier**, Google may use submitted content to improve its products. If your setting is confidential, use a paid key, and check Google's current terms.
+* Any usage cost is between you and Google.
+* Images use Gemini's image model, or the free [Pollinations](https://pollinations.ai) service as a fallback (only the image description is sent).
+
+---
+
+## 🌐 Languages (EN-US / PT-BR)
+
+In **Options → Language**:
+
+* **The AI and generated content** switch immediately: prompts, the field descriptions sent to Gemini, generated Markdown (adventures, lore checks, persona sheets, sourcebook) and Discord bot replies.
+* **The interface** switches after a restart.
+* Your lore files, `Templates/` and `Style/` are never translated.
+
+All texts live in `locale/`:
 
 ```
 locale/
-  pt_br/  e  en_us/
-    ui.json          textos da interface
-    mensagens.json   mensagens de log e avisos
-    conteudo.json    títulos e rótulos do conteúdo gerado
-    schemas.json     descrições dos campos dos schemas da IA
-    manual.md        manual exibido no programa
-    prompts/*.md     um arquivo por chamada de IA (variáveis no formato {{nome}})
+  pt_br/  and  en_us/
+    ui.json          interface texts
+    mensagens.json   log messages and notices
+    conteudo.json    headings and labels of generated content
+    schemas.json     field descriptions of the AI schemas
+    manual.md        the in-app manual
+    prompts/*.md     one file per AI call (variables as {{name}})
 ```
 
-Para ajustar um texto ou prompt, edite o arquivo nos **dois** idiomas (os testes conferem se as chaves e variáveis batem). Um executável gerado pelo PyInstaller precisa embutir essa pasta (`--add-data "locale;locale"`).
+To change a text or prompt, edit it in **both** languages (the tests check that keys and variables match).
 
 ---
 
-## 🧱 Organização do Código
+## 🛠️ Running from source
 
-* `ui/` só monta a tela: cada botão chama uma função de `core/`, `engine/` ou `bot/`. Nada de arquivos, IA, threads ou regras de negócio na interface (um teste garante isso).
-* `core/` configuração, cofre de credenciais, idioma, prompts, eventos de log e tarefas em segundo plano.
-* `engine/` operações de arquivo, editor, ações (Expander, WorldBuilder, auditoria, livro, backup), schemas e contexto do mundo.
-* `bot/` bot do Discord.
+Requires Windows and Python 3.14 (the version the project is tested with).
 
----
+```bash
+git clone https://github.com/SilentDM/Silent_Multiverse.git
+cd Silent_Multiverse
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python main.py
+```
 
-## 🚀 Como Usar
+Tip: double-click `ativar_venv.bat` to open a terminal with the venv already active.
 
-### Opção A: Executável Portátil (Recomendado para Usuários)
-1. Acesse a aba de [**Releases**](../../releases) deste repositório.
-2. Baixe o pacote `SilentMultiverse.zip`.
-3. Descompacte em qualquer pasta ou na raiz do seu cofre do Obsidian e execute `SilentMultiverse.exe`.
-4. Abra a aba **Opções** e configure sua chave de API (salva de forma criptografada pelo sistema).
+**Tests** (no network, no real keys; they work in a temporary folder):
 
----
+```bash
+python -m unittest discover -s tests -t .
+```
 
-### Opção B: Execução via Código-Fonte (Desenvolvedores)
-
-1. **Clone o repositório:**
-   ```bash
-   git clone https://github.com/SilentDM/Silent_Multiverse.git
-   cd Silent_Multiverse
-   ```
-
-2. **Crie e ative um ambiente virtual:**
-   ```bash
-   python -m venv .venv
-   ```
-   * No Windows (CMD):
-     ```cmd
-     .venv\Scripts\activate.bat
-     ```
-   * No Windows (PowerShell):
-     ```powershell
-     .\.venv\Scripts\Activate.ps1
-     ```
-
-3. **Instale as dependências:**
-   ```bash
-   pip install google-genai discord.py pydantic openai anthropic pystray Pillow tkinterweb keyring
-   ```
-
-4. **Inicie o aplicativo:**
-   ```bash
-   python main.py
-   ```
-
-5. **Para compilar o `.exe` único:**
-   Execute o script de automação:
-   ```cmd
-   build.bat
-   ```
-   O executável otimizado será gerado na pasta `dist/SilentMultiverse.exe`.
-
-6. **Rodar os testes** (não usam rede nem suas chaves; trabalham em uma pasta temporária):
-   ```bash
-   python -m unittest discover -s tests -t .
-   ```
+### Code layout
+* `ui/`: only builds the screens. Every button calls a function from `core/`, `engine/` or `bot/`. No file access, AI calls, threads or business rules in the interface (a test enforces this).
+* `core/`: settings, credential vault, language, prompts, log events, background tasks, updates.
+* `engine/`: file operations, editor session, actions (Expander, WorldBuilder, audit, sourcebook, backup), schemas and world context.
+* `bot/`: Discord bot.
 
 ---
 
-## 📄 Licença
+## 📦 Building and releasing
 
-Este projeto está licenciado sob a licença [MIT](LICENSE).
+```bash
+pip install -r requirements-build.txt
+python build.py
+```
+
+This creates `dist/SilentMultiverse.exe` and `dist/SilentMultiverse-<version>-windows.zip`. The executable bundles `locale/`, the icon and, if present, the starter `Templates/` and `Style/` folders.
+
+**Publishing a release:**
+1. Update `VERSAO` in `core/versao.py` (e.g. `2.1.0`) and commit.
+2. Create and push a matching tag: `git tag v2.1.0` then `git push origin v2.1.0`.
+3. GitHub Actions (`.github/workflows/release.yml`) runs the tests, builds the `.zip` on Windows and creates a **draft** release.
+4. Review the draft on GitHub and click **Publish release**. The program's update check then shows the new version to users.
+
+---
+
+## Legal notice
+
+Silent Multiverse Nexus is an independent, unofficial fan tool. It is **not affiliated with, endorsed, sponsored or approved by Wizards of the Coast LLC**.
+
+*Dungeons & Dragons* and *D&D* are trademarks of Wizards of the Coast LLC. *Tormenta20* is a trademark of Jambô Editora. *Pathfinder* is a trademark of Paizo Inc. These names are used only to describe rules compatibility. The program contains no rules text or content from these games.
+
+References to fifth edition rules (5e) follow the System Reference Document 5.1:
+
+> This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.
+
+Content generated by the AI is the user's responsibility. Silent is an original character of this program.
+
+## 📄 License
+
+The source code is licensed under the [MIT License](LICENSE).

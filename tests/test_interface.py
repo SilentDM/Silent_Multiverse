@@ -23,6 +23,7 @@ class TesteInterface(unittest.TestCase):
         self.raiz_projeto = novo_projeto({"Valia.md": "# Valia\ntexto"})
         self.patches = [mock.patch("bot.runner.iniciar"), mock.patch("bot.runner.parar"),
                         mock.patch("core.modelos_gemini.atualizar_se_necessario"),
+                        mock.patch("core.atualizacoes.verificar_na_inicializacao"),
                         mock.patch("ui.app.SilentApp._iniciar_bandeja")]
         for p in self.patches:
             p.start()

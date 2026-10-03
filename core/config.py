@@ -13,7 +13,7 @@ SETTINGS_FILE = pu.PASTA_LOGS / "settings.json"
 _LOCK = threading.Lock()
 
 CONFIG_PADRAO_DISCORD = {
-    "discord_prefix": "!ao",
+    "discord_prefix": "!silent",
     "discord_channels_allowed": "",
     "discord_channels_blocked": "",
     "discord_channels_knowledge": "",  # Canais lidos pelo Scraper
@@ -24,11 +24,12 @@ CONFIG_PADRAO_DISCORD = {
 DEFAULT_SETTINGS = {
     "idioma": "pt_br",                 # Idioma da interface e das chamadas de IA (pt_br | en_us)
     "auto_expander": False,
+    "verificar_atualizacoes": True,    # Procura versão nova no GitHub ao abrir o programa
     "wb_allow_create_folder": True,
     "wb_allow_create_file": True,
     "wb_allow_improve_file": True,
-    "tom_clima_perfil": "Dark Fantasy (Grimdark)",
-    "rpg_sistema_ativo": "D&D 5e",
+    "tom_clima_perfil": "dark_fantasy",
+    "rpg_sistema_ativo": "dnd5e",
     "ai_provider_ativo": "Gemini",
     "servidores_descobertos": [],
     "servidores": {},                  # ID_SERVIDOR: { config_especifica }

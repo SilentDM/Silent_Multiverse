@@ -1,5 +1,5 @@
 """
-Ao — a persona de Mestre do programa (chat local e bot do Discord).
+Silent — a entidade guardiã do Nexus, persona do programa (chat local e bot do Discord).
 
 Antes, o texto das instruções e a montagem do prompt viviam dentro do gui.py.
 Agora a interface só chama conversar() e historico_chat().
@@ -23,11 +23,11 @@ def _identificadores_chat_local():
 
 
 def instrucoes_chat() -> str:
-    return carregar_prompt("chat_ao_sistema")
+    return carregar_prompt("chat_silent_sistema")
 
 
 def instrucoes_discord() -> str:
-    return carregar_prompt("discord_ao_sistema")
+    return carregar_prompt("discord_silent_sistema")
 
 
 def preparar_anexo(caminho: str) -> dict:
@@ -39,13 +39,13 @@ def preparar_anexo(caminho: str) -> dict:
 def historico_chat() -> list:
     """
     Conversa salva do chat local como lista de (papel, texto),
-    papel ∈ {"usuario", "ao", "resumo"}.
+    papel ∈ {"usuario", "silent", "resumo"}.
     """
     memorias = me.carregar_memorias(*_identificadores_chat_local())
     if not memorias or not memorias.strip():
         return []
     partes = re.split(r'(Prompt Usuário:|Resposta:|Resumo de Memórias:)', memorias)
-    papeis = {"Prompt Usuário:": "usuario", "Resposta:": "ao", "Resumo de Memórias:": "resumo"}
+    papeis = {"Prompt Usuário:": "usuario", "Resposta:": "silent", "Resumo de Memórias:": "resumo"}
     mensagens = []
     for i in range(1, len(partes), 2):
         conteudo = partes[i + 1].strip() if i + 1 < len(partes) else ""
@@ -55,7 +55,7 @@ def historico_chat() -> list:
 
 
 def conversar(mensagem: str, anexo: dict = None) -> str:
-    """Envia a mensagem ao Ao (com o mundo como contexto), salva na memória e devolve a resposta."""
+    """Envia a mensagem a Silent (com o mundo como contexto), salva na memória e devolve a resposta."""
     guild_id, guild_name, userid, user_name = _identificadores_chat_local()
     memorias = me.carregar_memorias(guild_id, guild_name, userid, user_name)
 

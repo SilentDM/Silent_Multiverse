@@ -3,11 +3,15 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 import bot.runner as discord_runner
+import core.atualizacoes as atualizacoes
 import core.config as cfg
 import core.i18n as i18n
+import core.sistema as sistema
+import core.tarefas as tarefas
 import engine.style_manager as estilo
 import ui.theme as tema
 from core.i18n import t
+from core.versao import VERSAO, URL_PROJETO
 from ui.widgets import PaginaBase, GradeRolavel, cabecalho
 
 CAMPOS_DISCORD = [
@@ -35,6 +39,7 @@ class PaginaOpcoes(PaginaBase):
         self._caixa_segredos()
         self._caixa_estilo()
         self._caixa_automacao()
+        self._caixa_sobre()
         self.grade.organizar()
 
     def rolar(self, unidades):
@@ -186,3 +191,38 @@ class PaginaOpcoes(PaginaBase):
         ligado = bool(self.var_auto.get())
         cfg.atualizar_configuracoes({"auto_expander": ligado})
         self.app.toast(t("options.toast_auto", estado=t("comum.habilitado") if ligado else t("comum.desabilitado")))
+
+    # ------------------------------------------------------------------
+    def _caixa_sobre(self):
+        caixa = self.grade.nova_caixa(t("options.sobre_titulo"))
+        self._rotulo(caixa, t("options.sobre_versao", versao=VERSAO), font=("Segoe UI", 10, "bold"), foreground=tema.VERDE)
+        self.var_verificar = tk.BooleanVar(value=atualizacoes.verificacao_automatica_ativa())
+        ttk.Checkbutton(caixa, text=t("options.sobre_verificar_auto"), variable=self.var_verificar,
+                        command=lambda: atualizacoes.definir_verificacao_automatica(self.var_verificar.get())
+                        ).pack(anchor=tk.W, padx=10, pady=(4, 6))
+        linha = ttk.Frame(caixa)
+        linha.pack(fill=tk.X, padx=10, pady=(0, 8))
+        self.btn_verificar = ttk.Button(linha, text=t("options.sobre_verificar_agora"), command=self._verificar_agora)
+        self.btn_verificar.pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Button(linha, text=t("options.sobre_pagina"), command=lambda: sistema.abrir_link(URL_PROJETO)).pack(side=tk.LEFT)
+        ttk.Label(caixa, text=t("options.sobre_legal"), font=("Segoe UI", 8), foreground=tema.SUAVE,
+                  wraplength=420, justify="left").pack(anchor=tk.W, padx=10, pady=(4, 4))
+        ttk.Button(caixa, text=t("options.sobre_legal_completo"),
+                   command=lambda: self.app.mostrar_pagina("manual")).pack(anchor=tk.W, padx=10, pady=(0, 10))
+
+    def _verificar_agora(self):
+        self.btn_verificar.config(state=tk.DISABLED)
+        self.app.toast(t("update.toast_verificando"))
+
+        def _fim(nova):
+            self.btn_verificar.config(state=tk.NORMAL)
+            if nova:
+                self.app.abrir_atualizacao()
+            else:
+                self.app.toast(t("update.toast_atualizado", versao=VERSAO))
+
+        def _erro(e):
+            self.btn_verificar.config(state=tk.NORMAL)
+            self.app.toast(t("update.toast_erro", erro=e))
+
+        tarefas.executar_em_segundo_plano(atualizacoes.verificar, ao_concluir=_fim, ao_falhar=_erro)

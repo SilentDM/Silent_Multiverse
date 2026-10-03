@@ -12,6 +12,7 @@ import pystray
 from PIL import Image
 
 import bot.runner as discord_runner
+import core.atualizacoes as atualizacoes
 import core.eventos as ev
 import core.modelos_gemini as modelos
 import core.sistema as sistema
@@ -20,6 +21,7 @@ import engine.acoes as acoes
 import ui.gui_logger as gl
 import ui.theme as tema
 from core.i18n import t
+from core.versao import VERSAO
 from ui.pages.actions import PaginaAcoes
 from ui.pages.chat import PaginaChat
 from ui.pages.council import PaginaConselho
@@ -65,13 +67,14 @@ class SilentApp:
         self.mostrar_pagina("editor")
         discord_runner.iniciar(ao_descobrir_servidores=self._servidores_descobertos)
         tarefas.executar_em_segundo_plano(modelos.atualizar_se_necessario)
+        tarefas.executar_em_segundo_plano(atualizacoes.verificar_na_inicializacao)
         self._iniciar_bandeja()
 
     # ------------------------------------------------------------------
     # JANELA E LAYOUT
     # ------------------------------------------------------------------
     def _configurar_janela(self):
-        self.root.title("Silent Multiverse Nexus")
+        self.root.title(f"Silent Multiverse Nexus {VERSAO}")
         self.root.geometry("1300x700")
         self.root.minsize(1050, 550)
         self.root.state("zoomed")
@@ -184,6 +187,11 @@ class SilentApp:
         self.lbl_status_tarefa = tk.Label(barra, text=t("app.pronto"), bg=tema.FUNDO_SIDEBAR, fg=tema.VERDE,
                                           font=("Segoe UI", 9, "bold"))
         self.lbl_status_tarefa.pack(side=tk.RIGHT, padx=12)
+        # Aparece só quando há uma versão nova no GitHub
+        self.lbl_atualizacao = tk.Label(barra, text="", bg=tema.FUNDO_SIDEBAR, fg=tema.AMARELO,
+                                        font=("Segoe UI", 9, "bold", "underline"), cursor="hand2")
+        self.lbl_atualizacao.bind("<Button-1>", lambda e: self.abrir_atualizacao())
+        self._nova_versao = None
 
     def atualizar_estatisticas(self, est: dict = None):
         if not est:
@@ -225,6 +233,7 @@ class SilentApp:
         ev.inscrever_log(lambda msg: tarefas.na_interface(log.adicionar, msg))
         ev.inscrever_evento("acao.estado", lambda d: tarefas.na_interface(self._estado_acao, d))
         ev.inscrever_evento("discord.estado", lambda e: tarefas.na_interface(self._estado_discord, e))
+        ev.inscrever_evento("atualizacao.disponivel", lambda n: tarefas.na_interface(self._atualizacao_disponivel, n))
         # print()/erros de qualquer módulo também viram mensagens do barramento
         # (chegam ao Log e ao log ao vivo do WorldBuilder)
         sys.stdout = gl.GuiOutput(ev.log)
@@ -234,6 +243,20 @@ class SilentApp:
     def _estado_discord(self, estado):
         cores = {"online": tema.VERDE, "erro": tema.VERMELHO, "desativado": tema.SUAVE, "conectando": tema.AMARELO}
         self.lbl_discord.config(text=t(f"discord.estado.{estado}"), fg=cores.get(estado, tema.TEXTO))
+
+    def _atualizacao_disponivel(self, nova):
+        primeira_vez = self._nova_versao is None
+        self._nova_versao = nova
+        self.lbl_atualizacao.config(text=t("update.status", versao=nova.versao))
+        self.lbl_atualizacao.pack(side=tk.RIGHT, padx=12)
+        if primeira_vez:
+            self.toast(t("update.toast_disponivel", versao=nova.versao))
+
+    def abrir_atualizacao(self):
+        nova = self._nova_versao
+        if nova and messagebox.askyesno(t("update.perguntar_titulo"),
+                                        t("update.perguntar", versao=nova.versao, atual=VERSAO)):
+            sistema.abrir_link(nova.url)
 
     def _servidores_descobertos(self, servidores):
         self.paginas["options"].atualizar_servidores()

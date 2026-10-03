@@ -70,7 +70,7 @@ if DISCORD_ENABLED:
             print(t("bot.log_erro_servidores", erro=e))
 
         config = st.obter_configuracao_servidor()
-        prefixo = config.get("discord_prefix", "!ao")
+        prefixo = config.get("discord_prefix", "!silent")
         await atualizar_presenca_bot(prefixo)
 
     @discordclient.event
@@ -87,12 +87,13 @@ if DISCORD_ENABLED:
         if isinstance(message.channel, discord.DMChannel):
             if any(k in message.content.lower() for k in ["help", "ajuda", "/help", "!help", "!ajuda"]):
                 async with message.channel.typing():
-                    embed_help = actions.criar_embed_help()
+                    prefixo_global = st.obter_configuracao_servidor("global").get("discord_prefix", "!silent").strip()
+                    embed_help = actions.criar_embed_help(prefixo_global)
                     await message.reply(embed=embed_help)
             return
 
         config = st.obter_configuracao_servidor(guild_id)
-        prefixo = config.get("discord_prefix", "!ao").strip()
+        prefixo = config.get("discord_prefix", "!silent").strip()
         prefixo_lower = prefixo.lower()
         content = message.content.strip()
         content_lower = content.lower()
@@ -121,7 +122,7 @@ if DISCORD_ENABLED:
                 return
 
             if prompt.lower() in ["help", "ajuda"]:
-                embed_help = actions.criar_embed_help()
+                embed_help = actions.criar_embed_help(prefixo)
                 await message.reply(embed=embed_help)
                 return
 
@@ -131,7 +132,7 @@ if DISCORD_ENABLED:
                 await message.reply(res)
                 return
 
-            # SINCRONIZAÇÃO MANUAL DISPARADA PELO MESTRE (!ao sincronizar)
+            # SINCRONIZAÇÃO MANUAL DISPARADA PELO MESTRE (ex.: !silent sync)
             if prompt.lower() in ["sincronizar", "sync", "synchronize"]:
                 if not actions.verificar_permissao_mestre(message, config, obter_ids_mestres()):
                     await message.reply(tc("bot.sync_apenas_mestres"))

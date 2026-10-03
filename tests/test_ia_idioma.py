@@ -5,7 +5,7 @@ import unittest
 from tests.util import novo_projeto, apagar, usar_idioma, ia_falsa
 
 import core.ai_utils as au
-import core.ao_persona as ao
+import core.silent_persona as silent
 import engine.dnd_schemas as dnd
 import engine.expander as ex
 import engine.knowledge_schemas as ks
@@ -31,9 +31,9 @@ def aventura():
 
 class TesteIdiomaDaIA(unittest.TestCase):
     CASOS = {
-        "pt_br": {"linha": "Responda SEMPRE em português do Brasil", "chat": "mestre de mesa chamado Ao",
+        "pt_br": {"linha": "Responda SEMPRE em português do Brasil", "chat": "Você é Silent",
                   "sala": "## SALA 1:", "lore": "Verificações de Conhecimento", "desc": "True se"},
-        "en_us": {"linha": "Always answer in American English", "chat": "game master named Ao",
+        "en_us": {"linha": "Always answer in American English", "chat": "You are Silent",
                   "sala": "## ROOM 1:", "lore": "## 🎲 Lore Checks", "desc": "True if"},
     }
 
@@ -49,7 +49,7 @@ class TesteIdiomaDaIA(unittest.TestCase):
             with self.subTest(idioma=idioma):
                 usar_idioma(idioma)
                 with ia_falsa("Resposta.") as ia:
-                    ao.conversar("Quem é Valia?")
+                    silent.conversar("Quem é Valia?")
                     self.assertIn(esperado["chat"], ia.ultima["system_instruction"])
                     self.assertIn(esperado["linha"], ia.ultima["system_instruction"])
                     au.ask_ai(contents="x")   # mesmo sem instrução própria, o idioma é garantido

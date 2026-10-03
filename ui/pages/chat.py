@@ -1,8 +1,8 @@
-"""Página Converse com Ao (chat local com o mundo como contexto)."""
+"""Página Converse com Silent (chat local com o mundo como contexto)."""
 import tkinter as tk
 from tkinter import ttk
 
-import core.ao_persona as ao
+import core.silent_persona as silent
 import core.tarefas as tarefas
 import ui.theme as tema
 from core.i18n import t
@@ -27,7 +27,7 @@ class PaginaChat(PaginaBase):
         self.texto = texto_rolavel(self)
         self.texto.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 10))
         self.texto.tag_config("usuario", foreground=tema.AZUL, font=("Segoe UI", 10, "bold"))
-        self.texto.tag_config("ao", foreground="#34d399", font=("Segoe UI", 10, "bold"))
+        self.texto.tag_config("silent", foreground="#34d399", font=("Segoe UI", 10, "bold"))
         self.texto.tag_config("sistema", foreground=tema.SUAVE, font=("Segoe UI", 9, "italic"))
         self.texto.tag_config("pensando", foreground=tema.AMARELO, font=("Segoe UI", 9, "italic"))
         self._mensagem("sistema", t("chat.conectado"))
@@ -44,7 +44,7 @@ class PaginaChat(PaginaBase):
         self.recarregar_historico(forcar=True)
 
     def recarregar_historico(self, forcar=False):
-        historico = ao.historico_chat()
+        historico = silent.historico_chat()
         if historico == self._historico_exibido and not forcar:
             return
         self._historico_exibido = historico
@@ -65,7 +65,7 @@ class PaginaChat(PaginaBase):
     # --- anexar arquivo (chamado pelo Editor) ---
     def anexar_arquivo(self, caminho):
         try:
-            self._anexo = ao.preparar_anexo(caminho)
+            self._anexo = silent.preparar_anexo(caminho)
         except Exception as e:
             self.app.toast(t("chat.erro_anexo", erro=e))
             return
@@ -81,12 +81,12 @@ class PaginaChat(PaginaBase):
             return
         self.entrada.delete(0, tk.END)
         self._mensagem("usuario", mensagem)
-        anexar_texto(self.texto, f"{t('chat.autor.ao')}: ", "ao")
+        anexar_texto(self.texto, f"{t('chat.autor.silent')}: ", "silent")
         anexar_texto(self.texto, t("chat.pensando") + "\n\n", "pensando")
         self.btn_enviar.config(state=tk.DISABLED)
         self.app.salvar_editor()
         anexo, self._anexo = self._anexo, None
-        tarefas.executar_em_segundo_plano(ao.conversar, mensagem, anexo,
+        tarefas.executar_em_segundo_plano(silent.conversar, mensagem, anexo,
                                           ao_concluir=self._resposta, ao_falhar=self._falha)
 
     def _remover_pensando(self):
@@ -98,8 +98,8 @@ class PaginaChat(PaginaBase):
 
     def _resposta(self, resposta):
         self._remover_pensando()
-        self._mensagem("ao", resposta or t("chat.sem_resposta"))
-        self._historico_exibido = ao.historico_chat()
+        self._mensagem("silent", resposta or t("chat.sem_resposta"))
+        self._historico_exibido = silent.historico_chat()
         self.btn_enviar.config(state=tk.NORMAL)
 
     def _falha(self, erro):

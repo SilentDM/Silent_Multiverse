@@ -172,7 +172,7 @@ def processar_rolagem(texto: str) -> Optional[str]:
 
 
 def rolar_dados(expr: str) -> str:
-    """Rola a expressão informada após um comando (!r, !rolar, !ao rolar) e sempre devolve uma mensagem."""
+    """Rola a expressão informada após um comando (!r, !rolar, !silent rolar) e sempre devolve uma mensagem."""
     expr = (expr or "").strip()
     from core.i18n import tc
     uso = tc("bot.dados_uso")

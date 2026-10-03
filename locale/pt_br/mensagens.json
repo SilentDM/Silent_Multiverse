@@ -187,5 +187,7 @@
   "imagem.log_prompt": "🎨 [RETRATO] Prompt: {prompt}...",
   "bot.log_erro_dados": "[DADOS] Erro ao processar a rolagem: {erro}",
   "sistema.log_erro_ram": "Erro ao liberar memória: {erro}",
-  "estilo.log_erro_escrever": "Erro ao escrever o arquivo de tom em Style: {erro}"
+  "estilo.log_erro_escrever": "Erro ao escrever o arquivo de tom em Style: {erro}",
+  "update.log_disponivel": "⬆ Nova versão disponível: {versao} — {url}",
+  "update.log_erro": "ℹ️ Não foi possível procurar atualizações agora ({erro})."
 }
