@@ -34,23 +34,31 @@ def _obter_caminho_alvo(guild_id, guild_name, userid, user_name):
     return os.path.join(MEMORIES_DIR, f"memoria_{g_name}_{g_id}_{u_name}_{userid}.txt")
 
 def trim_incomplete_sentences(texto):
+    """
+    Remove apenas uma frase final que pareça cortada no meio (resposta truncada).
+    Preserva quebras de linha/Markdown e nunca remove links, listas ou finais
+    como ')', '**' ou emojis, que não indicam truncamento.
+    """
     if not texto:
         return ""
     texto = texto.strip()
     if texto.endswith((".", "!", "?")):
         return texto
 
-    frases = re.split(r'(?<=[.!?])\s+', texto)
-    if len(frases) <= 1:
-        return frases[0] if frases else texto
+    ultima_linha = texto.splitlines()[-1].strip()
+    # Itens de lista, títulos, citações e tabelas normalmente não terminam com pontuação
+    if ultima_linha.startswith(("-", "*", "+", "#", ">", "|")) or re.match(r'\d+[.)]\s', ultima_linha):
+        return texto
+    # Só consideramos "cortado" se terminar em letra/número/vírgula etc. e não for um link
+    if re.search(r'https?://', ultima_linha) or not re.search(r'[\w,;:\-]$', texto):
+        return texto
 
-    frases = frases[:-1]
-    resultado = " ".join(frases).strip()
+    # Corta logo após o último fim de frase, mantendo a formatação original
+    fins = list(re.finditer(r'[.!?](?=\s)', texto))
+    if not fins:
+        return texto
 
-    if not resultado.endswith((".", "!", "?")):
-        resultado += "."
-
-    return resultado
+    return texto[:fins[-1].end()].rstrip()
 
 def criar_resumo(memorias: str) -> str:
     instrucao_sistema = (

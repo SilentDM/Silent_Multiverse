@@ -783,7 +783,7 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
             )
 
             memorias = me.carregar_memorias(guild_id, guild_name, userid, user_name)
-            self.log_activity("Consultando Gemini...")
+            self.log_activity(f"Consultando IA ({au.obter_provedor_ativo()})...")
 
             system_instruction = f"{persona}\n\n{regras}"
             conteudo_prompt = ""
@@ -799,7 +799,7 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
                 conteudo_prompt += f"--- HISTÓRICO RECENTE DE CONVERSAS ---\n{memorias}\n\n"
             conteudo_prompt += f"--- MENSAGEM DO USUÁRIO ---\n{prompt}"
 
-            resposta = ag.ask_ai(
+            resposta = au.ask_ai(
                 contents=conteudo_prompt,
                 system_instruction=system_instruction,
                 temperature=0.6,
@@ -1738,7 +1738,7 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
 
         add_p("4. WORLDBUILDERS (EXPANDER, TAREFAS E AUDITORIA)", "h1")
         add_p("• Expander - Executar Tarefa: varre todos os arquivos na pasta do projeto buscando por tags <-- TODO:, ao encontrar uma, ele inicia o processo da IA e gera o conteúdo respeitando a coesão do mundo e do arquivo, então gera um novo arquivo de versão acima(ex:Reino_Lucian_v03.md) e salva o anterior(ex:Reino_Lucian_v02.md) na pasta Logs/history.", "bullet")
-        add_p("• Expander - Executar Tarefa: Essa ação pode ser automatizada na aba Opções, onde ao deixar um arquivo com essa Tag, o expander já irá ser acionado no momento que o arquivo for salvo.", "bullet")
+        add_p("• Expander - Executar Tarefa: Essa ação pode ser automatizada na aba Opções. Com ela habilitada, o Expander é acionado ao salvar com Ctrl+S ou ao sair de um arquivo editado que contenha a Tag.", "bullet")
         add_p("• Expander - Reconstruir Contexto: acesso interno do programa ao estado atual do seu projeto, perguntas ao Ao e ao Bot do Discord usam esse contexto para gerar respostas, ao realizar muitas mudanças, esse botão as força para o estado atual. É como um botão Salvar para o projeto inteiro. O contexto dura 12h de sua criação, passado esse tempo, ele é recriado automaticamente. O botão é apenas para acelerar o processo.", "bullet")
         add_p("• WorldBuilder: Executa um plano autônomo completo (cria pastas, arquivos e expande a lore) com base no objetivo que você definir.", "bullet")
         add_p("• WorldBuilder: A criação de pastas, arquivos e melhoria de arquivos podem ser habilitadas ou desabilitadas na aba Opções, para melhor controlar o que o Worldbuilder irá fazer.", "bullet")
@@ -1750,6 +1750,7 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
 
         add_p("5. ATALHOS DE TECLADO & NAVEGAÇÃO", "h1")
         add_p("  [F2]                 : Renomear o arquivo ou pasta selecionada no Explorer.", "bullet")
+        add_p("  [Ctrl + S]           : Salvar o arquivo (e acionar o Expander automático, se habilitado nas Opções).", "bullet")
         add_p("  [Ctrl + Scroll Mouse]: Aumentar ou diminuir o zoom da tela.", "bullet")
         add_p("  [Alt + Seta Esquerda]: Voltar para o documento anterior no histórico.", "bullet")
         add_p("  [Alt + Seta Direita] : Avançar no histórico de documentos.", "bullet")

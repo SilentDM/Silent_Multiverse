@@ -10,11 +10,13 @@ def _parse_lista_texto(raw_str: str) -> list[str]:
     raw_str = raw_str.replace(";", ",")
     return [item.strip().lower() for item in raw_str.split(",") if item.strip()]
 
-def verificar_permissao_mestre(message, config: dict, mestre_id: int) -> bool:
-    userid = message.author.id
+def verificar_permissao_mestre(message, config: dict, mestre_ids: str) -> bool:
+    userid = str(message.author.id)
     user_name = message.author.name
 
-    if userid == mestre_id and mestre_id != 0:
+    # MESTRE_DISCORD_ID aceita um ou vários IDs separados por vírgula/ponto-e-vírgula
+    ids_mestres = set(_parse_lista_texto(mestre_ids or ""))
+    if userid in ids_mestres:
         print(f"👑 [DISCORD-TRACE] Permissão para '{user_name}': 👑 MESTRE SUPREMO (ID no .env).")
         return True
 
@@ -99,7 +101,8 @@ async def processar_mensagem_ia(prompt: str, eh_mestre: bool, user_name: str, gu
         if resposta.rstrip() and resposta.rstrip()[-1] not in finalz:
             resposta = memory.trim_incomplete_sentences(resposta)
 
-        memory.salvar_memoria(guild_id, guild_name, userid, user_name, prompt, resposta)
+        # Em thread separada: pode chamar a IA para resumir e não pode travar o event loop do Discord
+        await asyncio.to_thread(memory.salvar_memoria, guild_id, guild_name, userid, user_name, prompt, resposta)
 
     return resposta or ""
 

@@ -169,3 +169,12 @@ def processar_rolagem(texto: str) -> Optional[str]:
     except Exception as e:
         print(f"[DICE] Erro ao processar rolagem: {e}")
         return None
+
+
+def rolar_dados(expr: str) -> str:
+    """Rola a expressão informada após um comando (!r, !rolar, !ao rolar) e sempre devolve uma mensagem."""
+    expr = (expr or "").strip()
+    uso = "🎲 Uso: `!r 1d20+5`, `!rolar 2d6+3`, `!r 2d20kh1+3` ou `!r 3#1d8+2` (motivo opcional depois da expressão)."
+    if not expr or not eh_comando_dado(expr):
+        return uso
+    return processar_rolagem(expr) or uso

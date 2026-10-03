@@ -10,7 +10,10 @@ import ui.setup_env as se
 se.carregar_todas_credenciais()
 
 TOKEN = os.getenv("DISCORD_TOKEN", "").strip()
-MESTRE_DISCORD_IDS = os.getenv("MESTRE_DISCORD_ID", "").strip()
+
+def obter_ids_mestres() -> str:
+    """Lido a cada mensagem para refletir alterações feitas na aba 'Opções' sem reiniciar."""
+    return os.getenv("MESTRE_DISCORD_ID", "").strip()
 DISCORD_ENABLED = bool(TOKEN)
 
 USER_COOLDOWNS = {}
@@ -94,6 +97,12 @@ if DISCORD_ENABLED:
         content_lower = content.lower()
 
         # 2. ROLADOR RÁPIDO (!r 1d20+5 ou !rolar 2d6)
+        partes_cmd = content.split(maxsplit=1)
+        if partes_cmd and partes_cmd[0].lower() in ("!r", "!rolar"):
+            expr = partes_cmd[1] if len(partes_cmd) > 1 else ""
+            await message.reply(dice.rolar_dados(expr))
+            return
+
         if dice.eh_comando_dado(content):
             resposta_dados = dice.processar_rolagem(content)
             if resposta_dados:
@@ -116,14 +125,14 @@ if DISCORD_ENABLED:
                 return
 
             if prompt.lower().startswith("rolar ") or prompt.lower().startswith("r "):
-                expr = prompt.split(" ", 1)[1] if " " in prompt else ""
+                expr = prompt.split(maxsplit=1)[1] if len(prompt.split(maxsplit=1)) > 1 else ""
                 res = dice.rolar_dados(expr)
                 await message.reply(res)
                 return
 
             # SINCRONIZAÇÃO MANUAL DISPARADA PELO MESTRE (!ao sincronizar)
             if prompt.lower() in ["sincronizar", "sync"]:
-                if not actions.verificar_permissao_mestre(message, config, MESTRE_DISCORD_IDS):
+                if not actions.verificar_permissao_mestre(message, config, obter_ids_mestres()):
                     await message.reply("Apenas Mestres podem disparar a sincronização de conhecimento.")
                     return
 
@@ -159,7 +168,7 @@ if DISCORD_ENABLED:
             USER_COOLDOWNS[userid] = agora
 
             # PERMISSÃO DE MESTRE
-            eh_mestre = actions.verificar_permissao_mestre(message, config, MESTRE_DISCORD_IDS)
+            eh_mestre = actions.verificar_permissao_mestre(message, config, obter_ids_mestres())
 
             # DIGITANDO... + CHAMADA DA IA
             async with message.channel.typing():

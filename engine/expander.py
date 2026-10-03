@@ -305,6 +305,9 @@ def processar_arquivos():
             
         if any(tag in conteudo for tag in pu.TAG_ALVO):
             encontrou_tag = True
+            if esta_em_processamento(arquivo):
+                print(f"⏳ {arquivo.name} já está sendo processado. Pulando.")
+                continue
             processar_arquivo_unico(arquivo)
             
     if not encontrou_tag:

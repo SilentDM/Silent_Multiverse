@@ -152,6 +152,8 @@ class ExplorerFrame(ttk.Frame):
         self.editor.pack(fill=tk.BOTH, expand=True)
         self.editor.config(state=tk.DISABLED)
         self.editor.bind("<KeyRelease>", self.on_key_release)
+        self.editor.bind("<Control-s>", self.on_manual_save)
+        self.editor.bind("<Control-S>", self.on_manual_save)
         
         # 2. Widget HtmlFrame do Preview Interno (tkinterweb)
         if TKINTERWEB_DISPONIVEL:
@@ -783,10 +785,12 @@ class ExplorerFrame(ttk.Frame):
                 self.autosave_timer = None
 
             # Salva o arquivo anterior se ele NÃO estiver em processamento
+            anterior_editado_e_salvo = False
             if arquivo_anterior and os.path.isfile(arquivo_anterior):
                 if not wb.ex.esta_em_processamento(arquivo_anterior):
                     try:
-                        self.save_current_file()
+                        editado = bool(self.editor.edit_modified())
+                        anterior_editado_e_salvo = (self.save_current_file() == "salvo") and editado
                     except Exception as e:
                         self.log_callback(f"Erro ao salvar arquivo anterior: {e}")
 
@@ -824,6 +828,7 @@ class ExplorerFrame(ttk.Frame):
 
                 try:
                     self.editor.edit_reset()
+                    self.editor.edit_modified(False)
                 except Exception:
                     pass
 
@@ -859,8 +864,26 @@ class ExplorerFrame(ttk.Frame):
                 self.editor.insert("1.0", f"--- Diretório Selecionado: {os.path.basename(novo_caminho)} ---")
                 self.editor.config(state=tk.DISABLED)
 
+            # Expander automático: só depois que o novo arquivo já está aberto,
+            # para que o arquivo anterior não seja reaberto ao fim do processamento
+            if anterior_editado_e_salvo:
+                self.process_saved_file(arquivo_anterior)
+
         except Exception as e:
             self.log_callback(f"Erro no on_select: {e}")
+
+    def on_manual_save(self, event=None):
+        """Ctrl+S: salva o arquivo atual e, se habilitado nas Opções, executa o Expander nele."""
+        if str(self.editor.cget("state")) == "disabled" or not self.current_file:
+            return "break"
+        caminho = self.current_file
+        resultado = self.save_current_file()
+        if resultado == "salvo":
+            self.toast(f"💾 '{os.path.basename(caminho)}' salvo.")
+            self.process_saved_file(caminho)
+        elif resultado == "alterado_externamente":
+            self.recarregar_arquivo_do_disco(caminho)
+        return "break"
 
     def process_saved_file(self, path):
         if self.auto_expander_callback and not self.auto_expander_callback():
@@ -943,6 +966,7 @@ class ExplorerFrame(ttk.Frame):
 
         try:
             self.editor.edit_reset()
+            self.editor.edit_modified(False)
         except Exception:
             pass
 
