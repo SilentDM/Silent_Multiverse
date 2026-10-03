@@ -317,7 +317,9 @@ def createfile(path, reason, template="nenhum"):
             print("Tentativa de criar arquivo fora da pasta raiz de conhecimento.")
             return False
 
-        arquivo = arquivo.with_suffix(".md")
+        # Acrescenta .md sem usar with_suffix(), que trocaria o trecho após um ponto do nome ("St. Varis" -> "St.md")
+        if arquivo.suffix.lower() != ".md":
+            arquivo = arquivo.with_name(arquivo.name + ".md")
 
         # 🛡️ TRAVA MECÂNICA DE SEGURANÇA (VERIFICA A PASTA PAI)
         config = st.carregar_configuracoes()
@@ -354,7 +356,8 @@ status: rascunho
         with open(arquivo, "w", encoding="utf-8") as f:
             f.write(conteudo)
         print(f"✅ Arquivo criado com sucesso: {arquivo}")
-        improvefile(path, reason)
+        # Usa o caminho final (já com .md); o 'path' original da IA pode não ter extensão
+        improvefile(str(arquivo), reason)
         return True
     except Exception as e:
         print(f"❌ Erro ao criar arquivo {path}: {e}")
@@ -513,12 +516,6 @@ CONTEÚDO PRÉ-EXISTENTE NO ARQUIVO (Use como base ou complete as lacunas):
         # Serializa para o Markdown final já com o mapa no lugar correto
         markdown_final = dnd.aventura_5rooms_para_markdown(aventura_obj)
 
-        if arquivo.exists():
-            ex.arquivar_versao_para_historico(arquivo)
-
-        with open(arquivo, "w", encoding="utf-8") as f:
-            f.write(markdown_final)      
-        
         # Arquiva a versão anterior no histórico (_v01, _v02...)
         if arquivo.exists():
             ex.arquivar_versao_para_historico(arquivo)

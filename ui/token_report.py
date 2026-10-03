@@ -55,7 +55,9 @@ class TokenReportWindow(tk.Toplevel):
         return int(round(tc.estimar_tokens(chars) * self.fator_mestre))
 
     def _tok_j(self, chars: int) -> int:
-        return int(round(tc.estimar_tokens(chars) * self.fator_jogador))
+        # Mesmo fator do Mestre: mesmo tokenizador e mesmo tipo de texto. Fatores separados
+        # faziam um arquivo aparecer com mais tokens para Jogadores do que para o Mestre.
+        return int(round(tc.estimar_tokens(chars) * self.fator_mestre))
 
     @property
     def total_mestre(self) -> int:

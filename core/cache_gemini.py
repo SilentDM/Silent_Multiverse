@@ -101,10 +101,13 @@ def prepare_world_context(is_dm: bool = True, ttl_hours=12):
     try:
         uploaded_dm = client.files.upload(file=bundle_dm_path)
         uploaded_player = client.files.upload(file=bundle_player_path)
-        # Aguarda o processamento do arquivo no Gemini ficar ACTIVE
+        # Aguarda o processamento dos DOIS arquivos (Mestre e Jogadores) no Gemini ficar ACTIVE
         while uploaded_dm.state.name == "PROCESSING":
             time.sleep(0.5)
             uploaded_dm = client.files.get(name=uploaded_dm.name)
+        while uploaded_player.state.name == "PROCESSING":
+            time.sleep(0.5)
+            uploaded_player = client.files.get(name=uploaded_player.name)
 
 
         registro = {

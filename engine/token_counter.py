@@ -24,6 +24,7 @@ CHARS_POR_TOKEN_ESTIMADO = 3.5
 LIMITE_CONTEXTO_PADRAO = 1_000_000
 
 MOTIVOS_EXCLUSAO = {
+    "vazio": "Arquivo vazio",
     "todo": "Pendente (TODO) — fora do contexto",
     "rascunho": "Rascunho — fora do contexto",
     "marcador": "Marcador de exclusão — fora do contexto",
@@ -111,7 +112,7 @@ def analisar_projeto() -> AnaliseProjeto:
 
         filtrado_mestre, motivo_mestre = pu.avaliar_conteudo_para_contexto(content, is_dm=True)
         filtrado_jogador, motivo_jogador = pu.avaliar_conteudo_para_contexto(
-            content, is_dm=False, termos_secretos=termos_secretos
+            content, is_dm=False, termos_secretos=termos_secretos, caminho_relativo=rel
         )
 
         chars_mestre = len(pu.formatar_bloco_contexto(f_path.name, filtrado_mestre)) if filtrado_mestre else 0

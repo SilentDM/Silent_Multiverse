@@ -289,25 +289,60 @@ def detectar_intencao(pergunta):
 def currentdate():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-def gerar_indice(root=None):
-    if root is None:
-        root = CAMINHO_PROJETO
-    root = Path(root)
-    indice = {}
+def _nome_revela_segredo(relativo: Path, termos_secretos) -> bool:
+    """True se o nome do arquivo (sem extensão) ou de alguma pasta do caminho contém um termo secreto."""
+    partes = list(relativo.parts[:-1]) + [relativo.stem] if relativo.suffix else list(relativo.parts)
+    return any(sf.contem_termo_secreto(parte, termos_secretos) for parte in partes)
+
+def listar_itens_visiveis(is_dm: bool = True, termos_secretos=None, root=None):
+    """
+    Lista (pastas, arquivos .md) do projeto que podem aparecer na estrutura/índice do contexto.
+    - Sempre ignora pastas da IGNORELIST (.obsidian, .git, .trash...).
+    - Para jogadores (is_dm=False), oculta arquivos totalmente secretos e qualquer
+      pasta/arquivo cujo NOME contenha um termo secreto, para não vazar segredos pelos nomes.
+    """
+    raiz = Path(root if root is not None else CAMINHO_PROJETO)
+    if not raiz.exists():
+        return [], []
+    termos = None
+    if not is_dm:
+        termos = termos_secretos if termos_secretos is not None else sf.obter_termos_secretos_configurados()
+
+    pastas, arquivos = [], []
+    for caminho in sorted(raiz.rglob("*")):
+        relativo = caminho.relative_to(raiz)
+        if any(ignore in relativo.parts for ignore in IGNORELIST):
+            continue
+        if caminho.is_dir():
+            if termos and _nome_revela_segredo(relativo, termos):
+                continue
+            pastas.append(caminho)
+        elif caminho.suffix == ".md":
+            if termos:
+                if _nome_revela_segredo(relativo, termos):
+                    continue
+                content = ler_markdown(caminho)
+                if content is not None:
+                    _, motivo = avaliar_conteudo_para_contexto(content, is_dm=False, termos_secretos=termos,
+                                                               caminho_relativo=relativo)
+                    if motivo == "segredo":
+                        continue
+            arquivos.append(caminho)
+    return pastas, arquivos
+
+def gerar_indice(root=None, is_dm: bool = True, termos_secretos=None):
+    root = Path(root if root is not None else CAMINHO_PROJETO)
     if not root.exists():
         return "{}"
-    for pasta in root.rglob("*"):
-        if pasta.is_dir():
-            arquivos = [
-                f.name
-                for f in pasta.glob("*.md")
-            ]
-            relativo = str(
-                pasta.relative_to(root)
-            )
-            if relativo == ".":
-                relativo = "ROOT"
-            indice[relativo] = arquivos
+    pastas, arquivos = listar_itens_visiveis(is_dm=is_dm, termos_secretos=termos_secretos, root=root)
+
+    # Índice: pasta -> arquivos .md diretamente dentro dela ("ROOT" = raiz do projeto)
+    indice = {"ROOT": []}
+    for pasta in pastas:
+        indice[str(pasta.relative_to(root))] = []
+    for arq in arquivos:
+        chave = str(arq.parent.relative_to(root))
+        indice.setdefault("ROOT" if chave == "." else chave, []).append(arq.name)
     return json.dumps(
         indice,
         ensure_ascii=False,
@@ -342,19 +377,14 @@ def build_tree(root=None):
     walk(root)
     return "\n".join(linhas)
 
-def carregar_estrutura_projeto():
+def carregar_estrutura_projeto(is_dm: bool = True, termos_secretos=None):
     raiz = Path(CAMINHO_PROJETO)
+    pastas, arquivos = listar_itens_visiveis(is_dm=is_dm, termos_secretos=termos_secretos)
+    conjunto_pastas = set(pastas)
     resultado = []
-    for caminho in sorted(raiz.rglob("*")):
+    for caminho in sorted(pastas + arquivos):
         relativo = caminho.relative_to(raiz)
-        if caminho.is_dir():
-            resultado.append(
-                f"[DIR] {relativo}"
-            )
-        elif caminho.suffix == ".md":
-            resultado.append(
-                f"[FILE] {relativo}"
-            )
+        resultado.append(f"[DIR] {relativo}" if caminho in conjunto_pastas else f"[FILE] {relativo}")
     return "\n".join(resultado)
 
 def arquivo_em_pasta_ignorada(f_path: Path) -> bool:
@@ -375,13 +405,22 @@ def ler_markdown(f_path: Path):
     except Exception:
         return None
 
-def avaliar_conteudo_para_contexto(content: str, is_dm: bool = True, termos_secretos=None):
+def avaliar_conteudo_para_contexto(content: str, is_dm: bool = True, termos_secretos=None, caminho_relativo=None):
     """
     Aplica as MESMAS regras usadas para montar o contexto do mundo enviado à IA.
     Retorna (conteudo_filtrado, motivo_exclusao). Se o arquivo entra no contexto,
     motivo_exclusao é None; caso contrário conteudo_filtrado é "" e o motivo é:
-    'todo', 'rascunho', 'marcador' ou 'segredo'.
+    'vazio', 'todo', 'rascunho', 'marcador' ou 'segredo'.
+    Para jogadores, se 'caminho_relativo' for informado e o nome do arquivo ou de
+    uma de suas pastas contiver um termo secreto, o arquivo inteiro é ocultado.
     """
+    if not is_dm and caminho_relativo is not None:
+        if termos_secretos is None:
+            termos_secretos = sf.obter_termos_secretos_configurados()
+        if _nome_revela_segredo(Path(caminho_relativo), termos_secretos):
+            return "", "segredo"
+    if not content.strip():
+        return "", "vazio"
     # Ignora arquivos que possuam tags de TODO ou marcações ignoradas
     if any(tag in content for tag in TAG_ALVO):
         return "", "todo"
@@ -403,6 +442,7 @@ def carregar_projeto(is_dm: bool = True):
         return ""
 
     conteudo_total = []
+    termos = None if is_dm else sf.obter_termos_secretos_configurados()
 
     # Itera diretamente sobre todos os .md canônicos do cofre
     for f_path in sorted(caminho.rglob("*.md")):
@@ -413,7 +453,9 @@ def carregar_projeto(is_dm: bool = True):
         if content is None:
             continue
 
-        content_filtrado, _ = avaliar_conteudo_para_contexto(content, is_dm=is_dm)
+        content_filtrado, _ = avaliar_conteudo_para_contexto(
+            content, is_dm=is_dm, termos_secretos=termos, caminho_relativo=f_path.relative_to(caminho)
+        )
         if not content_filtrado:
             continue
 
@@ -423,9 +465,11 @@ def carregar_projeto(is_dm: bool = True):
 
 def montar_contexto_mundo(is_dm: bool = True) -> str:
     """Bundle completo do mundo (estrutura + índice + conteúdo filtrado), igual ao enviado às IAs."""
+    # Lê os termos secretos uma única vez para os trechos do contexto dos jogadores
+    termos = None if is_dm else sf.obter_termos_secretos_configurados()
     return (
-        carregar_estrutura_projeto() + "\n\n" +
-        gerar_indice() + "\n\n" +
+        carregar_estrutura_projeto(is_dm=is_dm, termos_secretos=termos) + "\n\n" +
+        gerar_indice(is_dm=is_dm, termos_secretos=termos) + "\n\n" +
         carregar_projeto(is_dm=is_dm)
     )
 

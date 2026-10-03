@@ -1,4 +1,4 @@
-import os, threading, time, asyncio, sys, ctypes, pystray
+import os, threading, time, asyncio, sys, ctypes, subprocess, pystray
 import core.ai_gemini as ag
 import core.cache_gemini as cg
 import core.memory as me
@@ -315,6 +315,25 @@ class SilentDesktopApp:
         for page in self.pages.values():
             page.place(relx=0, rely=0, relwidth=1, relheight=1)
 
+        # 🖱️ Um único roteador de rolagem para as páginas com Canvas rolável
+        # (antes cada página fazia bind_all e só a última registrada funcionava)
+        self.root.bind_all("<MouseWheel>", self._on_global_mousewheel)
+
+    def _on_global_mousewheel(self, event):
+        try:
+            # Ignora rolagens em janelas separadas (relatórios, popups)
+            if event.widget.winfo_toplevel() is not self.root:
+                return
+        except Exception:
+            return
+        unidades = int(-1 * (event.delta / 120))
+        if self.current_page == "worldbuilder":
+            self.wb_canvas.yview_scroll(unidades, "units")
+        elif self.current_page == "models":
+            self.models_canvas.yview_scroll(unidades, "units")
+        elif self.current_page == "options":
+            self.options_pane._on_mousewheel(event)
+
     def _page_header(self, parent, title, subtitle):
         header = ttk.Frame(parent)
         header.pack(fill=tk.X, padx=18, pady=(18, 10))
@@ -419,7 +438,6 @@ class SilentDesktopApp:
         self.wb_canvas.configure(yscrollcommand=scrollbar.set)
 
         self.wb_canvas.bind("<Configure>", self._on_wb_canvas_resize)
-        self.wb_canvas.bind_all("<MouseWheel>", lambda e: self.wb_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units") if self.current_page == "worldbuilder" else None)
 
         self.wb_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(15, 0), pady=(0, 15))
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y, padx=(0, 15), pady=(0, 15))
@@ -673,7 +691,7 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
 
         def _salvar_relatorio():
             caminho_export = filedialog.asksaveasfilename(
-                initialdir=Path.cwd() / "exports",
+                initialdir=str(pu.PASTA_EXPORTS),
                 initialfile=f"Auditoria_Lore_{pu.PASTA_PROJETO}.md",
                 defaultextension=".md",
                 filetypes=[("Markdown", "*.md"), ("Texto", "*.txt")]
@@ -1050,8 +1068,9 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
     # COMPILADOR DE LIVRO (HTML/PDF)
     # ------------------------------------------------------------------
     def export_sourcebook(self):
+        self.start_spinner("Compilador em execução")
+
         def _run_compile():
-            self.start_spinner("Compilador em execução")
             try:
                 self.log_activity("Iniciando compilação do Livro do Cenário...")
                 self.toast("Compilando Livro do Cenário...")
@@ -1061,13 +1080,15 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
                 if caminho_html and caminho_html.exists():
                     self.log_activity(f"Livro gerado em: {caminho_html.name}")
                     self.toast("✅ Livro compilado com sucesso! Abrindo...")
-                    self.stop_spinner(f"Compilador: Concluído!")
+                    self.root.after(0, lambda: self.stop_spinner("Compilador: Concluído!"))
                     os.startfile(str(caminho_html))
                 else:
                     self.toast("❌ Falha ao compilar o livro.")
+                    self.root.after(0, lambda: self.stop_spinner("Compilador: Falhou", is_error=True))
             except Exception as e:
                 self.log_activity(f"Erro na compilação do livro: {e}")
                 self.toast("❌ Erro ao compilar o livro.")
+                self.root.after(0, lambda: self.stop_spinner("Compilador: Erro", is_error=True))
 
         threading.Thread(target=_run_compile, daemon=True).start()
 
@@ -1418,7 +1439,6 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
         self.models_canvas.configure(yscrollcommand=scrollbar.set)
         
         self.models_canvas.bind("<Configure>", self._on_models_canvas_resize)
-        self.models_canvas.bind_all("<MouseWheel>", lambda e: self.models_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units") if self.current_page == "models" else None)
 
         self.models_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(15, 0), pady=(0, 15))
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y, padx=(0, 15), pady=(0, 15))

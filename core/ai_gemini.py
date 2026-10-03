@@ -290,11 +290,23 @@ def generate_content_with_fallback(contents: Any, config: types.GenerateContentC
     for model in data:
         model_name = model["name"]
         config_to_use = config.model_copy(deep=True)
+        contents_to_use = contents
 
         if config_to_use.cached_content and cache_model and cache_model != model_name:
             config_to_use.cached_content = None
 
-        if model.get("supports_tools", False):
+        if config_to_use.cached_content:
+            # A API recusa system_instruction / tools junto com cached_content.
+            # As instruções vão para o início do conteúdo da própria requisição.
+            if config_to_use.system_instruction:
+                bloco_instrucoes = f"[INSTRUÇÕES DO SISTEMA]\n{config_to_use.system_instruction}\n[FIM DAS INSTRUÇÕES]"
+                if isinstance(contents, list):
+                    contents_to_use = [bloco_instrucoes, *contents]
+                else:
+                    contents_to_use = [bloco_instrucoes, contents]
+                config_to_use.system_instruction = None
+            config_to_use.tools = None
+        elif model.get("supports_tools", False):
             config_to_use.tools = [types.Tool(google_search=types.GoogleSearch())]
         else:
             config_to_use.tools = []
@@ -303,7 +315,7 @@ def generate_content_with_fallback(contents: Any, config: types.GenerateContentC
         try:
             response = client.models.generate_content(
                 model=model_name,
-                contents=contents,
+                contents=contents_to_use,
                 config=config_to_use
             )
             response_time = round(time.time() - start_time, 4)

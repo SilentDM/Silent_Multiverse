@@ -8,6 +8,19 @@ def _limpar_titulo_exibicao(nome: str) -> str:
     nome_limpo = re.sub(r'_v\d+$', '', nome_limpo, flags=re.IGNORECASE)
     return nome_limpo.replace("_", " ").strip().title()
 
+def _slug_documento(nome: str) -> str:
+    """
+    Âncora HTML de um documento. Usada TANTO no id do artigo quanto nos [[wikilinks]],
+    para que os links internos do livro sempre encontrem o destino
+    (ignora maiúsculas, acentos, separadores, extensão .md e sufixos _v01).
+    """
+    nome = nome.strip()
+    if nome.lower().endswith(".md"):
+        nome = nome[:-3]
+    nome = re.sub(r'_v\d+$', '', nome, flags=re.IGNORECASE)
+    nome = unicodedata.normalize("NFKD", nome).encode("ASCII", "ignore").decode("ASCII")
+    return "doc-" + re.sub(r'[^a-z0-9]', '', nome.lower())
+
 def _limpar_conteudo_markdown(texto: str) -> str:
     """Remove metadados de rascunho e tags TODO do texto final do livro."""
     linhas = []
@@ -100,7 +113,7 @@ def _markdown_para_html(md_texto: str) -> str:
     def _substituir_wikilink(match):
         target = match.group(1).strip()
         alias = match.group(2).strip() if match.group(2) else target
-        slug = f"doc-{re.sub(r'[^a-zA-Z0-9]', '', target.lower())}"
+        slug = _slug_documento(target.split("#")[0])
         return f'<a href="#{slug}" class="obsidian-link">{alias}</a>'
 
     resultado = re.sub(r'\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]', _substituir_wikilink, resultado)
@@ -181,7 +194,7 @@ def compilar_livro_cenario():
             except UnicodeDecodeError:
                 continue
 
-            doc_slug = f"doc-{re.sub(r'[^a-zA-Z0-9]', '', arq.stem)}"
+            doc_slug = _slug_documento(arq.stem)
             doc_titulo = _limpar_titulo_exibicao(arq.stem)
 
             # Item do Documento no Sumário

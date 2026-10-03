@@ -1,11 +1,17 @@
-import json
+import json, re
 from pathlib import Path
 import engine.project_utils as pu
 import core.ai_utils as au
+import engine.expander as ex
 from engine.persona_schemas import PersonaRoleplay, persona_para_markdown
 
 PASTA_PERSONAS = pu.PASTA_DADOS_NEXUS / "personas"
 PASTA_PERSONAS.mkdir(parents=True, exist_ok=True)
+
+def nome_arquivo_seguro(nome: str) -> str:
+    """Remove caracteres proibidos em nomes de arquivo no Windows (barras, : * ? " < > |) e pontas inválidas."""
+    limpo = re.sub(r'[\\/:*?"<>|\x00-\x1f]', '', str(nome or "")).strip().strip(".")
+    return limpo or "persona"
 
 def listar_personas_disponiveis() -> list[str]:
     """Retorna os nomes de todos os personagens salvos."""
@@ -14,7 +20,7 @@ def listar_personas_disponiveis() -> list[str]:
 
 def salvar_persona(nome: str, dados_dict: dict, historico_chat: list = None):
     """Salva os metadados e o histórico de chat do personagem."""
-    caminho = PASTA_PERSONAS / f"{nome}.json"
+    caminho = PASTA_PERSONAS / f"{nome_arquivo_seguro(nome)}.json"
     registro = {
         "dados": dados_dict,
         "historico": historico_chat or []
@@ -24,7 +30,7 @@ def salvar_persona(nome: str, dados_dict: dict, historico_chat: list = None):
 
 def carregar_persona(nome: str) -> tuple[dict, list]:
     """Carrega os dados e o histórico do personagem."""
-    caminho = PASTA_PERSONAS / f"{nome}.json"
+    caminho = PASTA_PERSONAS / f"{nome_arquivo_seguro(nome)}.json"
     if not caminho.exists():
         return {}, []
     try:
@@ -66,11 +72,13 @@ Responda ESTRITAMENTE através do schema JSON fornecido.
         use_world_context=True
     )
 
-    persona_obj = PersonaRoleplay.model_validate_json(str(resposta_raw))
+    persona_obj = PersonaRoleplay.model_validate_json(ex.remover_markdown_fences(str(resposta_raw)))
     dados_dict = persona_obj.model_dump()
 
-    salvar_persona(persona_obj.nome, dados_dict, historico_chat=[])
-    return persona_obj.nome
+    # O nome do arquivo (e da persona na lista) é a versão segura do nome devolvido pela IA
+    nome_salvo = nome_arquivo_seguro(persona_obj.nome)
+    salvar_persona(nome_salvo, dados_dict, historico_chat=[])
+    return nome_salvo
 
 def dialogar_com_persona(nome_persona: str, prompt_usuario: str) -> str:
     """Executa a chamada da IA assumindo estritamente a persona."""

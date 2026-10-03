@@ -54,6 +54,9 @@ def _contem_termo_secreto(texto: str, lista_termos: list[str]) -> bool:
 
     return False
 
+# Nome público para uso em outros módulos (ex: ocultar nomes de arquivos/pastas secretos)
+contem_termo_secreto = _contem_termo_secreto
+
 def filtrar_conteudo_por_permissao(texto_markdown: str, is_dm: bool = True, termos_custom: Optional[list[str]] = None) -> str:
     """
     Se is_dm=True: Retorna o texto 100% completo com todos os segredos.

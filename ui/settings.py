@@ -171,7 +171,6 @@ class OptionsFrame(ttk.Frame):
         self.canvas_window = self.canvas.create_window((0, 0), window=self.scroll_frame, anchor="nw")
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
-        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
         self.canvas.bind("<Configure>", self._on_canvas_resize)
 
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(15, 0), pady=(0, 15))
@@ -184,8 +183,8 @@ class OptionsFrame(ttk.Frame):
         self._render_grid()
 
     def _on_mousewheel(self, event):
-        if self.winfo_viewable():
-            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        # Chamado pelo roteador global de rolagem do gui.py quando esta página está ativa
+        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _on_canvas_resize(self, event):
         canvas_width = event.width
@@ -290,19 +289,25 @@ class OptionsFrame(ttk.Frame):
             import asyncio
 
             if not discordclient or not discordclient.is_ready():
-                self.toast("⚠️ O Bot do Discord ainda não está conectado.")
+                self.toast_callback("⚠️ O Bot do Discord ainda não está conectado.")
                 return
 
-            self.toast("🔄 Sincronizando canais de conhecimento com o Discord...")
-            
+            self.toast_callback("🔄 Sincronizando canais de conhecimento com o Discord...")
+
             # Agenda a tarefa diretamente no event loop do Discord que roda em segundo plano
-            loop = getattr(self, "discord_loop", None) or asyncio.get_event_loop()
             config = obter_configuracao_servidor(self.servidor_selecionado_id)
-            
-            asyncio.run_coroutine_threadsafe(
+            futuro = asyncio.run_coroutine_threadsafe(
                 scraper.varrer_e_salvar_canais_conhecimento(discordclient, config),
                 discordclient.loop
             )
+
+            def _ao_concluir(f):
+                try:
+                    total_arq, total_msg = f.result()
+                    self.toast_callback(f"✅ Sincronização concluída: {total_arq} canal(is), {total_msg} mensagem(ns).")
+                except Exception as erro:
+                    self.log_callback(f"Erro na sincronização com o Discord: {erro}")
+            futuro.add_done_callback(_ao_concluir)
         except Exception as e:
             self.log_callback(f"Erro ao disparar sincronização: {e}")
 

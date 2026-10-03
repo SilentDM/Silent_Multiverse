@@ -665,7 +665,9 @@ class ExplorerFrame(ttk.Frame):
         dest_path = os.path.join(dest_dir, os.path.basename(src_path))
         if os.path.abspath(src_path) != os.path.abspath(dest_path):
             try:
+                self._preparar_movimentacao()
                 shutil.move(src_path, dest_path)
+                self._remapear_arquivo_aberto(src_path, dest_path)
                 msg = f"Movido '{os.path.basename(src_path)}' para '{os.path.basename(dest_dir)}'"
                 self.log_callback(msg)
                 self.toast(msg)
@@ -676,6 +678,35 @@ class ExplorerFrame(ttk.Frame):
 
         self._drag_item = None
         self._drag_path = None
+
+    # --- MOVER / RENOMEAR SEM PERDER O ARQUIVO ABERTO ---
+    def _preparar_movimentacao(self):
+        """Salva o editor antes de mover/renomear algo no disco (evita perder o que foi digitado)."""
+        if self.autosave_timer:
+            self.after_cancel(self.autosave_timer)
+            self.autosave_timer = None
+        self.save_current_file()
+
+    def _remapear_caminho(self, caminho, origem, destino):
+        """Se 'caminho' é 'origem' ou está dentro dela, devolve o caminho equivalente sob 'destino'."""
+        if not caminho:
+            return caminho
+        caminho_abs, origem_abs = os.path.abspath(caminho), os.path.abspath(origem)
+        if caminho_abs == origem_abs:
+            return os.path.abspath(destino)
+        if caminho_abs.startswith(origem_abs + os.sep):
+            return os.path.join(os.path.abspath(destino), caminho_abs[len(origem_abs) + 1:])
+        return caminho
+
+    def _remapear_arquivo_aberto(self, origem, destino):
+        """Atualiza o arquivo aberto e o histórico de navegação após mover/renomear 'origem' para 'destino'."""
+        novo = self._remapear_caminho(self.current_file, origem, destino)
+        if novo != self.current_file:
+            self.current_file = novo
+            self._registrar_versao_disco(novo)
+            prefixo = "👁️ Visualizando: " if getattr(self, "modo_preview", False) else "✏️ Editando: "
+            self.lbl_editor_title.config(text=f"{prefixo}{os.path.basename(novo)}")
+        self.history = [self._remapear_caminho(h, origem, destino) for h in self.history]
 
     # --- AUTO-SAVE E EDIÇÃO ---
     def on_key_release(self, event):
@@ -1264,7 +1295,9 @@ class ExplorerFrame(ttk.Frame):
 
         try:
             if mode == "cut":
+                self._preparar_movimentacao()
                 shutil.move(src, dest)
+                self._remapear_arquivo_aberto(src, dest)
                 self.clipboard_item = None
                 msg = f"✂️ Recortado e colado '{base_name}'"
             else:
@@ -1409,8 +1442,13 @@ class ExplorerFrame(ttk.Frame):
                     if esta_aberto:
                         self.save_current_file()
                         self.current_file = None
+                    elif os.path.isdir(caminho):
+                        # Pasta que pode conter o arquivo aberto: salva e acompanha o novo caminho
+                        self._preparar_movimentacao()
 
                     os.rename(caminho, novo_caminho)
+                    if not esta_aberto:
+                        self._remapear_arquivo_aberto(caminho, novo_caminho)
                     self.toast(f"✏️ Renomeado: '{nome_antigo}' -> '{novo_nome}'")
                     self.refresh_tree()
 
