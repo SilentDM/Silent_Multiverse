@@ -90,3 +90,8 @@ def metricas(modelo: dict) -> dict:
         "tokens": int(modelo.get("maxinputtokens") or 0),
         "score": modelo.get("quality_score") or 0,
     }
+
+
+def atualizar_se_necessario():
+    """Na inicialização: refaz o ranking só se a lista estiver vazia ou com mais de 7 dias."""
+    ag.findmodel()

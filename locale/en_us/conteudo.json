@@ -18,5 +18,7 @@
   "wb.objetivo_padrao": "Complete the Project",
   "acoes.padrao_melhorar": "Improve the quality, richness of detail, style and cohesion of the file with the rest of the universe.",
   "acoes.padrao_aventura": "Create a challenging and immersive D&D 5e adventure themed around {nome}.",
-  "acoes.padrao_conhecimento": "Cover the entity's origins, politics, rumors and operational secrets."
+  "acoes.padrao_conhecimento": "Cover the entity's origins, politics, rumors and operational secrets.",
+  "conselho.diretriz_sugerida": "Deepen the intrigue, operational details and character reactions of {nome}.",
+  "conselho.diretriz_vazia": "Expand and deepen the document."
 }

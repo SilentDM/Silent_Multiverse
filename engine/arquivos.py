@@ -269,3 +269,46 @@ def remapear_caminho(caminho, origem, destino):
     if caminho_abs.startswith(origem_abs + os.sep):
         return os.path.join(os.path.abspath(destino), caminho_abs[len(origem_abs) + 1:])
     return caminho
+
+
+def esta_dentro(item: str, caminho) -> bool:
+    """True se 'caminho' é o próprio 'item' ou está dentro dele (pasta)."""
+    if not caminho:
+        return False
+    item_abs, caminho_abs = os.path.abspath(item), os.path.abspath(caminho)
+    return caminho_abs == item_abs or caminho_abs.startswith(item_abs + os.sep)
+
+
+# ----------------------------------------------------------------------
+# CONSULTAS SIMPLES DE CAMINHO (para a interface não lidar com o sistema de arquivos)
+# ----------------------------------------------------------------------
+def nome(caminho) -> str:
+    return os.path.basename(str(caminho)) if caminho else ""
+
+
+def pasta_de(caminho) -> str:
+    return os.path.dirname(str(caminho))
+
+
+def absoluto(caminho) -> str:
+    return os.path.abspath(str(caminho))
+
+
+def existe(caminho) -> bool:
+    return bool(caminho) and os.path.exists(str(caminho))
+
+
+def eh_arquivo(caminho) -> bool:
+    return bool(caminho) and os.path.isfile(str(caminho))
+
+
+def eh_pasta(caminho) -> bool:
+    return bool(caminho) and os.path.isdir(str(caminho))
+
+
+def eh_markdown(caminho) -> bool:
+    return eh_arquivo(caminho) and str(caminho).lower().endswith(".md")
+
+
+def mesmo_caminho(a, b) -> bool:
+    return bool(a and b) and os.path.abspath(str(a)) == os.path.abspath(str(b))

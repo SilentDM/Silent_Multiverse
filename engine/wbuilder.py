@@ -6,6 +6,7 @@ import engine.project_utils as pu
 import core.ai_image as aimg
 import core.ai_utils as au
 import core.cache_gemini as cg
+import core.eventos as ev
 import core.config as st
 from typing import Optional
 from pathlib import Path
@@ -230,6 +231,8 @@ Crie o plano de ação no formato JSON estruturado com as próximas etapas prior
                     reverse=True
                 )
                 
+                # Mostra o plano na página do WorldBuilder antes de executar
+                ev.emitir("wb.plano", actions)
                 if actions:
                     enactchoices(actions)
                 else:
@@ -245,7 +248,7 @@ Crie o plano de ação no formato JSON estruturado com as próximas etapas prior
 
 def enactchoices(actions):
     print("Enactchoices Iniciado!")
-    for action in actions:
+    for indice, action in enumerate(actions):
         if pu.is_cancelled():
             print("\nProcessamento do Expander interrompido pelo usuário!")
             return
@@ -254,22 +257,27 @@ def enactchoices(actions):
         objective = action.get("objective", "")
         template = action.get("template", "nenhum")
         
-        # Registro thread-safe no changelog.jsonl
-        registro = {
-            "timestamp": pu.currentdate(),
-            "action": tipo,
-            "path": path,
-            "template": template,
-            "objective": objective
-        }
-        pu.anexar_jsonl_seguro(pu.log_path("changelog.jsonl"), registro, pu.LOCK_CHANGELOG)
-
-        if tipo == "CreateFolder":
-            createfolder(action["path"], action.get("objective", ""))
-        elif tipo == "CreateFile":
-            createfile(action["path"], action.get("objective", ""), template)
-        elif tipo == "ImproveFile":
-            improvefile(action["path"], action.get("objective", ""))
+        ev.emitir("wb.acao", {"indice": indice, "estado": "executando"})
+        resultado = False
+        try:
+            if tipo == "CreateFolder":
+                resultado = createfolder(action["path"], action.get("objective", ""))
+            elif tipo == "CreateFile":
+                resultado = createfile(action["path"], action.get("objective", ""), template)
+            elif tipo == "ImproveFile":
+                resultado = improvefile(action["path"], action.get("objective", ""))
+        finally:
+            # Registro thread-safe no changelog.jsonl (com o resultado da ação)
+            registro = {
+                "timestamp": pu.currentdate(),
+                "action": tipo,
+                "path": path,
+                "template": template,
+                "objective": objective,
+                "result": bool(resultado),
+            }
+            pu.anexar_jsonl_seguro(pu.log_path("changelog.jsonl"), registro, pu.LOCK_CHANGELOG)
+            ev.emitir("wb.acao", {"indice": indice, "estado": "concluida" if resultado else "falhou", "registro": registro})
     
         ex.processar_arquivos()
         print("Reconstruindo contexto do cache para refletir as novas criações...")

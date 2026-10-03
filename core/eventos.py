@@ -8,6 +8,7 @@ de lógica precisa conhecer a interface (e vice-versa).
 Canais de log: "geral" recebe TUDO; canais específicos (ex: "worldbuilder")
 recebem apenas o que for publicado neles, além de aparecer em "geral".
 """
+import sys
 import threading
 import traceback
 from collections import defaultdict
@@ -51,8 +52,9 @@ def log(mensagem, canal: str = "geral"):
             destinos += _inscritos_log.get(canal, [])
     if destinos:
         _chamar(destinos, mensagem)
-    else:
-        print(mensagem)
+    elif sys.__stdout__ is not None:
+        # Console original (não o sys.stdout, que a interface pode redirecionar para cá mesmo)
+        sys.__stdout__.write(mensagem + "\n")
 
 
 def emitir(evento: str, dados=None):

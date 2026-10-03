@@ -40,3 +40,13 @@ def liberar_memoria():
         ctypes.windll.psapi.EmptyWorkingSet(handle)
     except Exception as e:
         print(f"Erro ao otimizar RAM: {e}")
+
+
+def caminho_icone():
+    """icon.ico embutido pelo PyInstaller (_MEIPASS) ou ao lado do programa; None se não existir."""
+    candidatos = []
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        candidatos.append(Path(sys._MEIPASS) / "icon.ico")
+    import engine.project_utils as pu
+    candidatos.append(pu.BASE_DIR / "icon.ico")
+    return next((c for c in candidatos if c.exists()), None)

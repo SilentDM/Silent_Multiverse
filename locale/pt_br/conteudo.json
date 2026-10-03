@@ -18,5 +18,7 @@
   "wb.objetivo_padrao": "Completar o Projeto",
   "acoes.padrao_melhorar": "Melhorar a qualidade, riqueza de detalhes, estilo e coesão do arquivo com o restante do universo.",
   "acoes.padrao_aventura": "Criar uma aventura desafiadora e imersiva de D&D 5e temática sobre {nome}.",
-  "acoes.padrao_conhecimento": "Cobrir origens, política, rumores e segredos operacionais da entidade."
+  "acoes.padrao_conhecimento": "Cobrir origens, política, rumores e segredos operacionais da entidade.",
+  "conselho.diretriz_sugerida": "Aprofundar a intriga, detalhes operacionais e reações dos personagens de {nome}.",
+  "conselho.diretriz_vazia": "Expandir e aprofundar o documento."
 }

@@ -9,7 +9,7 @@ se.carregar_todas_credenciais()
 pu.inicializar_estrutura_silent_data()
 pu.sincronizar_templates_e_estilo_iniciais()
 
-from ui.gui import main as start_gui
+from ui.app import main as start_gui
 
 def main():
     try:

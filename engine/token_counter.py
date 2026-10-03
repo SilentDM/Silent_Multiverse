@@ -291,3 +291,28 @@ def montar_arvore_relatorio(analise: AnaliseProjeto, coluna: str = "tok_m", decr
         return resultado
 
     return montar(Path("."))
+
+
+# ----------------------------------------------------------------------
+# CONTAGEM EXATA DOS DOIS CONTEXTOS + CALIBRAÇÃO
+# ----------------------------------------------------------------------
+def contar_contextos_exatos(analise: AnaliseProjeto) -> dict:
+    """Conta Mestre e Jogadores na API e devolve totais, limite, provedor e o fator de calibração."""
+    r_m = contar_tokens_exatos(analise.bundle_mestre)
+    r_j = contar_tokens_exatos(analise.bundle_jogador)
+    estimado = estimar_tokens(analise.chars_bundle_mestre)
+    return {
+        "mestre": r_m["tokens"],
+        "jogador": r_j["tokens"],
+        "limite": r_m.get("limite"),
+        "provedor": r_m["provedor"],
+        # Mesmo fator para as duas colunas: mesmo tokenizador, mesmo tipo de texto
+        "fator": (r_m["tokens"] / estimado) if estimado else 1.0,
+    }
+
+
+def dica_erro_contagem(erro) -> str:
+    texto = str(erro).lower()
+    if "too long" in texto or "exceed" in texto or "limit" in texto:
+        return t("relatorio.dica_excede")
+    return ""

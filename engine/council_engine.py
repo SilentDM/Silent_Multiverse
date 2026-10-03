@@ -160,3 +160,13 @@ INSTRUÇÕES DO JUIZ:
     print(f"✅ [CONSELHO] Arquivo consolidado com sucesso: {caminho.name}")
     print(f"   Nota do Juiz: {decisao.resumo_decisao_juiz}")
     return True
+
+def diretriz_padrao(nome_arquivo: str) -> str:
+    """Sugestão de diretriz exibida ao carregar um arquivo no Conselho (idioma ativo)."""
+    from core.i18n import tc
+    return tc("conselho.diretriz_sugerida", nome=nome_arquivo)
+
+
+def diretriz_vazia() -> str:
+    from core.i18n import tc
+    return tc("conselho.diretriz_vazia")

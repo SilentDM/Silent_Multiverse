@@ -210,3 +210,9 @@ def deve_auto_expandir(caminho: str) -> bool:
         return False
     conteudo = pu.ler_markdown(Path(caminho)) or ""
     return any(tag in conteudo for tag in pu.TAG_ALVO)
+
+
+def executar_benchmark_modelos(ao_concluir=None, ao_falhar=None) -> bool:
+    """Testa e reordena os modelos Gemini (página Performance). ao_concluir recebe a lista nova."""
+    import core.modelos_gemini as modelos
+    return _iniciar("benchmark", modelos.executar_benchmark, ao_concluir=ao_concluir, ao_falhar=ao_falhar)

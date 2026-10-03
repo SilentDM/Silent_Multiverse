@@ -40,5 +40,6 @@
   "relatorio.resumo_disco": "- Size on disk: {tamanho}",
   "relatorio.resumo_tokens_mestre": "- GM context tokens ({tipo}): {tokens} — {pct} of the {limite} limit",
   "relatorio.resumo_tokens_jogador": "- Player context tokens ({tipo}): {tokens} — {pct} of the {limite} limit",
-  "relatorio.resumo_maiores": "## Largest files (GM context)"
+  "relatorio.resumo_maiores": "## Largest files (GM context)",
+  "relatorio.dica_excede": " The context is probably larger than the limit accepted by the provider."
 }

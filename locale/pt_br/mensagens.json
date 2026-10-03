@@ -40,5 +40,6 @@
   "relatorio.resumo_disco": "- Tamanho em disco: {tamanho}",
   "relatorio.resumo_tokens_mestre": "- Tokens do contexto do Mestre ({tipo}): {tokens} — {pct} do limite de {limite}",
   "relatorio.resumo_tokens_jogador": "- Tokens do contexto dos Jogadores ({tipo}): {tokens} — {pct} do limite de {limite}",
-  "relatorio.resumo_maiores": "## Maiores arquivos (contexto do Mestre)"
+  "relatorio.resumo_maiores": "## Maiores arquivos (contexto do Mestre)",
+  "relatorio.dica_excede": " O contexto provavelmente é maior que o limite aceito pelo provedor."
 }
