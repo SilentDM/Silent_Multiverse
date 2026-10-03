@@ -1,6 +1,7 @@
 # Em engine/project_utils.py
 import sys, os, re, json, threading, unicodedata, difflib, zipfile, ctypes, shutil
 import core.secret_filter as sf
+from core.i18n import t
 from pathlib import Path
 from datetime import datetime
 
@@ -46,8 +47,17 @@ IGNORELIST = [
     ".obsidian",
     ".git",
     ".trash",
-    "status: rascunho"
+    "status: rascunho",
+    "status: draft",
 ]
+
+# Marcadores de rascunho aceitos (português e inglês) — arquivos com eles ficam fora do contexto da IA
+MARCADORES_RASCUNHO = ("status: rascunho", "status: draft")
+
+
+def eh_rascunho(texto: str) -> bool:
+    texto = (texto or "").lower()
+    return any(marcador in texto for marcador in MARCADORES_RASCUNHO)
 
 ARQUIVO_ORDEM_GLOBAL = PASTA_LOGS / "folder_orders.json"
 
@@ -148,9 +158,8 @@ def definir_projeto_ativo(caminho_bruto):
         with open(arquivo_settings, "w", encoding="utf-8") as f:
             json.dump(dados, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        print(f"Erro ao salvar projeto ativo: {e}")
+        print(f"Erro ao salvar projeto ativo: {e}")  # pode ocorrer durante a importação (sem traduções ainda)
 
-    print(f"🌍 Projeto Ativo configurado para: {CAMINHO_PROJETO}")
     return CAMINHO_PROJETO
 
 # Inicialização padrão do projeto
@@ -181,7 +190,7 @@ def ler_json_seguro(caminho: Path, lock: threading.Lock, padrao=None):
             with open(caminho, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
-            print(f"⚠️ Erro ao ler JSON {caminho.name}: {e}")
+            print(t("projeto.erro_ler_json", nome=caminho.name, erro=e))
             return padrao
 
 def salvar_json_seguro(caminho: Path, dados, lock: threading.Lock, indent=4):
@@ -194,7 +203,7 @@ def salvar_json_seguro(caminho: Path, dados, lock: threading.Lock, indent=4):
                 json.dump(dados, f, ensure_ascii=False, indent=indent)
             caminho_tmp.replace(caminho)  # Substituição atômica no sistema de arquivos
         except Exception as e:
-            print(f"❌ Erro ao salvar JSON {caminho.name}: {e}")
+            print(t("projeto.erro_salvar_json", nome=caminho.name, erro=e))
 
 def anexar_jsonl_seguro(caminho: Path, registro: dict, lock: threading.Lock):
     """Anexa um novo objeto como linha (.jsonl) de forma thread-safe."""
@@ -205,7 +214,7 @@ def anexar_jsonl_seguro(caminho: Path, registro: dict, lock: threading.Lock):
             with open(caminho, "a", encoding="utf-8") as f:
                 f.write(linha)
         except Exception as e:
-            print(f"❌ Erro ao anexar em {caminho.name}: {e}")
+            print(t("projeto.erro_anexar", nome=caminho.name, erro=e))
 
 def obter_caminho_base():
     """Retorna o caminho raiz correto rodando como script .py ou como .exe compilado."""
@@ -274,19 +283,25 @@ def existe_nome_parecido(nome_proposto: str, pasta_destino: Path, limiar: float 
 def log_path(nome):
     return PASTA_LOGS / nome
 
+# Palavras interrogativas (PT e EN) -> dica de foco enviada junto da pergunta ao bot
+_INTENCOES = [
+    (("onde", "where"), "intencao.local"),
+    (("quando", "when"), "intencao.tempo"),
+    (("quem", "who"), "intencao.entidade"),
+    (("como", "how"), "intencao.metodo"),
+    (("por que", "porque", "why"), "intencao.causa"),
+]
+
+
 def detectar_intencao(pergunta):
-    pergunta_lower = pergunta.lower()
-    if "onde" in pergunta_lower:
-        return "Foque na localização"
-    elif "quando" in pergunta_lower:
-        return "Foque no histórico ou cronologia"
-    elif "quem" in pergunta_lower:
-        return "Foque na entidade ou pessoa"
-    elif "como" in pergunta_lower:
-        return "Foque no método ou processo"
-    elif "por que" in pergunta_lower or "porque" in pergunta_lower:
-        return "Foque na causa"
+    from core.i18n import tc
+    palavras = re.findall(r"[\w']+", pergunta.lower())
+    texto = " ".join(palavras)
+    for gatilhos, chave in _INTENCOES:
+        if any((g in palavras) if " " not in g else (g in texto) for g in gatilhos):
+            return tc(chave)
     return ""
+
 
 def currentdate():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -427,7 +442,7 @@ def avaliar_conteudo_para_contexto(content: str, is_dm: bool = True, termos_secr
     if any(tag in content for tag in TAG_ALVO):
         return "", "todo"
     if any(ignore in content for ignore in IGNORELIST):
-        return "", "rascunho" if "status: rascunho" in content else "marcador"
+        return "", "rascunho" if eh_rascunho(content) else "marcador"
 
     content_filtrado = sf.filtrar_conteudo_por_permissao(content, is_dm=is_dm, termos_custom=termos_secretos)
     if not content_filtrado:
@@ -440,7 +455,7 @@ def formatar_bloco_contexto(nome_arquivo: str, conteudo_filtrado: str) -> str:
 def carregar_projeto(is_dm: bool = True):
     caminho = Path(CAMINHO_PROJETO)
     if not caminho.exists():
-        print(f"⚠️ Alerta: Pasta '{PASTA_PROJETO}' não encontrada.")
+        print(t("projeto.pasta_nao_encontrada", nome=PASTA_PROJETO))
         return ""
 
     conteudo_total = []
@@ -589,6 +604,6 @@ def carregar_conhecimento_discord(guild_id: str = "global") -> str:
                 if texto:
                     conteudo.append(f"=== CANAL DISCORD: #{arq.stem} ===\n{texto}")
         except Exception as e:
-            print(f"Erro ao ler conhecimento do Discord ({arq.name}): {e}")
+            print(t("projeto.erro_conhecimento_discord", nome=arq.name, erro=e))
 
     return "\n\n".join(conteudo)

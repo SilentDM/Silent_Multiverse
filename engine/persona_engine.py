@@ -2,10 +2,13 @@ import json, re
 from pathlib import Path
 import engine.project_utils as pu
 import core.ai_utils as au
+from core.i18n import t, tc
+from core.prompts import carregar_prompt
 import engine.expander as ex
 from engine.persona_schemas import PersonaRoleplay, persona_para_markdown
 
 PASTA_PERSONAS = pu.PASTA_DADOS_NEXUS / "personas"
+AUTOR_INTERLOCUTOR = "Interlocutor"  # marcador interno do histórico salvo (não traduzir)
 PASTA_PERSONAS.mkdir(parents=True, exist_ok=True)
 
 def nome_arquivo_seguro(nome: str) -> str:
@@ -38,110 +41,61 @@ def carregar_persona(nome: str) -> tuple[dict, list]:
             conteudo = json.load(f)
             return conteudo.get("dados", {}), conteudo.get("historico", [])
     except Exception as e:
-        print(f"Erro ao carregar persona {nome}: {e}")
+        print(t("persona.erro_ler", nome=nome, erro=e))
         return {}, []
 
-# Em engine/persona_engine.py -> atualizar a função forjar_nova_persona:
-
 def forjar_nova_persona(nome_personagem: str, descricao_direta: str) -> str:
-    """
-    Usa o bundle completo do mundo para derivar a psicologia profunda e a aparência visual do personagem.
-    """
-    prompt_usuario = f"""
-Crie a mente completa e a ficha visual de roleplay para o seguinte personagem:
-NOME: {nome_personagem}
-DIRETRIZES DO MESTRE: {descricao_direta}
-
-INSTRUÇÕES ADICIONAIS:
-1. Analise o contexto do mundo para inferir ou harmonizar a raça, vestimentas, deuses cultuados e facção do personagem.
-2. Defina com precisão os traços visuais em Português (gênero, raça, cabelo, olhos, tom de pele, roupas e marcas).
-3. No campo 'prompt_visual_ingles', crie um prompt em INGLÊS no estilo profissional de concept art de fantasia sombria, descrevendo a aparência facial, olhar, cabelo e vestimentas do personagem.
-"""
-
-    instrucoes_sistema = """
-Você é um diretor de elenco, psicólogo de personagens e concept artist sênior para universos de fantasia.
-Sua missão é criar uma entidade crível, com traços físicos marcantes e personalidade profunda.
-Responda ESTRITAMENTE através do schema JSON fornecido.
-"""
-
+    """Usa o mundo inteiro como contexto para derivar a psicologia e a aparência do personagem."""
     resposta_raw = au.ask_ai(
-        contents=prompt_usuario,
-        system_instruction=instrucoes_sistema,
+        contents=carregar_prompt("persona_forja_usuario", nome=nome_personagem, diretrizes=descricao_direta),
+        system_instruction=carregar_prompt("persona_forja_sistema"),
         temperature=0.65,
         response_schema=PersonaRoleplay,
-        use_world_context=True
+        use_world_context=True,
     )
-
     persona_obj = PersonaRoleplay.model_validate_json(ex.remover_markdown_fences(str(resposta_raw)))
-    dados_dict = persona_obj.model_dump()
-
     # O nome do arquivo (e da persona na lista) é a versão segura do nome devolvido pela IA
     nome_salvo = nome_arquivo_seguro(persona_obj.nome)
-    salvar_persona(nome_salvo, dados_dict, historico_chat=[])
+    salvar_persona(nome_salvo, persona_obj.model_dump(), historico_chat=[])
     return nome_salvo
+
 
 def dialogar_com_persona(nome_persona: str, prompt_usuario: str) -> str:
     """Executa a chamada da IA assumindo estritamente a persona."""
     dados, historico = carregar_persona(nome_persona)
     if not dados:
-        return "⚠️ Erro: Não foi possível carregar as diretrizes deste personagem."
+        raise RuntimeError(t("persona.erro_carregar", nome=nome_persona))
 
-    # Monta a instrução de sistema da persona
-    diretrizes_txt = "\n".join(f"- {d}" for d in dados.get("instrucoes_de_atuacao", []))
-    
-    persona_prompt = f"""
-[ASSUMA ESTA IDENTIDADE AGORA]
-Você é {dados.get('nome')}, conhecido como '{dados.get('titulo_ou_alcunha')}'.
-Ocupação: {dados.get('ocupacao_ou_papel')} | Alinhamento: {dados.get('alinhamento_moral')}
+    instrucoes = carregar_prompt(
+        "persona_dialogo_sistema", nome=dados.get("nome"), alcunha=dados.get("titulo_ou_alcunha"),
+        ocupacao=dados.get("ocupacao_ou_papel"), alinhamento=dados.get("alinhamento_moral"),
+        bordao=dados.get("bordao_ou_frase_marcante"), voz=dados.get("tom_de_voz_e_estilo_fala"),
+        psicologia=dados.get("psicologia_e_temperamento"), motivacao=dados.get("motivacao_primaria"),
+        fraqueza=dados.get("fraqueza_ou_medo_oculto"),
+        instrucoes="\n".join(f"- {d}" for d in dados.get("instrucoes_de_atuacao", [])))
 
-SUA VISÃO DE MUNDO / FILOSOFIA:
-"{dados.get('bordao_ou_frase_marcante')}"
-
-COMO VOCÊ FALA:
-{dados.get('tom_de_voz_e_estilo_fala')}
-
-SUA MENTE E TEMPERAMENTO:
-{dados.get('psicologia_e_temperamento')}
-
-SUA MOTIVAÇÃO PRINCIPAL:
-{dados.get('motivacao_primaria')}
-
-SEU MEDO OU FRAQUEZA OCULTA (Nunca revele isso facilmente!):
-{dados.get('fraqueza_ou_medo_oculto')}
-
-REGRAS DE INTERPRETAÇÃO (ROLEPLAY):
-{diretrizes_txt}
-- Responda SEMPRE em primeira pessoa ("Eu acho...", "Você ousa me perguntar isso?").
-- Mantenha total fidelidade ao clima do universo e às relações de poder do mundo.
-- Jamais quebre o personagem. Você não é um modelo de linguagem; você é {dados.get('nome')}.
-"""
-
-    # Constrói o histórico recente do chat desse personagem
-    contexto_conversa = ""
-    for msg in historico[-6:]:  # Pega as últimas 6 mensagens
-        contexto_conversa += f"{msg['autor']}: {msg['texto']}\n"
-
-    input_final = f"--- HISTÓRICO DA NOSSA CONVERSA ---\n{contexto_conversa}\n\nInterlocutor: {prompt_usuario}\n{dados.get('nome')}:"
+    # Histórico recente (as últimas 6 mensagens); o autor interno "Interlocutor" vira o rótulo do idioma
+    rotulo_interlocutor = tc("persona.interlocutor")
+    historico_txt = "\n".join(
+        f"{rotulo_interlocutor if m['autor'] == AUTOR_INTERLOCUTOR else m['autor']}: {m['texto']}" for m in historico[-6:])
 
     resposta = au.ask_ai(
-        contents=input_final,
-        system_instruction=persona_prompt,
+        contents=carregar_prompt("persona_dialogo_usuario", historico=historico_txt, interlocutor=rotulo_interlocutor,
+                                 mensagem=prompt_usuario, nome=dados.get("nome")),
+        system_instruction=instrucoes,
         temperature=0.75,
-        use_world_context=True
+        use_world_context=True,
     )
-
-    # Salva no histórico
-    historico.append({"autor": "Interlocutor", "texto": prompt_usuario})
-    historico.append({"autor": dados.get("nome"), "texto": str(resposta).strip()})
+    resposta = str(resposta).strip()
+    historico.append({"autor": AUTOR_INTERLOCUTOR, "texto": prompt_usuario})
+    historico.append({"autor": dados.get("nome"), "texto": resposta})
     salvar_persona(nome_persona, dados, historico)
-
-    return str(resposta).strip()
+    return resposta
 
 
 # ----------------------------------------------------------------------
 # FICHA E RETRATO (usados pela página de Roleplay)
 # ----------------------------------------------------------------------
-AUTOR_INTERLOCUTOR = "Interlocutor"  # marcador interno do histórico salvo
 
 
 def ficha(nome_persona: str) -> dict:

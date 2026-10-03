@@ -90,7 +90,7 @@ class _Seguro(dict):
         return "{" + chave + "}"
 
 
-def traduzir(chave: str, idioma: str, padrao=None, **variaveis) -> str:
+def traduzir(chave: str, idioma: str, padrao=None, /, **variaveis) -> str:
     texto = carregar_textos(idioma).get(chave)
     if texto is None and idioma != IDIOMA_PADRAO:
         texto = carregar_textos(IDIOMA_PADRAO).get(chave)
@@ -104,12 +104,12 @@ def traduzir(chave: str, idioma: str, padrao=None, **variaveis) -> str:
     return texto
 
 
-def t(chave: str, **variaveis) -> str:
+def t(chave: str, /, **variaveis) -> str:
     """Texto da INTERFACE (rótulos, botões, avisos, logs exibidos ao usuário)."""
     return traduzir(chave, idioma_interface(), **variaveis)
 
 
-def tc(chave: str, **variaveis) -> str:
+def tc(chave: str, /, **variaveis) -> str:
     """Texto do CONTEÚDO gerado e da IA (Markdown gerado, respostas do bot) no idioma ativo."""
     return traduzir(chave, idioma_ativo(), **variaveis)
 

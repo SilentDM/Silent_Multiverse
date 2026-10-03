@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from core.i18n import t
 
 
 def abrir_no_sistema(caminho):
@@ -39,7 +40,7 @@ def liberar_memoria():
         handle = ctypes.windll.kernel32.GetCurrentProcess()
         ctypes.windll.psapi.EmptyWorkingSet(handle)
     except Exception as e:
-        print(f"Erro ao otimizar RAM: {e}")
+        print(t("sistema.log_erro_ram", erro=e))
 
 
 def caminho_icone():

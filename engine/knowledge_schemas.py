@@ -17,24 +17,21 @@ class CompendioConhecimento(BaseModel):
     testes: List[TesteDePericiaConhecimento] = Field(description="Normalmente 1 a 3 perícias aplicáveis (ex: História para política, Investigação para segredos urbanos)")
 
 def compendio_para_markdown(comp: CompendioConhecimento) -> str:
-    """Converte a estrutura Pydantic em tabelas ricas no padrão Obsidian para inserir no arquivo."""
+    """Tabelas de Testes de Conhecimento em Markdown (padrão Obsidian), no idioma ativo."""
+    from core.i18n import tc
     linhas = [
-        f"\n---\n",
-        f"## 🎲 Verificações de Conhecimento (Lore Checks)",
-        f"> [!tip] Guia Rápido para o Mestre",
-        f"> Use as tabelas abaixo quando os jogadores perguntarem o que seus personagens sabem sobre **{comp.tema_entidade}**.",
-        f"> *Nota do Mestre:* {comp.resumo_mestre}\n"
+        "\n---\n",
+        tc("md.conhecimento.titulo"),
+        tc("md.conhecimento.guia"),
+        tc("md.conhecimento.uso", tema=comp.tema_entidade),
+        tc("md.conhecimento.nota", resumo=comp.resumo_mestre) + "\n",
     ]
-
-    for t in comp.testes:
-        linhas.append(f"### Teste de {t.pericia}")
-        linhas.append(f"*{t.foco_do_teste}*\n")
-        linhas.append("| d20 + Bônus | Nível | Informação Revelada ao Jogador |")
+    for teste in comp.testes:
+        linhas.append(tc("md.conhecimento.teste", pericia=teste.pericia))
+        linhas.append(f"*{teste.foco_do_teste}*\n")
+        linhas.append(tc("md.conhecimento.cabecalho"))
         linhas.append("| :---: | :--- | :--- |")
-        
-        for f in t.faixas:
-            linhas.append(f"| **{f.faixa_d20}** | *{f.nivel_informacao}* | {f.o_que_sabe} |")
-        
+        for faixa in teste.faixas:
+            linhas.append(f"| **{faixa.faixa_d20}** | *{faixa.nivel_informacao}* | {faixa.o_que_sabe} |")
         linhas.append("")
-
     return "\n".join(linhas)

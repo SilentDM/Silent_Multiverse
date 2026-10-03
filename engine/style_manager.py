@@ -58,7 +58,7 @@ def escrever_arquivo_estilo_tom(perfil: str = None):
         pu.CAMINHO_ESTILO.mkdir(parents=True, exist_ok=True)
         (pu.CAMINHO_ESTILO / ARQUIVO_TOM).write_text(tc(f"style.conteudo.{perfil}"), encoding="utf-8")
     except Exception as e:
-        print(f"Erro ao escrever arquivo de tom em Style: {e}")
+        print(t("estilo.log_erro_escrever", erro=e))
 
 
 def definir_perfil_tom(perfil: str):

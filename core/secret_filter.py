@@ -4,13 +4,21 @@ from typing import Optional
 
 # Tags explícitas que sempre indicam segredo
 TAGS_FIXAS_SEGREDO = [
-    "[segredo]", 
-    "[segredos]", 
-    "<!-- segredo -->", 
-    "<-- segredo", 
-    "status: segredo", 
-    "🤫"
+    # Português
+    "[segredo]",
+    "[segredos]",
+    "<!-- segredo -->",
+    "<-- segredo",
+    "status: segredo",
+    # English
+    "[secret]",
+    "[secrets]",
+    "<!-- secret -->",
+    "<-- secret",
+    "status: secret",
+    "🤫",
 ]
+MARCADORES_ARQUIVO_SECRETO = ("status: segredo", "status: secret")
 
 def obter_termos_secretos_configurados() -> list[str]:
     """Lê as palavras secretas cadastradas nas Opções e unifica com as tags fixas."""
@@ -73,7 +81,7 @@ def filtrar_conteudo_por_permissao(texto_markdown: str, is_dm: bool = True, term
         l_str = l.strip()
         if l_str.startswith("# ") and _contem_termo_secreto(l_str[2:], termos_secretos):
             return ""
-        if "status: segredo" in l.lower():
+        if any(marcador in l.lower() for marcador in MARCADORES_ARQUIVO_SECRETO):
             return ""
         if "tags:" in l.lower() and _contem_termo_secreto(l, termos_secretos):
             return ""

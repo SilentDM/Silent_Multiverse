@@ -4,6 +4,7 @@ import core.config as st
 import engine.project_utils as pu
 import bot.dice_roller as dice
 import bot.bot_actions as actions
+from core.i18n import t, tc
 import core.credentials as se
 
 # 🟢 Garante que as chaves do cofre estejam carregadas
@@ -44,13 +45,13 @@ if DISCORD_ENABLED:
                     activity=atividade
                 )
                 ULTIMO_STATUS_PRESENCA = chave_atual
-                print(f" Status do Discord atualizado: Ouvindo {texto_status}")
+                print(t("bot.log_status", status=texto_status))
             except Exception as e:
-                print(f"Erro ao atualizar presença do bot: {e}")
+                print(t("bot.log_erro_presenca", erro=e))
 
     @discordclient.event
     async def on_ready():
-        print(f'🟢 Logado no Discord como: {discordclient.user}')
+        print(t("bot.log_logado", usuario=discordclient.user))
 
         try:
             guilds_info = [(str(g.id), g.name) for g in discordclient.guilds]
@@ -59,14 +60,14 @@ if DISCORD_ENABLED:
             if hasattr(discordclient, "callback_guilds"):
                 discordclient.callback_guilds(guilds_info)
 
-            print(f'Servidores Conectados: {guilds_info}')
+            print(t("bot.log_servidores", servidores=guilds_info))
 
             import bot.discord_scraper as scraper
             config = st.obter_configuracao_servidor()
             asyncio.create_task(scraper.varrer_e_salvar_canais_conhecimento(discordclient, config))
 
         except Exception as e:
-            print(f"Erro ao registrar servidores / disparar scraper: {e}")
+            print(t("bot.log_erro_servidores", erro=e))
 
         config = st.obter_configuracao_servidor()
         prefixo = config.get("discord_prefix", "!ao")
@@ -84,7 +85,7 @@ if DISCORD_ENABLED:
 
         # 1. DMs: IGNORA OU RESPONDE APENAS AJUDA
         if isinstance(message.channel, discord.DMChannel):
-            if any(k in message.content.lower() for k in ["help", "ajuda", "/help", "!help"]):
+            if any(k in message.content.lower() for k in ["help", "ajuda", "/help", "!help", "!ajuda"]):
                 async with message.channel.typing():
                     embed_help = actions.criar_embed_help()
                     await message.reply(embed=embed_help)
@@ -98,7 +99,7 @@ if DISCORD_ENABLED:
 
         # 2. ROLADOR RÁPIDO (!r 1d20+5 ou !rolar 2d6)
         partes_cmd = content.split(maxsplit=1)
-        if partes_cmd and partes_cmd[0].lower() in ("!r", "!rolar"):
+        if partes_cmd and partes_cmd[0].lower() in ("!r", "!rolar", "!roll"):
             expr = partes_cmd[1] if len(partes_cmd) > 1 else ""
             await message.reply(dice.rolar_dados(expr))
             return
@@ -124,23 +125,23 @@ if DISCORD_ENABLED:
                 await message.reply(embed=embed_help)
                 return
 
-            if prompt.lower().startswith("rolar ") or prompt.lower().startswith("r "):
+            if prompt.lower().split(" ")[0] in ("rolar", "roll", "r") and " " in prompt:
                 expr = prompt.split(maxsplit=1)[1] if len(prompt.split(maxsplit=1)) > 1 else ""
                 res = dice.rolar_dados(expr)
                 await message.reply(res)
                 return
 
             # SINCRONIZAÇÃO MANUAL DISPARADA PELO MESTRE (!ao sincronizar)
-            if prompt.lower() in ["sincronizar", "sync"]:
+            if prompt.lower() in ["sincronizar", "sync", "synchronize"]:
                 if not actions.verificar_permissao_mestre(message, config, obter_ids_mestres()):
-                    await message.reply("Apenas Mestres podem disparar a sincronização de conhecimento.")
+                    await message.reply(tc("bot.sync_apenas_mestres"))
                     return
 
-                print(f"[DISCORD-TRACE] Mestre '{user_name}' disparou !ao sincronizar...")
+                print(t("bot.log_sync_mestre", nome=user_name))
                 async with message.channel.typing():
                     import bot.discord_scraper as scraper
                     total_arq, total_msg = await scraper.varrer_e_salvar_canais_conhecimento(discordclient, config)
-                    msg_res = f"🔄 **Sincronização Concluída!**\n- **{total_arq}** canais salvos em `Discord_Knowledge/server_{guild_id}/`.\n- **{total_msg}** mensagens e tópicos processados."
+                    msg_res = tc("bot.sync_concluido", canais=total_arq, mensagens=total_msg, pasta=f"Discord_Knowledge/server_{guild_id}/")
                     await message.reply(msg_res)
                 return
 
@@ -195,7 +196,7 @@ if DISCORD_ENABLED:
 
 else:
     discordclient = None
-    print("DISCORD_TOKEN não configurado — o bot do Discord está desativado.")
+    print(t("bot.log_sem_token"))
 
 if __name__ == "__main__":
     if discordclient and TOKEN:

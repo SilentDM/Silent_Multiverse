@@ -30,16 +30,20 @@ def variaveis_do_prompt(texto: str) -> set:
     return set(_PADRAO_VARIAVEL.findall(texto))
 
 
-def carregar_prompt(nome: str, idioma: str = None, **variaveis) -> str:
-    """Prompt pronto no idioma ativo. Falta de variável é erro (evita enviar '{{x}}' para a IA)."""
-    caminho = caminho_prompt(nome, idioma)
+def carregar_prompt(nome_prompt: str, idioma: str = None, /, **variaveis) -> str:
+    """
+    Prompt pronto no idioma ativo. Falta de variável é erro (evita enviar '{{x}}' para a IA).
+    Os dois primeiros parâmetros são só posicionais para não colidirem com variáveis do
+    template de mesmo nome (ex: {{nome}}).
+    """
+    caminho = caminho_prompt(nome_prompt, idioma)
     if not caminho.exists():
-        caminho = caminho_prompt(nome, i18n.IDIOMA_PADRAO)
+        caminho = caminho_prompt(nome_prompt, i18n.IDIOMA_PADRAO)
     texto = caminho.read_text(encoding="utf-8")
 
     faltando = variaveis_do_prompt(texto) - set(variaveis)
     if faltando:
-        raise KeyError(f"Prompt '{nome}' sem valor para: {', '.join(sorted(faltando))}")
+        raise KeyError(f"Prompt '{nome_prompt}' sem valor para: {', '.join(sorted(faltando))}")
 
     return _PADRAO_VARIAVEL.sub(lambda m: str(variaveis[m.group(1)]), texto).strip()
 
@@ -75,7 +79,7 @@ def schema_localizado(modelo, idioma: str = None):
     for nome, info in modelo.model_fields.items():
         novo_info = copy.copy(info)
         novo_info.description = i18n.traduzir(
-            f"schema.{modelo.__name__}.{nome}", idioma, padrao=info.description
+            f"schema.{modelo.__name__}.{nome}", idioma, info.description
         )
         campos[nome] = (_localizar_tipo(info.annotation, idioma), novo_info)
 
