@@ -154,3 +154,15 @@ def definir_provedor_ia(rotulo: str):
     import core.credentials as cred
     atualizar_configuracoes({"ai_provider_ativo": rotulo})
     cred.salvar_credencial("AI_PROVIDER", PROVEDORES_IA.get(rotulo, "gemini"))
+
+
+def credencial_para_edicao(nome_chave: str) -> str:
+    """Valor atual de uma credencial do cofre, para preencher a tela de Opções."""
+    import core.credentials as cred
+    return cred.obter_credencial(nome_chave)
+
+
+def salvar_credenciais(valores: dict):
+    """Grava várias credenciais no cofre de uma vez (valores vazios removem a chave)."""
+    import core.credentials as cred
+    cred.atualizar_credenciais_em_lote(valores)

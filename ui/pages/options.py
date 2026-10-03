@@ -4,7 +4,6 @@ from tkinter import ttk, messagebox
 
 import bot.runner as discord_runner
 import core.config as cfg
-import core.credentials as cred
 import core.i18n as i18n
 import engine.style_manager as estilo
 import ui.theme as tema
@@ -77,7 +76,7 @@ class PaginaOpcoes(PaginaBase):
         for chave, rotulo, oculto in CREDENCIAIS:
             self._rotulo(caixa, t(rotulo))
             entrada = ttk.Entry(caixa, show="*" if oculto else "", font=("Segoe UI", 10))
-            entrada.insert(0, cred.obter_credencial(chave))
+            entrada.insert(0, cfg.credencial_para_edicao(chave))
             entrada.pack(fill=tk.X, padx=10, pady=(0, 4))
             self.entradas_cred[chave] = entrada
         ttk.Button(caixa, text=t("options.cred_salvar"), command=self._salvar_credenciais).pack(anchor=tk.E, padx=10, pady=10)
@@ -87,7 +86,7 @@ class PaginaOpcoes(PaginaBase):
         self.app.toast(t("options.toast_provedor", nome=rotulo))
 
     def _salvar_credenciais(self):
-        cred.atualizar_credenciais_em_lote({k: e.get().strip() for k, e in self.entradas_cred.items()})
+        cfg.salvar_credenciais({k: e.get().strip() for k, e in self.entradas_cred.items()})
         self.app.toast(t("options.toast_cred"))
 
     # ------------------------------------------------------------------

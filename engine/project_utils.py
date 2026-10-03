@@ -12,7 +12,9 @@ else:
     BASE_DIR = Path(__file__).resolve().parent.parent
 
 # 🟢 PASTA CENTRAL DE DADOS DO NEXUS (Ao lado do executável)
-PASTA_DADOS_NEXUS = (BASE_DIR / ".silent_data").resolve()
+# SILENT_DATA_DIR permite usar outra pasta (os testes automáticos usam uma pasta temporária
+# para nunca tocar nas configurações e memórias reais).
+PASTA_DADOS_NEXUS = Path(os.environ.get("SILENT_DATA_DIR") or (BASE_DIR / ".silent_data")).resolve()
 
 # Todas as subpastas agora vivem exclusivamente dentro de .silent_data
 PASTA_LOGS = PASTA_DADOS_NEXUS / "logs"
