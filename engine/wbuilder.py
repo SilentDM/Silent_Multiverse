@@ -6,7 +6,7 @@ import engine.project_utils as pu
 import core.ai_image as aimg
 import core.ai_utils as au
 import core.cache_gemini as cg
-import ui.settings as st  
+import core.config as st
 from typing import Optional
 from pathlib import Path
 from pydantic import BaseModel

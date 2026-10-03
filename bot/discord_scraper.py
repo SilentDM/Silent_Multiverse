@@ -3,7 +3,7 @@ import os, asyncio, unicodedata, re
 import discord
 from pathlib import Path
 import engine.project_utils as pu
-import ui.settings as st
+import core.config as st
 
 def normalizar_texto_canal(texto: str) -> str:
     if not texto:

@@ -16,7 +16,7 @@ def obter_termos_secretos_configurados() -> list[str]:
     """Lê as palavras secretas cadastradas nas Opções e unifica com as tags fixas."""
     termos = list(TAGS_FIXAS_SEGREDO)
     try:
-        import ui.settings as st
+        import core.config as st
         cfg = st.carregar_configuracoes()
         raw_palavras = cfg.get("termos_secretos", "")
         if raw_palavras:

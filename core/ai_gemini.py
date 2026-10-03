@@ -1,6 +1,6 @@
 import os, threading, time, json, concurrent.futures
 import engine.project_utils as pu
-import ui.settings as st
+import core.config as st
 from typing import Any, Optional, Type
 from pydantic import BaseModel
 from google import genai

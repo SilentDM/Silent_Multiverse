@@ -1,4 +1,4 @@
-# ui/setup_env.py
+# core/credentials.py — cofre de credenciais (keyring do Windows)
 import os, sys
 from pathlib import Path
 import keyring

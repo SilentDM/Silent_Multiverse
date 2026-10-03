@@ -14,7 +14,7 @@ import ui.roleplay_frame as rp
 import ui.settings as st
 import ui.token_report as tr
 import engine.token_counter as tc
-import ui.setup_env as se
+import core.credentials as se
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext, filedialog
 from pathlib import Path

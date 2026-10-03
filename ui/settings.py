@@ -4,9 +4,7 @@ import tkinter as tk
 from tkinter import ttk
 from pathlib import Path
 import engine.project_utils as pu
-import ui.setup_env as se
-
-SETTINGS_FILE = pu.PASTA_LOGS / "settings.json"
+import core.credentials as se
 
 SISTEMAS_RPG = {
     "D&D 5e": "DnD5e.md",
@@ -46,94 +44,11 @@ PERFIS_TOM = {
     )
 }
 
-CONFIG_PADRAO_DISCORD = {
-    "discord_prefix": "!ao",
-    "discord_channels_allowed": "",
-    "discord_channels_blocked": "",
-    "discord_channels_knowledge": "",  # 🟢 NOVO: Canais lidos pelo Scraper
-    "discord_roles_dm": "Mestre, DM, GM",
-    "discord_cooldown_seconds": 15
-}
-
-DEFAULT_SETTINGS = {
-    "auto_expander": False,
-    "wb_allow_create_folder": True,
-    "wb_allow_create_file": True,
-    "wb_allow_improve_file": True,
-    "tom_clima_perfil": "Dark Fantasy (Grimdark)",
-    "rpg_sistema_ativo": "D&D 5e",
-    "ai_provider_ativo": "Gemini",
-    "servidores_descobertos": [],
-    "servidores": {},
-    "termos_secretos":"",
-    "modelos_modo_ordenacao": "automatico",  # "automatico" ou "manual"
-    "ordem_manual_modelos": []  # ID_SERVIDOR: { config_especifica }
-}
-
-DEFAULT_SETTINGS.update(CONFIG_PADRAO_DISCORD)
-
-PROVEDORES_IA = {
-    "Gemini": "gemini",
-    "Pro (OpenAI)": "pro",
-    "Claude (Anthropic)": "claude"
-}
-
-def carregar_configuracoes():
-    config = DEFAULT_SETTINGS.copy()
-    if SETTINGS_FILE.exists():
-        try:
-            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-                dados = json.load(f)
-                config.update(dados)
-        except Exception as e:
-            print(f"Erro ao carregar configurações: {e}")
-    return config
-
-def salvar_configuracoes(config):
-    try:
-        with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
-            json.dump(config, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print(f"Erro ao salvar configurações: {e}")
-
-def atualizar_configuracoes(novos_valores: dict) -> dict:
-    """
-    Relê o settings.json do disco, aplica apenas as chaves informadas e grava.
-    Evita sobrescrever alterações feitas por outras partes do programa
-    (projeto ativo, servidores do Discord, modo dos modelos...).
-    """
-    cfg = carregar_configuracoes()
-    cfg.update(novos_valores)
-    salvar_configuracoes(cfg)
-    return cfg
-
-def obter_configuracao_servidor(guild_id: str = None) -> dict:
-    """
-    Retorna a configuração resolvida para um servidor específico.
-    Se o servidor não tiver personalização ou um campo estiver vazio, usa o fallback global.
-    """
-    cfg = carregar_configuracoes()
-    base = {k: cfg.get(k, CONFIG_PADRAO_DISCORD.get(k, "")) for k in CONFIG_PADRAO_DISCORD}
-
-    if guild_id and "servidores" in cfg and str(guild_id) in cfg["servidores"]:
-        custom = cfg["servidores"][str(guild_id)]
-        # Sobrescreve apenas o que estiver preenchido no servidor específico
-        for k, v in custom.items():
-            if v is not None and str(v).strip() != "":
-                base[k] = v
-
-    return base
-
-def registrar_servidores_descobertos(guilds_info: list):
-    """Atualiza a lista de servidores conhecidos no settings.json (id, name)."""
-    cfg = carregar_configuracoes()
-    atuais = {str(item["id"]): item["name"] for item in cfg.get("servidores_descobertos", [])}
-    
-    for gid, gname in guilds_info:
-        atuais[str(gid)] = gname
-
-    cfg["servidores_descobertos"] = [{"id": gid, "name": name} for gid, name in atuais.items()]
-    salvar_configuracoes(cfg)
+from core.config import (  # camada de configuração movida para core/config.py
+    CONFIG_PADRAO_DISCORD, DEFAULT_SETTINGS, PROVEDORES_IA, SETTINGS_FILE,
+    carregar_configuracoes, salvar_configuracoes, atualizar_configuracoes,
+    obter_configuracao_servidor, registrar_servidores_descobertos,
+)
 
 def escrever_arquivo_estilo_tom(nome_perfil):
     try:

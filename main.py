@@ -2,7 +2,7 @@
 Silent Multiverse Nexus - Ponto de Entrada Principal
 """
 import sys, traceback
-import ui.setup_env as se
+import core.credentials as se
 import engine.project_utils as pu
 
 se.carregar_todas_credenciais()

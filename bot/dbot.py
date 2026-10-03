@@ -1,10 +1,10 @@
 import os, asyncio, time
 import discord
-import ui.settings as st
+import core.config as st
 import engine.project_utils as pu
 import bot.dice_roller as dice
 import bot.bot_actions as actions
-import ui.setup_env as se
+import core.credentials as se
 
 # 🟢 Garante que as chaves do cofre estejam carregadas
 se.carregar_todas_credenciais()
