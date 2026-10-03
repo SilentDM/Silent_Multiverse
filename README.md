@@ -101,7 +101,7 @@ In **Options → Language**:
 
 * **The AI and generated content** switch immediately: prompts, the field descriptions sent to Gemini, generated Markdown (adventures, lore checks, persona sheets, sourcebook) and Discord bot replies.
 * **The interface** switches after a restart.
-* Your lore files, `Templates/` and `Style/` are never translated.
+* Your lore files are never translated. The starter templates and style guides switch to the new language only if you haven't edited them; your own and edited files are always kept.
 
 All texts live in `locale/`:
 
@@ -114,6 +114,7 @@ locale/
     schemas.json     field descriptions of the AI schemas
     manual.md        the in-app manual
     prompts/*.md     one file per AI call (variables as {{name}})
+    modelos/         starter Templates/ and Style/ copied to .silent_data on first use
 ```
 
 To change a text or prompt, edit it in **both** languages (the tests check that keys and variables match).
@@ -156,7 +157,7 @@ pip install -r requirements-build.txt
 python build.py
 ```
 
-This creates `dist/SilentMultiverse.exe` and `dist/SilentMultiverse-<version>-windows.zip`. The executable bundles `locale/`, the icon and, if present, the starter `Templates/` and `Style/` folders.
+This creates `dist/SilentMultiverse.exe` and `dist/SilentMultiverse-<version>-windows.zip`. The executable bundles `locale/` (which includes the starter templates and style guides of each language, in `locale/<language>/modelos/`) and the icon.
 
 **Publishing a release:**
 1. Update `VERSAO` in `core/versao.py` (e.g. `2.1.0`) and commit.

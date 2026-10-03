@@ -66,7 +66,7 @@ class PaginaOpcoes(PaginaBase):
 
     def _mudar_idioma(self, codigo):
         i18n.definir_idioma(codigo)
-        estilo.escrever_arquivo_estilo_tom()          # diretriz de estilo no novo idioma
+        estilo.aplicar_idioma()                       # modelos e diretriz de estilo no novo idioma
         self.app.toast(t("options.toast_idioma", nome=i18n.IDIOMAS[codigo]))
         if codigo != i18n.idioma_interface():
             messagebox.showinfo(t("options.idioma_reiniciar_titulo"), t("options.idioma_reiniciar"))

@@ -82,33 +82,94 @@ LOCK_MODELS = threading.Lock()
 LOCK_CHANGELOG = threading.Lock()
 LOCK_FOLDER_ORDERS = threading.Lock()
 
-def sincronizar_templates_e_estilo_iniciais():
-    """Se a pasta de Templates ou Style em .silent_data estiver vazia, copia os modelos embutidos."""
-    # Origem dos modelos embutidos pelo PyInstaller ou no código-fonte
-    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-        origem_base = Path(sys._MEIPASS)
-    else:
-        origem_base = BASE_DIR
+# ----------------------------------------------------------------------
+# MODELOS INICIAIS (Templates/ e Style/ que acompanham o programa)
+# ----------------------------------------------------------------------
+# Ficam em locale/<idioma>/modelos/ e são copiados para a .silent_data.
+# O registro guarda o idioma instalado e o hash de cada arquivo copiado, para
+# saber quais ainda são a cópia original (nunca editados) ao trocar de idioma.
+PASTAS_MODELOS = ("Templates", PASTA_ESTILO_NOME)
 
-    # Sincroniza Templates se a pasta estiver vazia
-    origem_templates = origem_base / "Templates"
-    if origem_templates.exists() and not any(PASTA_TEMPLATES.glob("*.md")):
-        for arq in origem_templates.glob("*.md"):
+
+def _hash_arquivo(caminho: Path) -> str:
+    import hashlib
+    return hashlib.sha256(caminho.read_bytes()).hexdigest()
+
+
+def _idioma_configurado(pasta_dados: Path) -> str:
+    """Idioma salvo no settings.json (lido direto, sem depender de core.config)."""
+    try:
+        return json.loads((pasta_dados / "logs" / "settings.json").read_text(encoding="utf-8")).get("idioma") or "pt_br"
+    except Exception:
+        return "pt_br"
+
+
+def pasta_modelos_iniciais(idioma: str) -> Path:
+    import core.i18n as i18n
+    return i18n.pasta_locale() / i18n.normalizar_idioma(idioma) / "modelos"
+
+
+def instalar_modelos_iniciais(idioma: str = None, pasta_dados: Path = None) -> list:
+    """
+    Copia os modelos iniciais do idioma para a pasta de dados. Devolve os caminhos copiados.
+
+    - Primeira vez: uma pasta (Templates ou Style) sem nenhum .md recebe todos os modelos dela.
+      Pastas que já têm arquivos (instalações antigas) ficam como estão.
+    - Troca de idioma: os modelos que ainda são a cópia original são trocados pela versão
+      do novo idioma. Arquivos editados ou criados pelo usuário nunca são alterados.
+    """
+    pasta_dados = Path(pasta_dados or PASTA_DADOS_NEXUS)
+    idioma = idioma or _idioma_configurado(pasta_dados)
+    origem = pasta_modelos_iniciais(idioma)
+    arquivo_registro = pasta_dados / "logs" / "modelos_iniciais.json"
+    try:
+        registro = json.loads(arquivo_registro.read_text(encoding="utf-8"))
+    except Exception:
+        registro = None
+    if registro and registro.get("idioma") == idioma:
+        return []
+
+    instalados = dict(registro.get("arquivos", {})) if registro else {}
+    copiados, substituir = [], set()
+    # Modelos antigos nunca editados saem para dar lugar à versão do novo idioma
+    for relativo, hash_original in list(instalados.items()):
+        destino = pasta_dados / relativo
+        if destino.is_file() and _hash_arquivo(destino) == hash_original:
             try:
-                shutil.copy2(arq, PASTA_TEMPLATES / arq.name)
-            except Exception:
+                destino.unlink()
+                substituir.add(relativo)
+            except OSError:
+                pass
+        instalados.pop(relativo)
+
+    for nome_pasta in PASTAS_MODELOS:
+        pasta_origem = origem / ("Style" if nome_pasta == PASTA_ESTILO_NOME else nome_pasta)
+        pasta_destino = pasta_dados / nome_pasta
+        if not pasta_origem.is_dir():
+            continue
+        primeira_vez = registro is None and not any(pasta_destino.glob("*.md"))
+        pasta_destino.mkdir(parents=True, exist_ok=True)
+        for arq in sorted(pasta_origem.glob("*.md")):
+            relativo = f"{nome_pasta}/{arq.name}"
+            destino = pasta_destino / arq.name
+            if destino.exists() or not (primeira_vez or relativo in substituir):
+                continue
+            try:
+                shutil.copy2(arq, destino)
+                instalados[relativo] = _hash_arquivo(destino)
+                copiados.append(str(destino))
+            except OSError:
                 pass
 
-    # Sincroniza Style se a pasta estiver vazia
-    origem_style = origem_base / "Style"
-    if origem_style.exists() and not any(CAMINHO_ESTILO.glob("*.md")):
-        for arq in origem_style.glob("*.md"):
-            try:
-                shutil.copy2(arq, CAMINHO_ESTILO / arq.name)
-            except Exception:
-                pass
+    try:
+        arquivo_registro.parent.mkdir(parents=True, exist_ok=True)
+        arquivo_registro.write_text(json.dumps({"idioma": idioma, "arquivos": instalados}, indent=2), encoding="utf-8")
+    except OSError:
+        pass
+    return copiados
 
-sincronizar_templates_e_estilo_iniciais()
+
+instalar_modelos_iniciais()
 
 def obter_projetos_recentes():
     """Retorna a lista de caminhos de projetos recentes salvos nas configurações."""

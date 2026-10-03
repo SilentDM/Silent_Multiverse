@@ -39,6 +39,7 @@
 - A IA passa a usar o novo idioma na hora: Expander, WorldBuilder, Conselho, Roleplay, chat, auditoria, aventuras, testes de conhecimento e o bot do Discord.
 - A interface muda ao reiniciar o programa.
 - Seus arquivos de lore nunca são traduzidos. O conteúdo novo gerado pela IA segue o idioma escolhido.
+- Os templates e guias de estilo iniciais que você não editou mudam para o novo idioma; os seus e os editados são mantidos.
 - Os marcadores funcionam nos dois idiomas: status: segredo ou status: secret, [segredo] ou [secret], status: rascunho ou status: draft.
 
 # 4. EDITOR

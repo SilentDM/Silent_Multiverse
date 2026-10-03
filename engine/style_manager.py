@@ -51,6 +51,12 @@ def listar_sistemas() -> list:
     return [(sid, t(f"style.sistema.{sid}")) for sid in SISTEMAS_RPG]
 
 
+def aplicar_idioma():
+    """Depois de trocar o idioma: modelos iniciais nunca editados e a diretriz de tom passam para o novo idioma."""
+    pu.instalar_modelos_iniciais(cfg.obter("idioma"))
+    escrever_arquivo_estilo_tom()
+
+
 def escrever_arquivo_estilo_tom(perfil: str = None):
     """Grava Style/Tom_e_Clima.md com a diretriz do perfil, no idioma ativo."""
     perfil = _normalizar(perfil or perfil_tom_ativo(), _LEGADO_TOM, PERFIS_TOM, "neutro")

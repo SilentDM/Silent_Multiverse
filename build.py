@@ -5,8 +5,8 @@ Uso (com o venv ativo e requirements-build.txt instalado):
     python build.py               -> dist/SilentMultiverse.exe + dist/SilentMultiverse-<versão>-windows.zip
     python build.py --tag v2.0.0  -> também confere se a tag bate com core/versao.py (usado no GitHub Actions)
 
-Inclui no executável: locale/ (textos e prompts), icon.ico e, se existirem,
-Templates/ e Style/ (modelos copiados para a .silent_data no primeiro uso).
+Inclui no executável: locale/ (textos, prompts e os modelos iniciais de Templates/Style
+de cada idioma, copiados para a .silent_data no primeiro uso) e icon.ico.
 """
 import argparse
 import re
@@ -32,13 +32,8 @@ def conferir_tag(tag: str, versao: str):
 
 
 def dados_embutidos() -> list:
-    pares = [("locale", "locale"), ("icon.ico", ".")]
-    for pasta in ("Templates", "Style"):
-        if (RAIZ / pasta).is_dir():
-            pares.append((pasta, pasta))
-        else:
-            print(f"Aviso: pasta {pasta}/ não encontrada; o executável sairá sem os modelos iniciais dela.")
-    return pares
+    # locale/ já traz os modelos iniciais (locale/<idioma>/modelos/Templates e Style)
+    return [("locale", "locale"), ("icon.ico", ".")]
 
 
 def gerar_executavel():

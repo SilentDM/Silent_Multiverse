@@ -101,7 +101,7 @@ Em **Opções → Idioma**:
 
 * **A IA e o conteúdo gerado** mudam na hora: prompts, descrições de campos enviadas ao Gemini, Markdown gerado (aventuras, testes de conhecimento, fichas de persona, livro do cenário) e respostas do bot do Discord.
 * **A interface** muda ao reiniciar.
-* Seus arquivos de lore, `Templates/` e `Style/` nunca são traduzidos.
+* Seus arquivos de lore nunca são traduzidos. Os templates e guias de estilo iniciais mudam para o novo idioma só se você não os editou; arquivos seus ou editados são sempre mantidos.
 
 Todos os textos ficam em `locale/`:
 
@@ -114,6 +114,7 @@ locale/
     schemas.json     descrições dos campos dos schemas da IA
     manual.md        o manual exibido no programa
     prompts/*.md     um arquivo por chamada de IA (variáveis no formato {{nome}})
+    modelos/         Templates/ e Style/ iniciais, copiados para a .silent_data no primeiro uso
 ```
 
 Para alterar um texto ou prompt, edite nos **dois** idiomas (os testes conferem se as chaves e variáveis batem).
@@ -156,7 +157,7 @@ pip install -r requirements-build.txt
 python build.py
 ```
 
-Isso cria `dist/SilentMultiverse.exe` e `dist/SilentMultiverse-<versão>-windows.zip`. O executável embute `locale/`, o ícone e, se existirem, as pastas iniciais `Templates/` e `Style/`.
+Isso cria `dist/SilentMultiverse.exe` e `dist/SilentMultiverse-<versão>-windows.zip`. O executável embute `locale/` (que inclui os templates e guias de estilo iniciais de cada idioma, em `locale/<idioma>/modelos/`) e o ícone.
 
 **Publicando uma versão:**
 1. Atualize `VERSAO` em `core/versao.py` (ex.: `2.1.0`) e faça o commit.
