@@ -1,6 +1,7 @@
 import re, os
 from pathlib import Path
 import engine.project_utils as pu
+from core.i18n import t
 
 CSS_OBSIDIAN_THEME = """
 html {
@@ -340,7 +341,7 @@ def _markdown_para_html_rico(conteudo_md: str, caminho_base_arquivo: Path) -> st
             uri = caminho_encontrado.resolve().as_uri()
             return f'<div style="text-align:center; margin:16px 0;"><img src="{uri}" alt="{nome_img}" style="max-width:100%; border-radius:8px; border:1px solid #36363a; box-shadow:0 4px 20px rgba(0,0,0,0.6);"><br><small style="color:#888;">🗺️ {nome_img}</small></div>'
         else:
-            return f'<div style="border:1px dashed #ef4444; padding:10px; color:#ef4444; margin:10px 0;">⚠️ Imagem não encontrada: {nome_img}</div>'
+            return f'<div style="border:1px dashed #ef4444; padding:10px; color:#ef4444; margin:10px 0;">⚠️ {t("preview.imagem_nao_encontrada", nome=nome_img)}</div>'
 
     # 🟢 1º Trata ![[imagem.png]]
     html = re.sub(r'!\s*\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]', _sub_img_wiki, html)
@@ -392,7 +393,7 @@ def gerar_preview_documento(caminho_arquivo: Path) -> Path:
 
         caixa_propriedades = f"""
         <div class="properties-box">
-            <div class="properties-header">🗂️ Propriedades</div>
+            <div class="properties-header">🗂️ {t('preview.propriedades')}</div>
             {"".join(linhas_props)}
         </div>
         """
@@ -405,7 +406,7 @@ def gerar_preview_documento(caminho_arquivo: Path) -> Path:
             banner_html = f'<div class="banner-container"><img class="banner-img" src="{banner_path.as_uri()}"></div>'
 
     html_completo = f"""<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="{t('livro.lang')}">
 <head>
     <meta charset="UTF-8">
     <title>Preview: {caminho.stem}</title>
@@ -449,7 +450,7 @@ def gerar_html_string_preview(conteudo_md: str, caminho_arquivo: Path = None) ->
 
         caixa_propriedades = f"""
         <div class="properties-box">
-            <div class="properties-header">🗂️ Propriedades</div>
+            <div class="properties-header">🗂️ {t('preview.propriedades')}</div>
             {"".join(linhas_props)}
         </div>
         """
@@ -462,7 +463,7 @@ def gerar_html_string_preview(conteudo_md: str, caminho_arquivo: Path = None) ->
             banner_html = f'<div class="banner-container"><img class="banner-img" src="{banner_path.as_uri()}"></div>'
 
     return f"""<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="{t('livro.lang')}">
 <head>
     <meta charset="UTF-8">
     <style>{CSS_OBSIDIAN_THEME}</style>

@@ -4,19 +4,27 @@ from typing import Optional
 
 # Tags explícitas que sempre indicam segredo
 TAGS_FIXAS_SEGREDO = [
-    "[segredo]", 
-    "[segredos]", 
-    "<!-- segredo -->", 
-    "<-- segredo", 
-    "status: segredo", 
-    "🤫"
+    # Português
+    "[segredo]",
+    "[segredos]",
+    "<!-- segredo -->",
+    "<-- segredo",
+    "status: segredo",
+    # English
+    "[secret]",
+    "[secrets]",
+    "<!-- secret -->",
+    "<-- secret",
+    "status: secret",
+    "🤫",
 ]
+MARCADORES_ARQUIVO_SECRETO = ("status: segredo", "status: secret")
 
 def obter_termos_secretos_configurados() -> list[str]:
     """Lê as palavras secretas cadastradas nas Opções e unifica com as tags fixas."""
     termos = list(TAGS_FIXAS_SEGREDO)
     try:
-        import ui.settings as st
+        import core.config as st
         cfg = st.carregar_configuracoes()
         raw_palavras = cfg.get("termos_secretos", "")
         if raw_palavras:
@@ -54,6 +62,9 @@ def _contem_termo_secreto(texto: str, lista_termos: list[str]) -> bool:
 
     return False
 
+# Nome público para uso em outros módulos (ex: ocultar nomes de arquivos/pastas secretos)
+contem_termo_secreto = _contem_termo_secreto
+
 def filtrar_conteudo_por_permissao(texto_markdown: str, is_dm: bool = True, termos_custom: Optional[list[str]] = None) -> str:
     """
     Se is_dm=True: Retorna o texto 100% completo com todos os segredos.
@@ -70,7 +81,7 @@ def filtrar_conteudo_por_permissao(texto_markdown: str, is_dm: bool = True, term
         l_str = l.strip()
         if l_str.startswith("# ") and _contem_termo_secreto(l_str[2:], termos_secretos):
             return ""
-        if "status: segredo" in l.lower():
+        if any(marcador in l.lower() for marcador in MARCADORES_ARQUIVO_SECRETO):
             return ""
         if "tags:" in l.lower() and _contem_termo_secreto(l, termos_secretos):
             return ""

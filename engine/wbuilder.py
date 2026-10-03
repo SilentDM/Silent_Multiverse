@@ -1,16 +1,26 @@
+"""
+WorldBuilder: planeja ações (criar pastas/arquivos, melhorar arquivos) a partir de
+um objetivo e as executa. Também gera Aventuras 5-Room e Testes de Conhecimento.
+Prompts em locale/<idioma>/prompts/wb_*.md.
+"""
 import re
+import shutil
+from pathlib import Path
+from typing import List, Literal, Optional
+
+from pydantic import BaseModel
+
+import core.ai_image as aimg
+import core.ai_utils as au
+import core.cache_gemini as cg
+import core.config as st
+import core.eventos as ev
 import engine.dnd_schemas as dnd
 import engine.expander as ex
 import engine.knowledge_schemas as ks
 import engine.project_utils as pu
-import core.ai_image as aimg
-import core.ai_utils as au
-import core.cache_gemini as cg
-import ui.settings as st  
-from typing import Optional
-from pathlib import Path
-from pydantic import BaseModel
-from typing import Literal, List
+from core.i18n import t, tc
+from core.prompts import carregar_prompt
 
 
 def resolver_caminho(path_str):
@@ -20,594 +30,294 @@ def resolver_caminho(path_str):
     """
     caminho = Path(path_str)
     raiz = Path(pu.CAMINHO_PROJETO).resolve()
-
     if caminho.is_absolute():
         return caminho.resolve()
-
     partes = caminho.parts
-
     if partes and partes[0] == pu.PASTA_PROJETO:
         caminho = Path(*partes[1:]) if len(partes) > 1 else Path("")
-
     return (raiz / caminho).resolve()
 
+
 def obter_conteudo_template(nome_template: Optional[str]) -> str:
-    """Busca e retorna o conteúdo do arquivo de template (.md) dentro da pasta Templates."""
+    """Conteúdo do template (.md) em <projeto>/Templates ou .silent_data/Templates."""
     if not nome_template or nome_template.lower() == "nenhum":
         return ""
-
     nome_arquivo = f"{nome_template.lower().strip()}.md"
-
-    locais_possiveis = [Path(pu.CAMINHO_PROJETO) / "Templates" / nome_arquivo, pu.PASTA_TEMPLATES / nome_arquivo]
-
-    for caminho in locais_possiveis:
-        if caminho.exists() and caminho.is_file():
+    for caminho in (Path(pu.CAMINHO_PROJETO) / "Templates" / nome_arquivo, pu.PASTA_TEMPLATES / nome_arquivo):
+        if caminho.is_file():
             try:
-                with open(caminho, "r", encoding="utf-8") as f:
-                    conteudo = f.read().strip()
-                    print(f"📑 Template '{nome_template}' aplicado a partir de: {caminho.name}")
-                    return f"\n\n{conteudo}"
+                conteudo = caminho.read_text(encoding="utf-8").strip()
+                ev.log(t("wb.log_template", template=nome_template, arquivo=caminho.name))
+                return f"\n\n{conteudo}"
             except Exception as e:
-                print(f"⚠️ Erro ao ler template {caminho}: {e}")
+                ev.log(t("wb.log_erro_template", arquivo=caminho, erro=e))
                 return ""
-
-    print(f"⚠️ Template '{nome_template}' solicitado, mas '{nome_arquivo}' não foi encontrado na pasta Templates.")
+    ev.log(t("wb.log_template_ausente", template=nome_template, arquivo=nome_arquivo))
     return ""
 
-def iterationschoice(reason: Optional[str] = "O projeto esteja concluído"):
-    print("Iterations Iniciado!")
-    numero = 1
-    instrucao_sistema = f"""
-Você é um especialista em worldbuilding para RPG.
-Analise o estado atual do projeto e estime quantas iterações de expansão são necessárias para que: 
-{reason}.
-Responda apenas um número inteiro entre 1 e 10.
-"""
-    corpo_usuario = f"""
-Utilize o projeto carregado no cache.
 
-Critérios:
-- Regiões
-- Cidades
-- NPCs
-- História
-- Potencial para aventuras
-
-Objetivo:
-{reason}
-
-Quantas iterações ainda são necessárias?
-Responda apenas um número.
-"""
-    try:
-        resposta = au.ask_ai(
-            contents=corpo_usuario,
-            system_instruction=instrucao_sistema,
-            temperature=0.35,
-            use_world_context=True
-        )
-        match = re.search(r"\d+", str(resposta))
-        if not match:
-            print("⚠️ A IA não retornou um número válido de iterações. Usando 1 como padrão.")
-        else:
-            numero = max(1, min(10, int(match.group())))
-        print(f"Gemini analisou e decidiu que precisa de: {numero} etapas para melhorar o projeto")
-        print("Iterations Concluído!")
-        return numero
-    except Exception as e:
-        print(f"Erro ao determinar iterações: {e}")
-        print("Iterations Concluído!")
-        return numero
 class Action(BaseModel):
     type: Literal["CreateFolder", "CreateFile", "ImproveFile"]
     path: str
     priority: int
     objective: str
     template: Optional[Literal["aventura", "cidade", "local", "npc", "reinado", "nenhum"]] = "nenhum"
+
+
 class ActionPlan(BaseModel):
     actions: List[Action]
 
-def taskplanner(reason: Optional[str] = "O projeto esteja concluído"):
-    print("Vamos começar o Taskplanner!")
-    
-    # 1. Lê as permissões configuradas na aba de Opções
+
+# ----------------------------------------------------------------------
+# PLANEJAMENTO E EXECUÇÃO
+# ----------------------------------------------------------------------
+def taskplanner(reason: Optional[str] = None):
+    reason = reason or tc("wb.objetivo_padrao")
+    ev.log(t("wb.log_inicio"))
+
     config = st.carregar_configuracoes()
     allow_folder = config.get("wb_allow_create_folder", True)
     allow_file = config.get("wb_allow_create_file", True)
     allow_improve = config.get("wb_allow_improve_file", True)
 
-    # 2. Monta dinamicamente quais ferramentas o Gemini pode usar
-    ferramentas_permitidas = []
-    if allow_folder:
-        ferramentas_permitidas.append("CreateFolder")
-    if allow_file:
-        ferramentas_permitidas.append("CreateFile")
-    if allow_improve:
-        ferramentas_permitidas.append("ImproveFile")
-
-    if not ferramentas_permitidas:
-        print("⚠️ Todas as ferramentas do WorldBuilder estão desabilitadas nas Opções! Ação cancelada.")
+    ferramentas = [nome for nome, ativo in (("CreateFolder", allow_folder), ("CreateFile", allow_file),
+                                            ("ImproveFile", allow_improve)) if ativo]
+    if not ferramentas:
+        ev.log(t("wb.log_sem_ferramentas"))
         return
-
-    texto_ferramentas = "\n".join(ferramentas_permitidas)
-
-    # 🛡️ REGRA RESTRITIVA SE CRIAÇÃO DE PASTAS ESTIVER BLOQUEADA
-    instrucao_restricao_pastas = ""
-    if not allow_folder:
-        instrucao_restricao_pastas = """
-REGRA OBRIGATÓRIA E ABSOLUTA DE PASTAS:
-- A criação de novas pastas está DESABILITADA pelo Mestre.
-- Ao sugerir 'CreateFile', você DEVE OBRIGATORIAMENTE escolher apenas caminhos de PASTAS QUE JÁ EXISTEM no Índice/Estrutura.
-- É PROIBIDO inventar pastas ou subpastas novas no caminho de 'CreateFile'.
-"""
-
     if pu.is_cancelled():
-        print("\n🛑 Processamento do Expander interrompido pelo usuário!")
+        ev.log(t("wb.log_interrompido"))
         return
-    else:
-        instrucao_sistema = f"""
-Você é um especialista em worldbuilding para RPG.
-Analise o projeto e identifique quais ações são necessárias para:
-{reason}
 
-{instrucao_restricao_pastas}
+    instrucao = carregar_prompt(
+        "wb_planner_sistema", objetivo=reason, ferramentas="\n".join(ferramentas), projeto=pu.PASTA_PROJETO,
+        restricao_pastas="" if allow_folder else carregar_prompt("wb_planner_restricao_pastas"))
 
-REGRA IMPORTANTE SOBRE NOMES:
-Antes de sugerir CreateFolder ou CreateFile, verifique cuidadosamente o Índice
-e a Estrutura fornecidos. NÃO crie algo com nome igual, similar, singular/plural,
-ou com pequenas variações de grafia/acentuação de algo que já existe.
-Se um conceito já existe com outro nome, use ImproveFile no arquivo existente
-em vez de criar um novo.
+    try:
+        resposta = au.ask_ai(contents=carregar_prompt("wb_planner_usuario", objetivo=reason),
+                             system_instruction=instrucao, temperature=0.4, response_schema=ActionPlan,
+                             use_world_context=True)
+        plano = ActionPlan.model_validate_json(ex.remover_markdown_fences(str(resposta)))
 
-REGRA DE NOMES E WIKILINKS:
-Antes de sugerir CreateFolder ou CreateFile, verifique cuidadosamente o Índice.
-Ao sugerir a criação de arquivos, prefira nomes curtos e elegantes que possam ser citados facilmente como Wikilinks (ex: "Catedral de Prata", "Arquimago Varis").
-
-REGRA SOBRE TEMPLATES (Apenas para CreateFile):
-Ao sugerir 'CreateFile', escolha obrigatoriamente um dos seguintes valores para o campo 'template':
-- "aventura": para quests, missões, módulos de aventura
-- "cidade": para vilas, povoados, metrópoles e assentamentos
-- "local": para ruínas, dungeons, florestas, cavernas e regiões
-- "npc": para personagens, vilões, aliados e figuras históricas
-- "reinado": para países, reinos, impérios e ducados
-- "nenhum": para conceitos genéricos, facções ou tópicos gerais (padrão)
-
-FERRAMENTAS PERMITIDAS (Você DEVE usar APENAS estas ferramentas autorizadas):
-{texto_ferramentas}
-
-Formato obrigatório:
-{{
-    "actions": [
-    {{
-        "type": "CreateFolder",
-        "path": "{pu.PASTA_PROJETO}/...",
-        "priority":10,
-        "objective": "motivo"
-    }}
-    ]
-}}
-Passe o path inteiro desde a pasta {pu.PASTA_PROJETO}.
-Não utilize markdown.
-"""
-
-        corpo_usuario = f"""
-Analise a estrutura atual do projeto no cache.
-Objetivo do Mestre: {reason}
-
-Crie o plano de ação no formato JSON estruturado com as próximas etapas prioritárias usando APENAS as ferramentas permitidas.
-"""
-
-        try:    
-            resposta = au.ask_ai(
-                contents=corpo_usuario,
-                system_instruction=instrucao_sistema,
-                temperature=0.4,
-                response_schema=ActionPlan,
-                use_world_context=True
-            )
-            texto_limpo = ex.remover_markdown_fences(str(resposta))
-            plano = ActionPlan.model_validate_json(texto_limpo)
-            
-            if not plano.actions:
-                print("Nenhuma ação necessária.")
+        acoes_filtradas = []
+        for acao in plano.actions:
+            permitido = {"CreateFolder": allow_folder, "CreateFile": allow_file, "ImproveFile": allow_improve}[acao.type]
+            if permitido:
+                acoes_filtradas.append(acao)
             else:
-                acoes_filtradas = []
-                for a in plano.actions:
-                    if a.type == "CreateFolder" and not allow_folder:
-                        print(f"🚫 Ação '{a.type}' bloqueada pelas Opções.")
-                        continue
-                    if a.type == "CreateFile" and not allow_file:
-                        print(f"🚫 Ação '{a.type}' bloqueada pelas Opções.")
-                        continue
-                    if a.type == "ImproveFile" and not allow_improve:
-                        print(f"🚫 Ação '{a.type}' bloqueada pelas Opções.")
-                        continue
-                    acoes_filtradas.append(a)
+                ev.log(t("wb.log_bloqueada", tipo=acao.type))
 
-                actions = sorted(
-                    [a.model_dump() for a in acoes_filtradas],
-                    key=lambda x: x.get("priority", 0),
-                    reverse=True
-                )
-                
-                if actions:
-                    enactchoices(actions)
-                else:
-                    print("Nenhuma ação permitida a ser executada nesta iteração.")
-                if pu.is_cancelled():
-                    print("\nProcessamento do Expander interrompido pelo usuário!")
-                    return
-        except Exception as e:
-            print(f"Erro na resposta do TaskPlanner: {e}")
-            
+        acoes = sorted([a.model_dump() for a in acoes_filtradas], key=lambda x: x.get("priority", 0), reverse=True)
+        # Mostra o plano na página do WorldBuilder antes de executar
+        ev.emitir("wb.plano", acoes)
+        if acoes:
+            enactchoices(acoes)
+        else:
+            ev.log(t("wb.log_nada_a_fazer"))
+        if pu.is_cancelled():
+            ev.log(t("wb.log_interrompido"))
+            return
+    except Exception as e:
+        ev.log(t("wb.log_erro_planner", erro=e))
+
     ex.processar_arquivos()
-    print("TaskPlanner Concluído!")
+    ev.log(t("wb.log_fim"))
+
 
 def enactchoices(actions):
-    print("Enactchoices Iniciado!")
-    for action in actions:
+    ev.log(t("wb.log_executando", total=len(actions)))
+    for indice, action in enumerate(actions):
         if pu.is_cancelled():
-            print("\nProcessamento do Expander interrompido pelo usuário!")
+            ev.log(t("wb.log_interrompido"))
             return
         tipo = action["type"]
         path = action.get("path", "")
         objective = action.get("objective", "")
         template = action.get("template", "nenhum")
-        
-        # Registro thread-safe no changelog.jsonl
-        registro = {
-            "timestamp": pu.currentdate(),
-            "action": tipo,
-            "path": path,
-            "template": template,
-            "objective": objective
-        }
-        pu.anexar_jsonl_seguro(pu.log_path("changelog.jsonl"), registro, pu.LOCK_CHANGELOG)
 
-        if tipo == "CreateFolder":
-            createfolder(action["path"], action.get("objective", ""))
-        elif tipo == "CreateFile":
-            createfile(action["path"], action.get("objective", ""), template)
-        elif tipo == "ImproveFile":
-            improvefile(action["path"], action.get("objective", ""))
-    
+        ev.emitir("wb.acao", {"indice": indice, "estado": "executando"})
+        resultado = False
+        try:
+            if tipo == "CreateFolder":
+                resultado = createfolder(path, objective)
+            elif tipo == "CreateFile":
+                resultado = createfile(path, objective, template)
+            elif tipo == "ImproveFile":
+                resultado = improvefile(path, objective)
+        finally:
+            # Registro thread-safe no changelog.jsonl (com o resultado da ação)
+            registro = {"timestamp": pu.currentdate(), "action": tipo, "path": path, "template": template,
+                        "objective": objective, "result": bool(resultado)}
+            pu.anexar_jsonl_seguro(pu.log_path("changelog.jsonl"), registro, pu.LOCK_CHANGELOG)
+            ev.emitir("wb.acao", {"indice": indice, "estado": "concluida" if resultado else "falhou", "registro": registro})
+
         ex.processar_arquivos()
-        print("Reconstruindo contexto do cache para refletir as novas criações...")
+        ev.log(t("wb.log_reconstruindo"))
         cg.force_rebuild_world_context()
-    
-    print("Enactchoices Concluído!")
+    ev.log(t("wb.log_execucao_fim"))
+
 
 def createfolder(path, reason):
-    print(f"Vamos criar uma pasta: {path}, por que {reason}")
-    config = st.carregar_configuracoes()
-    if not config.get("wb_allow_create_folder", True):
-        print("🚫 Ação Cancelada: A criação de pastas está desabilitada nas Opções.")
+    ev.log(t("wb.log_criar_pasta", caminho=path, motivo=reason))
+    if not st.carregar_configuracoes().get("wb_allow_create_folder", True):
+        ev.log(t("wb.log_pasta_desabilitada"))
         return False
-
     try:
         raiz = Path(pu.CAMINHO_PROJETO).resolve()
         destino = resolver_caminho(path)
-
         if not destino.is_relative_to(raiz):
-            print("Tentativa de criar pasta fora da pasta raiz de conhecimento.")
+            ev.log(t("wb.log_fora_da_raiz"))
             return False
-
         parecido = pu.existe_nome_parecido(destino.name, destino.parent)
         if parecido:
-            print(f"Pasta não criada: '{destino.name}' é muito parecida com a já existente '{parecido}'.")
+            ev.log(t("wb.log_nome_parecido", nome=destino.name, existente=parecido))
             return False
-
         if destino.exists():
-            print(f"Pasta já existe: {destino}")
+            ev.log(t("wb.log_ja_existe", caminho=destino))
             return False
         destino.mkdir(parents=True, exist_ok=True)
-        print(f"Pasta criada: {destino}")
+        ev.log(t("wb.log_pasta_criada", caminho=destino))
         return True
     except Exception as e:
-        print(f"Erro ao criar pasta: {e}")
+        ev.log(t("wb.log_erro_pasta", erro=e))
         return False
 
+
 def createfile(path, reason, template="nenhum"):
-    print(f"Vamos criar um arquivo: {path} (Template: {template}), motivo: {reason}")
+    ev.log(t("wb.log_criar_arquivo", caminho=path, template=template, motivo=reason))
     try:
         raiz = Path(pu.CAMINHO_PROJETO).resolve()
         arquivo = resolver_caminho(path)
-
         if not arquivo.is_relative_to(raiz):
-            print("Tentativa de criar arquivo fora da pasta raiz de conhecimento.")
+            ev.log(t("wb.log_fora_da_raiz"))
             return False
-
-        arquivo = arquivo.with_suffix(".md")
-
-        # 🛡️ TRAVA MECÂNICA DE SEGURANÇA (VERIFICA A PASTA PAI)
-        config = st.carregar_configuracoes()
-        allow_folder = config.get("wb_allow_create_folder", True)
+        # Acrescenta .md sem usar with_suffix(), que trocaria o trecho após um ponto do nome ("St. Varis" -> "St.md")
+        if arquivo.suffix.lower() != ".md":
+            arquivo = arquivo.with_name(arquivo.name + ".md")
 
         if not arquivo.parent.exists():
-            if not allow_folder:
-                print(f"🚫 Arquivo '{arquivo.name}' CANCELADO: A pasta '{arquivo.parent.name}' NÃO EXISTE e a criação de novas pastas está DESABILITADA nas Opções.")
+            if not st.carregar_configuracoes().get("wb_allow_create_folder", True):
+                ev.log(t("wb.log_pasta_inexistente", nome=arquivo.name, pasta=arquivo.parent.name))
                 return False
-            else:
-                arquivo.parent.mkdir(parents=True, exist_ok=True)
+            arquivo.parent.mkdir(parents=True, exist_ok=True)
 
-        # --- CHECAGEM DE NOME PARECIDO ---
         parecido = pu.existe_nome_parecido(arquivo.name, arquivo.parent)
         if parecido:
-            print(f"⚠️ Arquivo não criado: '{arquivo.name}' é muito parecido com o já existente '{parecido}'.")
+            ev.log(t("wb.log_nome_parecido", nome=arquivo.name, existente=parecido))
             return False
-
         if arquivo.exists():
-            print(f"⚠️ Arquivo já existe: {arquivo}")
+            ev.log(t("wb.log_ja_existe", caminho=arquivo))
             return False
 
         titulo = re.sub(r"_v\d+$", "", arquivo.stem)
-        conteudo_template = obter_conteudo_template(template)
-
-        conteudo = f"""# {titulo}
-> Este arquivo foi criado automaticamente pelo WorldBuilder.
-----
-status: rascunho
-----
-<-- TO DO: {reason}
-{conteudo_template}
-"""
-        with open(arquivo, "w", encoding="utf-8") as f:
-            f.write(conteudo)
-        print(f"✅ Arquivo criado com sucesso: {arquivo}")
-        improvefile(path, reason)
+        conteudo = tc("wb.stub_arquivo", titulo=titulo, marcador_rascunho=tc("marcador.rascunho"), motivo=reason) \
+            + "\n" + obter_conteudo_template(template) + "\n"
+        arquivo.write_text(conteudo, encoding="utf-8")
+        ev.log(t("wb.log_arquivo_criado", caminho=arquivo))
+        # Usa o caminho final (já com .md); o 'path' original da IA pode não ter extensão
+        improvefile(str(arquivo), reason)
         return True
     except Exception as e:
-        print(f"❌ Erro ao criar arquivo {path}: {e}")
+        ev.log(t("wb.log_erro_arquivo", caminho=path, erro=e))
         return False
 
-def improvefile(path, reason="Melhorar o arquivo!"):
-    print(f"Vamos melhorar o arquivo: {path}\nMotivo: {reason}")
-    arquivo = resolver_caminho(path)
 
-    if not arquivo.exists() or not arquivo.is_file():
-        print(f"Arquivo não encontrado ou inválido, ação cancelada: {arquivo}")
+def improvefile(path, reason=None):
+    reason = reason or tc("acoes.padrao_melhorar")
+    ev.log(t("wb.log_melhorar", caminho=path, motivo=reason))
+    arquivo = resolver_caminho(path)
+    if not arquivo.is_file():
+        ev.log(t("wb.log_arquivo_invalido", caminho=arquivo))
         return False
 
     ex.marcar_processamento(arquivo, True)
-
     try:
-        with open(arquivo, "r", encoding="utf-8", errors="ignore") as f:
-            arquivoatual = f.read()
-
-        instrucoes_globais = f"""
-Você é um Mestre de Mesa (DM) de D&D experiente.
-Seu objetivo é melhorar o arquivo: {arquivo.name}
-Seguindo a motivação: {reason}
-
-# REGRAS DE FORMATAÇÃO E WIKILINKS:
-- Organize o texto com títulos (#, ##, ###).
-- Use citações (> texto) para caixas de lore, citações, diários ou rumores.
-- Use negrito (**termo**) em nomes importantes.
-- Crie Wikilinks [[Nome do Conceito]] sempre que citar NPCs, lugares, facções, deuses ou raças do universo (ex: [[Reino de Phaeton]], [[Ordem da Penumbra]]).
-- Não contradiga informações existentes.
-- Mantenha consistência com o restante do mundo.
-"""
-        prompt_conteudo = f"""
-OBJETIVO:
-{reason}
-O PROJETO COMPLETO está no cache para ser analisado!
-
-CONTEÚDO ORIGINAL:
-{arquivoatual}
-
-Retorne apenas o conteúdo final do arquivo.
-"""
-
-        texto_expandido = au.ask_ai(
-            contents=prompt_conteudo,
-            system_instruction=instrucoes_globais,
-            temperature=0.4
-        )
-
-        if texto_expandido:
-            texto_limpo = ex.remover_markdown_fences(texto_expandido)
-            
-            # 1. Se o arquivo já existe, faz o backup versionado no histórico
-            if arquivo.exists():
-                ex.arquivar_versao_para_historico(arquivo)
-
-            # 2. Salva a nova versão diretamente no nome estável original
-            arquivo.parent.mkdir(parents=True, exist_ok=True)
-            with open(arquivo, "w", encoding="utf-8") as f:
-                f.write(texto_limpo)
-
-            print(f"✅ Arquivo aprimorado com sucesso: {arquivo.name}")
-            return True
-        else:
-            print(f"O retorno do modelo para {arquivo.name} foi vazio.")
+        conteudo = arquivo.read_text(encoding="utf-8", errors="ignore")
+        texto = au.ask_ai(
+            contents=carregar_prompt("wb_melhorar_usuario", objetivo=reason, conteudo=conteudo),
+            system_instruction=carregar_prompt("wb_melhorar_sistema", arquivo=arquivo.name, objetivo=reason),
+            temperature=0.4)
+        if not texto:
+            ev.log(t("wb.log_retorno_vazio", nome=arquivo.name))
             return False
-
-    except Exception as e:
-        print(f"Erro ao processar {arquivo.name}: {e}")
-        return False
-    finally:
-        ex.marcar_processamento(arquivo, False)
-        
-def gerar_aventura_completa(path, reason="Aventura de D&D 5e"):
-    print(f"🎲 Gerando Aventura 5-Room Dungeon para: {path}\nObjetivo: {reason}")
-    arquivo = resolver_caminho(path)
-
-    if not arquivo.exists() or not arquivo.is_file():
-        print(f"Arquivo não encontrado: {arquivo}")
-        return False
-
-    ex.marcar_processamento(arquivo, True)
-
-    try:
-        with open(arquivo, "r", encoding="utf-8", errors="ignore") as f:
-            conteudo_atual = f.read()
-
-        estilo_contexto = ex.carregar_diretrizes_estilo()
-
-        instrucoes_sistema = f"""
-Você é um Designer Profissional de Aventuras de D&D 5e e escritor veterano.
-Seu objetivo é criar um módulo de aventura completo e envolvente seguindo rigorosamente a estrutura de '5-Room Dungeon'.
-
-# DIRETRIZES DE TOM E ESTILO DO CENÁRIO:
-{estilo_contexto}
-
-# REGRAS OBRIGATÓRIAS DE DESIGN D&D 5e:
-- Contextualize a aventura com o universo carregado no cache (use facções, deuses, vilões ou cidades existentes).
-- CRIE WIKILINKS [[Nome do Conceito]] sempre que citar locais, itens, NPCs ou monstros do universo.
-- No Statblock do monstro/vilão principal, seja preciso nas estatísticas de 5e (CA, PV, ND e ações).
-- Para CADA sala (1 a 5), forneça desfechos claros e distintos para as rolagens de d20 (<=5, 6-10, 11-15, 16-20 e 21+).
-- Responda OBRIGATORIAMENTE seguindo o schema estruturado JSON.
-"""
-
-        prompt_usuario = f"""
-Crie a aventura para o arquivo: {arquivo.name}
-
-OBJETIVO / GANCHO DO MESTRE:
-{reason}
-
-CONTEÚDO PRÉ-EXISTENTE NO ARQUIVO (Use como base ou complete as lacunas):
-{conteudo_atual}
-"""
-
-        # 🟢 AQUI ESTÁ A MÁGICA: Executando o response_schema!
-        resposta_raw = au.ask_ai(
-            contents=prompt_usuario,
-            system_instruction=instrucoes_sistema,
-            temperature=0.7,
-            response_schema=dnd.ModuloAventura5Rooms,
-            use_world_context=True
-        )
-
-        if not resposta_raw:
-            print("⚠️ Resposta da IA foi vazia.")
-            return False
-
-        # Valida o JSON no schema e converte para o Markdown com Callouts
-        json_limpo = ex.remover_markdown_fences(str(resposta_raw))
-        aventura_obj = dnd.ModuloAventura5Rooms.model_validate_json(json_limpo)
-
-        # 🟢 TENTA GERAR O BATTLEMAP DA SALA 4 (CLÍMAX)
-        try:
-            import core.ai_image as aimg
-            import shutil
-            
-            s4 = aventura_obj.sala4
-            print(f"🎨 [BATTLEMAP] Gerando mapa tático para: {s4.titulo_sala}...")
-            
-            mapa_path = aimg.gerar_battlemap_boss(
-                nome_sala=s4.titulo_sala,
-                descricao_ambiente=s4.narracao
-            )
-            
-            if mapa_path and Path(mapa_path).exists():
-                # Copia para a pasta onde o .md da aventura está salvo
-                destino_final = arquivo.parent / mapa_path.name
-                shutil.copy2(mapa_path, destino_final)
-
-                # 🟢 Atribui ao campo do schema (sem sujar s4.narracao!)
-                s4.mapa_imagem = mapa_path.name
-                print(f"✅ [BATTLEMAP] Imagem vinculada à Sala 4: {mapa_path.name}")
-        except Exception as e:
-            print(f"⚠️ Aviso: Battlemap ignorado: {e}")
-
-        # Serializa para o Markdown final já com o mapa no lugar correto
-        markdown_final = dnd.aventura_5rooms_para_markdown(aventura_obj)
-
-        if arquivo.exists():
-            ex.arquivar_versao_para_historico(arquivo)
-
-        with open(arquivo, "w", encoding="utf-8") as f:
-            f.write(markdown_final)      
-        
-        # Arquiva a versão anterior no histórico (_v01, _v02...)
-        if arquivo.exists():
-            ex.arquivar_versao_para_historico(arquivo)
-
-        # Salva o novo arquivo no cofre
-        with open(arquivo, "w", encoding="utf-8") as f:
-            f.write(markdown_final)
-
-        print(f"✅ Aventura 5-Room Dungeon gerada com sucesso em: {arquivo.name}")
-        return True
-
-    except Exception as e:
-        print(f"❌ Erro ao gerar aventura estruturada: {e}")
-        return False
-    finally:
-        ex.marcar_processamento(arquivo, False)
-        
-def gerar_tabelas_de_conhecimento(path, foco_especifico="Todas as informações relevantes"):
-    print(f"🎲 Gerando Verificações de Conhecimento (Lore Checks) para: {path}")
-    arquivo = resolver_caminho(path)
-
-    if not arquivo.exists() or not arquivo.is_file():
-        print(f"Arquivo inválido: {arquivo}")
-        return False
-
-    # 🟢 REMOVIDO: a checagem dupla de 'ex.esta_em_processamento(arquivo)' aqui,
-    # pois o ui/explorer.py já marcou o arquivo para proteger o editor.
-
-    try:
-        with open(arquivo, "r", encoding="utf-8", errors="ignore") as f:
-            conteudo_atual = f.read()
-
-        estilo_contexto = ex.carregar_diretrizes_estilo()
-
-        instrucoes_sistema = f"""
-Você é um Designer Especialista em D&D 5e e Mestre veterano.
-Seu objetivo é ler o documento fornecido e transformá-lo em tabelas práticas de 'Teste de Conhecimento' (Lore Checks).
-
-REGRAS DE CONSTRUÇÃO DE TESTES (D&D 5e):
-1. Escolha as perícias que realmente fazem sentido para o assunto do documento (ex: História, Arcanismo, Religião, Natureza ou Investigação).
-2. Para CADA perícia, construa a escala gradual:
-   - '≤ 5': O que qualquer pessoa do povo sabe (rumores comuns, lendas urbanas, às vezes com um detalhe folclórico falso).
-   - '6 a 10': Fatos evidentes (líder público, endereço do QG, mercadoria básica).
-   - '11 a 15': Conhecimento profissional ou de quem estuda o assunto (monopólios, custos, alianças públicas).
-   - '16 a 20': Conhecimento privilegiado de quem frequenta bastidores ou círculos de poder (tensões internas, subornos, métodos velados).
-   - '21 a 25': Segredos guardados a sete chaves que só espiões de elite ou estudiosos mestres sabem (rotas ocultas, traições iminentes).
-   - '26+': O maior mistério da entidade (caso haja algo marcado como segredo no arquivo).
-3. Use linguagem direta, pronta para ser narrada aos jogadores.
-4. CRIE WIKILINKS [[Nome]] em itens, cidades, deuses ou NPCs citados.
-"""
-
-        prompt_usuario = f"""
-DOCUMENTO ALVO ({arquivo.name}):
-{conteudo_atual}
-
-DIRETRIZ DO MESTRE:
-{foco_especifico}
-
-Crie as tabelas de Verificação de Conhecimento estruturadas no schema JSON para que o Mestre possa consultar na hora do jogo.
-"""
-
-        resposta_raw = au.ask_ai(
-            contents=prompt_usuario,
-            system_instruction=instrucoes_sistema,
-            temperature=0.5,
-            response_schema=ks.CompendioConhecimento,
-            use_world_context=True
-        )
-
-        if not resposta_raw:
-            print("⚠️ Resposta da IA foi vazia.")
-            return False
-
-        json_limpo = ex.remover_markdown_fences(str(resposta_raw))
-        compendio_obj = ks.CompendioConhecimento.model_validate_json(json_limpo)
-        tabelas_markdown = ks.compendio_para_markdown(compendio_obj)
-
-        # Arquiva versão no histórico antes de alterar
         ex.arquivar_versao_para_historico(arquivo)
-
-        # Anexa a tabela ao final do arquivo atual
-        conteudo_final = conteudo_atual.rstrip() + "\n" + tabelas_markdown + "\n"
-
-        with open(arquivo, "w", encoding="utf-8") as f:
-            f.write(conteudo_final)
-
-        print(f"✅ Tabelas de Lore Checks anexadas com sucesso em: {arquivo.name}")
+        arquivo.write_text(ex.remover_markdown_fences(texto), encoding="utf-8")
+        ev.log(t("wb.log_melhorado", nome=arquivo.name))
         return True
-
     except Exception as e:
-        print(f"❌ Erro ao gerar tabelas de conhecimento: {e}")
+        ev.log(t("wb.log_erro_melhorar", nome=arquivo.name, erro=e))
+        return False
+    finally:
+        ex.marcar_processamento(arquivo, False)
+
+
+# ----------------------------------------------------------------------
+# AVENTURA 5-ROOM E TESTES DE CONHECIMENTO
+# ----------------------------------------------------------------------
+def gerar_aventura_completa(path, reason=None):
+    arquivo = resolver_caminho(path)
+    reason = reason or tc("acoes.padrao_aventura", nome=arquivo.name)
+    ev.log(t("wb.log_aventura", caminho=path, objetivo=reason))
+    if not arquivo.is_file():
+        ev.log(t("wb.log_arquivo_invalido", caminho=arquivo))
+        return False
+
+    ex.marcar_processamento(arquivo, True)
+    try:
+        conteudo = arquivo.read_text(encoding="utf-8", errors="ignore")
+        resposta = au.ask_ai(
+            contents=carregar_prompt("wb_aventura_usuario", arquivo=arquivo.name, objetivo=reason, conteudo=conteudo),
+            system_instruction=carregar_prompt("wb_aventura_sistema", estilo=ex.carregar_diretrizes_estilo()),
+            temperature=0.7, response_schema=dnd.ModuloAventura5Rooms, use_world_context=True)
+        if not resposta:
+            ev.log(t("wb.log_retorno_vazio", nome=arquivo.name))
+            return False
+        aventura = dnd.ModuloAventura5Rooms.model_validate_json(ex.remover_markdown_fences(str(resposta)))
+
+        # Battlemap da Sala 4 (clímax), copiado para a pasta da aventura
+        try:
+            sala4 = aventura.sala4
+            ev.log(t("wb.log_battlemap", sala=sala4.titulo_sala))
+            mapa = aimg.gerar_battlemap_boss(nome_sala=sala4.titulo_sala, descricao_ambiente=sala4.narracao)
+            if mapa and Path(mapa).exists():
+                shutil.copy2(mapa, arquivo.parent / Path(mapa).name)
+                sala4.mapa_imagem = Path(mapa).name
+                ev.log(t("wb.log_battlemap_ok", nome=Path(mapa).name))
+        except Exception as e:
+            ev.log(t("wb.log_battlemap_erro", erro=e))
+
+        ex.arquivar_versao_para_historico(arquivo)
+        arquivo.write_text(dnd.aventura_5rooms_para_markdown(aventura), encoding="utf-8")
+        ev.log(t("wb.log_aventura_ok", nome=arquivo.name))
+        return True
+    except Exception as e:
+        ev.log(t("wb.log_aventura_erro", erro=e))
+        return False
+    finally:
+        ex.marcar_processamento(arquivo, False)
+
+
+def gerar_tabelas_de_conhecimento(path, foco_especifico=None):
+    foco_especifico = foco_especifico or tc("acoes.padrao_conhecimento")
+    ev.log(t("wb.log_conhecimento", caminho=path))
+    arquivo = resolver_caminho(path)
+    if not arquivo.is_file():
+        ev.log(t("wb.log_arquivo_invalido", caminho=arquivo))
+        return False
+    try:
+        conteudo = arquivo.read_text(encoding="utf-8", errors="ignore")
+        resposta = au.ask_ai(
+            contents=carregar_prompt("wb_conhecimento_usuario", arquivo=arquivo.name, conteudo=conteudo, foco=foco_especifico),
+            system_instruction=carregar_prompt("wb_conhecimento_sistema"),
+            temperature=0.5, response_schema=ks.CompendioConhecimento, use_world_context=True)
+        if not resposta:
+            ev.log(t("wb.log_retorno_vazio", nome=arquivo.name))
+            return False
+        compendio = ks.CompendioConhecimento.model_validate_json(ex.remover_markdown_fences(str(resposta)))
+        ex.arquivar_versao_para_historico(arquivo)
+        arquivo.write_text(conteudo.rstrip() + "\n" + ks.compendio_para_markdown(compendio) + "\n", encoding="utf-8")
+        ev.log(t("wb.log_conhecimento_ok", nome=arquivo.name))
+        return True
+    except Exception as e:
+        ev.log(t("wb.log_conhecimento_erro", erro=e))
         return False

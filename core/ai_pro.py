@@ -28,11 +28,7 @@ def _montar_contexto_mundo(is_dm: bool = True) -> str:
     de arquivos equivalente ao Files API do Gemini.
     """
     try:
-        return (
-            pu.carregar_estrutura_projeto() + "\n\n" +
-            pu.gerar_indice() + "\n\n" +
-            pu.carregar_projeto(is_dm=is_dm)
-        )
+        return pu.montar_contexto_mundo(is_dm=is_dm)
     except Exception as e:
         print(f"⚠️ Erro ao montar contexto do mundo para o Pro: {e}")
         return ""
@@ -53,7 +49,7 @@ def ask_ai(
     """
     client = get_pro_client()
     if not client:
-        return "❌ Nenhuma chave Pro (PRO_API_KEY) configurada. Acesse a aba 'Opções' para cadastrar sua chave."
+        raise RuntimeError("Nenhuma chave Pro (PRO_API_KEY) configurada. Acesse a aba 'Opções' para cadastrar sua chave.")
 
     if not system_instruction:
         system_instruction = DEFAULT_SYSTEM_INSTRUCTION
@@ -95,10 +91,10 @@ def ask_ai(
             response = client.chat.completions.create(**kwargs_call)
     except APIError as e:
         print(f"❌ Erro na chamada da API Pro/OpenAI: {e}")
-        return f"❌ Erro ao consultar a IA Pro: {e}"
+        raise RuntimeError(f"Erro ao consultar a IA Pro: {e}") from e
     except Exception as e:
         print(f"❌ Erro inesperado na chamada da API Pro/OpenAI: {e}")
-        return f"❌ Erro ao consultar a IA Pro: {e}"
+        raise RuntimeError(f"Erro ao consultar a IA Pro: {e}") from e
 
     conteudo_resposta = response.choices[0].message.content
     return conteudo_resposta.strip() if conteudo_resposta else ""

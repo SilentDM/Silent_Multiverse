@@ -37,28 +37,28 @@ class PersonaRoleplay(BaseModel):
     )
 
 def persona_para_markdown(p: PersonaRoleplay) -> str:
-    """Converte a persona em um documento Markdown formatado com Callouts para exibição e edição na IDE."""
+    """Ficha da persona em Markdown com Callouts (exibida na página de Roleplay), no idioma da interface."""
+    from core.i18n import t
     linhas = [
         f"# {p.nome}",
         f"> *\"{p.bordao_ou_frase_marcante}\"*\n",
-        f"> [!summary] Perfil & Posição",
-        f"> - **Título / Alcunha:** {p.titulo_ou_alcunha}",
-        f"> - **Ocupação:** {p.ocupacao_ou_papel}",
-        f"> - **Alinhamento:** {p.alinhamento_moral}\n",
-        f"> [!abstract] Características Visuais",
-        f"> - **Gênero & Raça:** {p.genero} | {p.raca} ({p.idade_aparente})",
-        f"> - **Pele & Olhos:** Pele {p.tom_de_pele} | Olhos {p.olhos}",
-        f"> - **Cabelo:** {p.cabelo}",
-        f"> - **Marcas / Cicatrizes:** {p.tracos_marcantes}",
-        f"> - **Vestimentas & Adornos:** {p.vestimentas_e_acessorios}\n",
-        f"> [!quote] Voz & Temperamento",
-        f"> - **Estilo de Fala:** {p.tom_de_voz_e_estilo_fala}",
-        f"> - **Psicologia:** {p.psicologia_e_temperamento}\n",
-        f"> [!warning] Ambições & Fraquezas",
-        f"> - **Motivação:** {p.motivacao_primaria}",
-        f"> - **Vulnerabilidade Oculta:** {p.fraqueza_ou_medo_oculto}\n",
-        f"## 🎭 Diretrizes de Atuação (Roleplay)"
+        t("md.persona.perfil"),
+        f"> - **{t('md.persona.alcunha')}:** {p.titulo_ou_alcunha}",
+        f"> - **{t('md.persona.ocupacao')}:** {p.ocupacao_ou_papel}",
+        f"> - **{t('md.persona.alinhamento')}:** {p.alinhamento_moral}\n",
+        t("md.persona.visual"),
+        f"> - **{t('md.persona.genero_raca')}:** {p.genero} | {p.raca} ({p.idade_aparente})",
+        f"> - **{t('md.persona.pele_olhos')}:** {p.tom_de_pele} | {p.olhos}",
+        f"> - **{t('md.persona.cabelo')}:** {p.cabelo}",
+        f"> - **{t('md.persona.marcas')}:** {p.tracos_marcantes}",
+        f"> - **{t('md.persona.vestimentas')}:** {p.vestimentas_e_acessorios}\n",
+        t("md.persona.voz"),
+        f"> - **{t('md.persona.fala')}:** {p.tom_de_voz_e_estilo_fala}",
+        f"> - **{t('md.persona.psicologia')}:** {p.psicologia_e_temperamento}\n",
+        t("md.persona.ambicoes"),
+        f"> - **{t('md.persona.motivacao')}:** {p.motivacao_primaria}",
+        f"> - **{t('md.persona.fraqueza')}:** {p.fraqueza_ou_medo_oculto}\n",
+        t("md.persona.diretrizes"),
     ]
-    for inst in p.instrucoes_de_atuacao:
-        linhas.append(f"- {inst}")
+    linhas += [f"- {instrucao}" for instrucao in p.instrucoes_de_atuacao]
     return "\n".join(linhas)

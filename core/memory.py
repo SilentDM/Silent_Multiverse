@@ -1,5 +1,7 @@
 import os, time, re, glob
 import core.ai_utils as au
+from core.i18n import t
+from core.prompts import carregar_prompt
 import engine.project_utils as pu
 from pathlib import Path
 
@@ -34,55 +36,44 @@ def _obter_caminho_alvo(guild_id, guild_name, userid, user_name):
     return os.path.join(MEMORIES_DIR, f"memoria_{g_name}_{g_id}_{u_name}_{userid}.txt")
 
 def trim_incomplete_sentences(texto):
+    """
+    Remove apenas uma frase final que pareça cortada no meio (resposta truncada).
+    Preserva quebras de linha/Markdown e nunca remove links, listas ou finais
+    como ')', '**' ou emojis, que não indicam truncamento.
+    """
     if not texto:
         return ""
     texto = texto.strip()
     if texto.endswith((".", "!", "?")):
         return texto
 
-    frases = re.split(r'(?<=[.!?])\s+', texto)
-    if len(frases) <= 1:
-        return frases[0] if frases else texto
+    ultima_linha = texto.splitlines()[-1].strip()
+    # Itens de lista, títulos, citações e tabelas normalmente não terminam com pontuação
+    if ultima_linha.startswith(("-", "*", "+", "#", ">", "|")) or re.match(r'\d+[.)]\s', ultima_linha):
+        return texto
+    # Só consideramos "cortado" se terminar em letra/número/vírgula etc. e não for um link
+    if re.search(r'https?://', ultima_linha) or not re.search(r'[\w,;:\-]$', texto):
+        return texto
 
-    frases = frases[:-1]
-    resultado = " ".join(frases).strip()
+    # Corta logo após o último fim de frase, mantendo a formatação original
+    fins = list(re.finditer(r'[.!?](?=\s)', texto))
+    if not fins:
+        return texto
 
-    if not resultado.endswith((".", "!", "?")):
-        resultado += "."
-
-    return resultado
+    return texto[:fins[-1].end()].rstrip()
 
 def criar_resumo(memorias: str) -> str:
-    instrucao_sistema = (
-        "Você é um assistente especializado em condensar históricos de RPG de forma extremamente objetiva.\n"
-        "Seu objetivo é extrair apenas os fatos consolidados, decisões tomadas, itens adquiridos e "
-        "revelações importantes sobre o universo. Escreva um resumo contínuo, em formato de parágrafo "
-        "ou lista compacta de fatos, sem rodeios ou saudações."
-    )
-    
-    corpo_usuario = (
-        "Reduza as seguintes interações antigas de diálogo para um resumo consolidado, "
-        f"mantendo todas as informações vitais de enredo:\n\n{memorias}"
-    )
-    
+    """Condensa o histórico em um resumo no idioma ativo (temperatura baixa: só fatos, sem invenções)."""
     try:
-        # Usamos uma temperatura baixa (0.3) para garantir foco nos fatos existentes, sem invenções.
         resumo_texto = au.ask_ai(
-            contents=corpo_usuario,
-            system_instruction=instrucao_sistema,
+            contents=carregar_prompt("memoria_resumo_usuario", memorias=memorias),
+            system_instruction=carregar_prompt("memoria_resumo_sistema"),
             temperature=0.3,
-            use_world_context=False
+            use_world_context=False,
         )
-        
-        # Caso a função de limpeza de sentenças incompletas esteja no módulo de memória
-        if resumo_texto:
-            return trim_incomplete_sentences(resumo_texto)
-        return ""
-        
+        return trim_incomplete_sentences(resumo_texto) if resumo_texto else ""
     except Exception as e:
-        print(f"\n--- 🛑 ERRO AO GERAR RESUMO EM MEMORIES ---")
-        print(f"Tipo do Erro: {type(e).__name__}")
-        print(f"Mensagem: {e}")
+        print(t("memoria.erro_resumo", tipo=type(e).__name__, erro=e))
         return ""
 
 def carregar_memorias(guild_id, guild_name, userid, user_name):
@@ -98,7 +89,7 @@ def carregar_memorias(guild_id, guild_name, userid, user_name):
         if os.path.abspath(arquivo_existente) != os.path.abspath(caminho_ideal):
             try:
                 os.rename(arquivo_existente, caminho_ideal)
-                print(f"Renomeando memória de {arquivo_existente} para {caminho_ideal} (Atualização de Nomes)")
+                print(t("memoria.renomeando", antigo=arquivo_existente, novo=caminho_ideal))
             except OSError:
                 pass
             arquivo_final = caminho_ideal
@@ -135,7 +126,7 @@ def salvar_memoria(guild_id, guild_name, userid, user_name, prompt, resposta):
         ultima_mod = os.path.getmtime(arquivo_final)
         idade_horas = (time.time() - ultima_mod) / 3600
         if idade_horas > 168:
-            print(f"Memória do usuário {user_name} ({userid}) expirou. Limpando arquivo...")
+            print(t("memoria.expirou", nome=user_name, id=userid))
             try:
                 os.remove(arquivo_final)
             except OSError:
@@ -152,7 +143,7 @@ def salvar_memoria(guild_id, guild_name, userid, user_name, prompt, resposta):
     # 'enc' deve ser o seu codificador de tokens configurado previamente (ex: tiktoken)
     tamanho_estimado_tokens = len(conteudo) // 4
     if tamanho_estimado_tokens > 20480:
-        print(f"Memória de {user_name} excedeu o tamanho máximo. Gerando resumo...")
+        print(t("memoria.resumindo", nome=user_name))
         
         # Chamada da função de resumo atualizada
         resumo = criar_resumo(conteudo)
@@ -164,5 +155,5 @@ def delete_all_memories():
     for arquivo in Path(MEMORIES_DIR).rglob("*"):
         if arquivo.is_file():
             arquivo.unlink()
-            print(f"Deletando:{arquivo.name}")
+            print(t("memoria.excluindo", nome=arquivo.name))
     

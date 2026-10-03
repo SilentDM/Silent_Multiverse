@@ -92,118 +92,110 @@ class ModuloAventura5Rooms(BaseModel):
     sala5: Sala5Consequencias
 
 def formatar_tabela_d20(t: TabelaResultadosD20, label_contexto: str) -> str:
-    return f"""### 🎲 Teste: {t.pericia_ou_atributo} (CD Base: {t.cd_base})
+    from core.i18n import tc
+    return "\n".join([
+        tc("md.d20.titulo", pericia=t.pericia_ou_atributo, cd=t.cd_base),
+        "",
+        tc("md.d20.cabecalho", contexto=label_contexto),
+        "| :--- | :--- |",
+        f"| **{tc('md.d20.falha_critica')}** | {t.ate_5_falha_critica} |",
+        f"| **{tc('md.d20.falha_parcial')}** | {t.de_6_a_10_falha_parcial} |",
+        f"| **{tc('md.d20.sucesso')}** | {t.de_11_a_15_sucesso} |",
+        f"| **{tc('md.d20.excelente')}** | {t.de_16_a_20_excelente} |",
+        f"| **{tc('md.d20.critico')}** | {t.acima_21_critico} |",
+        "",
+    ])
 
-| Resultado d20 | Desfecho do Teste ({label_contexto}) |
-| :--- | :--- |
-| **≤ 5 (Falha Crítica)** | {t.ate_5_falha_critica} |
-| **6 - 10 (Falha Parcial)** | {t.de_6_a_10_falha_parcial} |
-| **11 - 15 (Sucesso Básico)** | {t.de_11_a_15_sucesso} |
-| **16 - 20 (Sucesso Excepcional)** | {t.de_16_a_20_excelente} |
-| **21+ (Crítico / Revelação)** | {t.acima_21_critico} |
-"""
+
+def _narracao(linhas, texto):
+    from core.i18n import tc
+    linhas.append(tc("md.aventura.narracao"))
+    for linha in texto.splitlines():
+        linhas.append(f"> {linha}")
+
 
 def aventura_5rooms_para_markdown(adv: ModuloAventura5Rooms) -> str:
-    linhas = []
-    
-    # Metadados Obsidian Frontmatter
-    linhas.append("---")
-    linhas.append("tipo: aventura")
-    linhas.append("status: rascunho")
-    linhas.append("sistema: D&D 5e")
-    linhas.append(f"nivel_recomendado: \"{adv.nivel_recomendado}\"")
-    linhas.append("---\n")
+    """Módulo de aventura em Markdown (com callouts do Obsidian), no idioma ativo."""
+    from core.i18n import tc
+    linhas = [
+        "---",
+        tc("md.aventura.fm_tipo"),
+        tc("marcador.rascunho"),
+        tc("md.aventura.fm_sistema"),
+        f"{tc('md.aventura.fm_nivel')}: \"{adv.nivel_recomendado}\"",
+        "---\n",
+        f"# {adv.titulo_aventura}\n",
+        tc("md.aventura.visao_geral"),
+        f"> - **{tc('md.aventura.premissa')}:** {adv.premissa_e_gancho}",
+        f"> - **{tc('md.aventura.localizacao')}:** {adv.localizacao_mundo}",
+        f"> - **{tc('md.aventura.tom')}:** {adv.tom_e_atmosfera}",
+        f"> - **{tc('md.aventura.relogio')}:** {adv.relogio_de_eventos}\n",
+        "---\n",
+    ]
 
-    # Título & Visão Geral
-    linhas.append(f"# {adv.titulo_aventura}\n")
-    linhas.append("> [!summary] 📜 Visão Geral da Aventura")
-    linhas.append(f"> - **Premissa & Gancho:** {adv.premissa_e_gancho}")
-    linhas.append(f"> - **Localização:** {adv.localizacao_mundo}")
-    linhas.append(f"> - **Tom & Atmosfera:** {adv.tom_e_atmosfera}")
-    linhas.append(f"> - **Relógio de Eventos:** {adv.relogio_de_eventos}\n")
-    linhas.append("---\n")
-
-    # Statblock do Vilão
-    op = adv.oponente_principal
-    at = op.atributos
-    linhas.append("## ⚔️ Oponentes Principais (Statblocks)\n")
-    linhas.append(f"> [!danger] Monstro / Vilão Principal: [[{op.nome}]]")
-    linhas.append(f"> *{op.tipo_e_alinhamento}*")
-    linhas.append(f"> - **Classe de Armadura:** {op.ca}")
-    linhas.append(f"> - **Pontos de Vida:** {op.pv}")
-    linhas.append(f"> - **Deslocamento:** {op.deslocamento}")
-    linhas.append("> ")
-    linhas.append("> | FOR | DES | CON | INT | SAB | CAR |")
-    linhas.append("> | :---: | :---: | :---: | :---: | :---: | :---: |")
-    linhas.append(f"> | {at.forca} | {at.destreza} | {at.constituicao} | {at.inteligencia} | {at.sabedoria} | {at.carisma} |")
-    linhas.append("> ")
-    linhas.append(f"> - **Perícias:** {op.pericias}")
-    linhas.append(f"> - **Sentidos:** {op.sentidos}")
-    linhas.append(f"> - **Nível de Desafio (ND):** {op.nd_e_xp}")
-    linhas.append("> ")
-    linhas.append("> **AÇÕES**")
+    op, at = adv.oponente_principal, adv.oponente_principal.atributos
+    linhas += [
+        tc("md.aventura.oponentes") + "\n",
+        tc("md.aventura.vilao", nome=op.nome),
+        f"> *{op.tipo_e_alinhamento}*",
+        f"> - **{tc('md.aventura.ca')}:** {op.ca}",
+        f"> - **{tc('md.aventura.pv')}:** {op.pv}",
+        f"> - **{tc('md.aventura.deslocamento')}:** {op.deslocamento}",
+        "> ",
+        tc("md.aventura.atributos_cabecalho"),
+        "> | :---: | :---: | :---: | :---: | :---: | :---: |",
+        f"> | {at.forca} | {at.destreza} | {at.constituicao} | {at.inteligencia} | {at.sabedoria} | {at.carisma} |",
+        "> ",
+        f"> - **{tc('md.aventura.pericias')}:** {op.pericias}",
+        f"> - **{tc('md.aventura.sentidos')}:** {op.sentidos}",
+        f"> - **{tc('md.aventura.nd')}:** {op.nd_e_xp}",
+        "> ",
+        f"> **{tc('md.aventura.acoes')}**",
+    ]
     if op.ataque_multiplo:
-        linhas.append(f"> - **Ataque Múltiplo:** {op.ataque_multiplo}")
-    linhas.append(f"> - **Ataque Principal:** {op.ataque_principal}")
+        linhas.append(f"> - **{tc('md.aventura.ataque_multiplo')}:** {op.ataque_multiplo}")
+    linhas.append(f"> - **{tc('md.aventura.ataque_principal')}:** {op.ataque_principal}")
     if op.habilidade_especial:
-        linhas.append(f"> - **Habilidade Especial:** {op.habilidade_especial}")
+        linhas.append(f"> - **{tc('md.aventura.habilidade_especial')}:** {op.habilidade_especial}")
     linhas.append("\n---\n")
 
-    # SALA 1
     s1 = adv.sala1
-    linhas.append(f"## SALA 1: {s1.titulo_sala} (O Guardião da Entrada)")
-    linhas.append("> [!quote] Narração para os Jogadores")
-    for l in s1.narracao.splitlines(): linhas.append(f"> {l}")
-    linhas.append(f"\n- **Ameaça / Obstáculo:** {s1.ameaca_inicial}\n")
-    linhas.append(formatar_tabela_d20(s1.teste_d20, "SALA 1"))
-    linhas.append("---\n")
+    linhas.append(tc("md.aventura.sala1", titulo=s1.titulo_sala))
+    _narracao(linhas, s1.narracao)
+    linhas.append(f"\n- **{tc('md.aventura.ameaca')}:** {s1.ameaca_inicial}\n")
+    linhas += [formatar_tabela_d20(s1.teste_d20, tc("md.aventura.rotulo_sala", n=1)), "---\n"]
 
-    # SALA 2
     s2 = adv.sala2
-    linhas.append(f"## SALA 2: {s2.titulo_sala} (O Enigma ou Obstáculo)")
-    linhas.append("> [!quote] Narração para os Jogadores")
-    for l in s2.narracao.splitlines(): linhas.append(f"> {l}")
-    linhas.append(f"\n- **Natureza do Desafio:** {s2.natureza_desafio}")
-    linhas.append(f"- **Recompensa por Maestria:** {s2.recompensa_de_sucesso}\n")
-    linhas.append(formatar_tabela_d20(s2.teste_d20, "SALA 2"))
-    linhas.append("---\n")
+    linhas.append(tc("md.aventura.sala2", titulo=s2.titulo_sala))
+    _narracao(linhas, s2.narracao)
+    linhas.append(f"\n- **{tc('md.aventura.natureza')}:** {s2.natureza_desafio}")
+    linhas.append(f"- **{tc('md.aventura.recompensa')}:** {s2.recompensa_de_sucesso}\n")
+    linhas += [formatar_tabela_d20(s2.teste_d20, tc("md.aventura.rotulo_sala", n=2)), "---\n"]
 
-    # SALA 3
     s3 = adv.sala3
-    linhas.append(f"## SALA 3: {s3.titulo_sala} (Ponto de Tensão / Reviravolta)")
-    linhas.append("> [!quote] Narração para os Jogadores")
-    for l in s3.narracao.splitlines(): linhas.append(f"> {l}")
-    linhas.append(f"\n- **A Reviravolta:** {s3.a_reviravolta}")
-    linhas.append(f"- **O Dilema Moral:** {s3.dilema_moral}\n")
-    linhas.append(formatar_tabela_d20(s3.teste_d20, "SALA 3"))
-    linhas.append("---\n")
+    linhas.append(tc("md.aventura.sala3", titulo=s3.titulo_sala))
+    _narracao(linhas, s3.narracao)
+    linhas.append(f"\n- **{tc('md.aventura.reviravolta')}:** {s3.a_reviravolta}")
+    linhas.append(f"- **{tc('md.aventura.dilema')}:** {s3.dilema_moral}\n")
+    linhas += [formatar_tabela_d20(s3.teste_d20, tc("md.aventura.rotulo_sala", n=3)), "---\n"]
 
-    # SALA 4
     s4 = adv.sala4
-    linhas.append(f"## SALA 4: {s4.titulo_sala} (O Clímax)")
-    linhas.append("> [!quote] Narração para os Jogadores")
-    for l in s4.narracao.splitlines(): 
-        linhas.append(f"> {l}")
+    linhas.append(tc("md.aventura.sala4", titulo=s4.titulo_sala))
+    _narracao(linhas, s4.narracao)
     linhas.append("")
-
     if getattr(s4, "mapa_imagem", None):
-        linhas.append(f"> [!tip] 🗺️ Mapa Tático da Câmara")
+        linhas.append(tc("md.aventura.mapa"))
         linhas.append(f"> ![[{s4.mapa_imagem}]]\n")
+    linhas.append(f"- **{tc('md.aventura.covil')}:** {s4.efeito_ambiental_covil}")
+    linhas.append(f"- **{tc('md.aventura.interacao')}:** {s4.interacao_dinamica}\n")
+    linhas += [formatar_tabela_d20(s4.teste_d20, tc("md.aventura.rotulo_sala", n=4)), "---\n"]
 
-    linhas.append(f"- **Efeito do Covil (Iniciativa 20):** {s4.efeito_ambiental_covil}")
-    linhas.append(f"- **Interação Tática de Cenário:** {s4.interacao_dinamica}\n")
-    linhas.append(formatar_tabela_d20(s4.teste_d20, "SALA 4"))
-    linhas.append("---\n")
-
-    # SALA 5
     s5 = adv.sala5
-    linhas.append(f"## SALA 5: {s5.titulo_sala} (Recompensa e Consequências)")
-    linhas.append("> [!quote] Narração para os Jogadores")
-    for l in s5.narracao.splitlines(): linhas.append(f"> {l}")
-    linhas.append("\n- **Tesouros & Achados:**")
-    for t in s5.tesouros: linhas.append(f"  - {t}")
-    linhas.append(f"- **Tensão / Fuga:** {s5.complicacao_fuga}")
-    linhas.append(f"- **Evolução do Mundo:** {s5.evolucao_mundo}")
-    linhas.append(f"- **Gancho Futuro:** {s5.gancho_futuro}\n")
-
-    return "\n".join(linhas).strip()
+    linhas.append(tc("md.aventura.sala5", titulo=s5.titulo_sala))
+    _narracao(linhas, s5.narracao)
+    linhas.append(f"\n- **{tc('md.aventura.tesouros')}:**")
+    linhas += [f"  - {tesouro}" for tesouro in s5.tesouros]
+    linhas.append(f"- **{tc('md.aventura.fuga')}:** {s5.complicacao_fuga}")
+    linhas.append(f"- **{tc('md.aventura.evolucao')}:** {s5.evolucao_mundo}")
+    linhas.append(f"- **{tc('md.aventura.gancho')}:** {s5.gancho_futuro}\n")
+    return "\n".join(linhas)

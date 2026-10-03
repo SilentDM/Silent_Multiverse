@@ -1,6 +1,7 @@
 # Em engine/project_utils.py
 import sys, os, re, json, threading, unicodedata, difflib, zipfile, ctypes, shutil
 import core.secret_filter as sf
+from core.i18n import t
 from pathlib import Path
 from datetime import datetime
 
@@ -11,7 +12,9 @@ else:
     BASE_DIR = Path(__file__).resolve().parent.parent
 
 # 🟢 PASTA CENTRAL DE DADOS DO NEXUS (Ao lado do executável)
-PASTA_DADOS_NEXUS = (BASE_DIR / ".silent_data").resolve()
+# SILENT_DATA_DIR permite usar outra pasta (os testes automáticos usam uma pasta temporária
+# para nunca tocar nas configurações e memórias reais).
+PASTA_DADOS_NEXUS = Path(os.environ.get("SILENT_DATA_DIR") or (BASE_DIR / ".silent_data")).resolve()
 
 # Todas as subpastas agora vivem exclusivamente dentro de .silent_data
 PASTA_LOGS = PASTA_DADOS_NEXUS / "logs"
@@ -46,8 +49,17 @@ IGNORELIST = [
     ".obsidian",
     ".git",
     ".trash",
-    "status: rascunho"
+    "status: rascunho",
+    "status: draft",
 ]
+
+# Marcadores de rascunho aceitos (português e inglês) — arquivos com eles ficam fora do contexto da IA
+MARCADORES_RASCUNHO = ("status: rascunho", "status: draft")
+
+
+def eh_rascunho(texto: str) -> bool:
+    texto = (texto or "").lower()
+    return any(marcador in texto for marcador in MARCADORES_RASCUNHO)
 
 ARQUIVO_ORDEM_GLOBAL = PASTA_LOGS / "folder_orders.json"
 
@@ -148,9 +160,8 @@ def definir_projeto_ativo(caminho_bruto):
         with open(arquivo_settings, "w", encoding="utf-8") as f:
             json.dump(dados, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        print(f"Erro ao salvar projeto ativo: {e}")
+        print(f"Erro ao salvar projeto ativo: {e}")  # pode ocorrer durante a importação (sem traduções ainda)
 
-    print(f"🌍 Projeto Ativo configurado para: {CAMINHO_PROJETO}")
     return CAMINHO_PROJETO
 
 # Inicialização padrão do projeto
@@ -181,7 +192,7 @@ def ler_json_seguro(caminho: Path, lock: threading.Lock, padrao=None):
             with open(caminho, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
-            print(f"⚠️ Erro ao ler JSON {caminho.name}: {e}")
+            print(t("projeto.erro_ler_json", nome=caminho.name, erro=e))
             return padrao
 
 def salvar_json_seguro(caminho: Path, dados, lock: threading.Lock, indent=4):
@@ -194,7 +205,7 @@ def salvar_json_seguro(caminho: Path, dados, lock: threading.Lock, indent=4):
                 json.dump(dados, f, ensure_ascii=False, indent=indent)
             caminho_tmp.replace(caminho)  # Substituição atômica no sistema de arquivos
         except Exception as e:
-            print(f"❌ Erro ao salvar JSON {caminho.name}: {e}")
+            print(t("projeto.erro_salvar_json", nome=caminho.name, erro=e))
 
 def anexar_jsonl_seguro(caminho: Path, registro: dict, lock: threading.Lock):
     """Anexa um novo objeto como linha (.jsonl) de forma thread-safe."""
@@ -205,7 +216,7 @@ def anexar_jsonl_seguro(caminho: Path, registro: dict, lock: threading.Lock):
             with open(caminho, "a", encoding="utf-8") as f:
                 f.write(linha)
         except Exception as e:
-            print(f"❌ Erro ao anexar em {caminho.name}: {e}")
+            print(t("projeto.erro_anexar", nome=caminho.name, erro=e))
 
 def obter_caminho_base():
     """Retorna o caminho raiz correto rodando como script .py ou como .exe compilado."""
@@ -217,7 +228,9 @@ ROOT_EMBUTIDO = obter_caminho_base()
 
 def normalizar_nome(nome: str) -> str:
     """Normaliza o nome removendo extensão, sufixos de versão, acentos e separadores."""
-    nome = Path(nome).stem  # Remove extensão .md se houver
+    nome = str(nome).strip()
+    if nome.lower().endswith(".md"):  # Remove só a extensão .md (Path.stem cortaria "St. Gregor" em "St")
+        nome = nome[:-3]
     nome = re.sub(r'_v\d+$', '', nome, flags=re.IGNORECASE)  # Remove sufixos como _v01
     nome = unicodedata.normalize("NFKD", nome).encode("ASCII", "ignore").decode("ASCII")
     nome = nome.lower().strip()
@@ -272,42 +285,83 @@ def existe_nome_parecido(nome_proposto: str, pasta_destino: Path, limiar: float 
 def log_path(nome):
     return PASTA_LOGS / nome
 
+# Palavras interrogativas (PT e EN) -> dica de foco enviada junto da pergunta ao bot
+_INTENCOES = [
+    (("onde", "where"), "intencao.local"),
+    (("quando", "when"), "intencao.tempo"),
+    (("quem", "who"), "intencao.entidade"),
+    (("como", "how"), "intencao.metodo"),
+    (("por que", "porque", "why"), "intencao.causa"),
+]
+
+
 def detectar_intencao(pergunta):
-    pergunta_lower = pergunta.lower()
-    if "onde" in pergunta_lower:
-        return "Foque na localização"
-    elif "quando" in pergunta_lower:
-        return "Foque no histórico ou cronologia"
-    elif "quem" in pergunta_lower:
-        return "Foque na entidade ou pessoa"
-    elif "como" in pergunta_lower:
-        return "Foque no método ou processo"
-    elif "por que" in pergunta_lower or "porque" in pergunta_lower:
-        return "Foque na causa"
+    from core.i18n import tc
+    palavras = re.findall(r"[\w']+", pergunta.lower())
+    texto = " ".join(palavras)
+    for gatilhos, chave in _INTENCOES:
+        if any((g in palavras) if " " not in g else (g in texto) for g in gatilhos):
+            return tc(chave)
     return ""
+
 
 def currentdate():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-def gerar_indice(root=None):
-    if root is None:
-        root = CAMINHO_PROJETO
-    root = Path(root)
-    indice = {}
+def _nome_revela_segredo(relativo: Path, termos_secretos) -> bool:
+    """True se o nome do arquivo (sem extensão) ou de alguma pasta do caminho contém um termo secreto."""
+    partes = list(relativo.parts[:-1]) + [relativo.stem] if relativo.suffix else list(relativo.parts)
+    return any(sf.contem_termo_secreto(parte, termos_secretos) for parte in partes)
+
+def listar_itens_visiveis(is_dm: bool = True, termos_secretos=None, root=None):
+    """
+    Lista (pastas, arquivos .md) do projeto que podem aparecer na estrutura/índice do contexto.
+    - Sempre ignora pastas da IGNORELIST (.obsidian, .git, .trash...).
+    - Para jogadores (is_dm=False), oculta arquivos totalmente secretos e qualquer
+      pasta/arquivo cujo NOME contenha um termo secreto, para não vazar segredos pelos nomes.
+    """
+    raiz = Path(root if root is not None else CAMINHO_PROJETO)
+    if not raiz.exists():
+        return [], []
+    termos = None
+    if not is_dm:
+        termos = termos_secretos if termos_secretos is not None else sf.obter_termos_secretos_configurados()
+
+    pastas, arquivos = [], []
+    for caminho in sorted(raiz.rglob("*")):
+        relativo = caminho.relative_to(raiz)
+        if any(ignore in relativo.parts for ignore in IGNORELIST):
+            continue
+        if caminho.is_dir():
+            if termos and _nome_revela_segredo(relativo, termos):
+                continue
+            pastas.append(caminho)
+        elif caminho.suffix == ".md":
+            if termos:
+                if _nome_revela_segredo(relativo, termos):
+                    continue
+                content = ler_markdown(caminho)
+                if content is not None:
+                    _, motivo = avaliar_conteudo_para_contexto(content, is_dm=False, termos_secretos=termos,
+                                                               caminho_relativo=relativo)
+                    if motivo == "segredo":
+                        continue
+            arquivos.append(caminho)
+    return pastas, arquivos
+
+def gerar_indice(root=None, is_dm: bool = True, termos_secretos=None):
+    root = Path(root if root is not None else CAMINHO_PROJETO)
     if not root.exists():
         return "{}"
-    for pasta in root.rglob("*"):
-        if pasta.is_dir():
-            arquivos = [
-                f.name
-                for f in pasta.glob("*.md")
-            ]
-            relativo = str(
-                pasta.relative_to(root)
-            )
-            if relativo == ".":
-                relativo = "ROOT"
-            indice[relativo] = arquivos
+    pastas, arquivos = listar_itens_visiveis(is_dm=is_dm, termos_secretos=termos_secretos, root=root)
+
+    # Índice: pasta -> arquivos .md diretamente dentro dela ("ROOT" = raiz do projeto)
+    indice = {"ROOT": []}
+    for pasta in pastas:
+        indice[str(pasta.relative_to(root))] = []
+    for arq in arquivos:
+        chave = str(arq.parent.relative_to(root))
+        indice.setdefault("ROOT" if chave == "." else chave, []).append(arq.name)
     return json.dumps(
         indice,
         ensure_ascii=False,
@@ -342,55 +396,101 @@ def build_tree(root=None):
     walk(root)
     return "\n".join(linhas)
 
-def carregar_estrutura_projeto():
+def carregar_estrutura_projeto(is_dm: bool = True, termos_secretos=None):
     raiz = Path(CAMINHO_PROJETO)
+    pastas, arquivos = listar_itens_visiveis(is_dm=is_dm, termos_secretos=termos_secretos)
+    conjunto_pastas = set(pastas)
     resultado = []
-    for caminho in sorted(raiz.rglob("*")):
+    for caminho in sorted(pastas + arquivos):
         relativo = caminho.relative_to(raiz)
-        if caminho.is_dir():
-            resultado.append(
-                f"[DIR] {relativo}"
-            )
-        elif caminho.suffix == ".md":
-            resultado.append(
-                f"[FILE] {relativo}"
-            )
+        resultado.append(f"[DIR] {relativo}" if caminho in conjunto_pastas else f"[FILE] {relativo}")
     return "\n".join(resultado)
+
+def arquivo_em_pasta_ignorada(f_path: Path) -> bool:
+    """True se o arquivo está dentro de uma pasta da IGNORELIST (.obsidian, .git, .trash...)."""
+    return any(ignore in Path(f_path).parts for ignore in IGNORELIST)
+
+def ler_markdown(f_path: Path):
+    """Lê um .md em UTF-8 (com fallback para latin1). Retorna None se o arquivo for ilegível."""
+    try:
+        with open(f_path, "r", encoding="utf-8") as file_obj:
+            return file_obj.read()
+    except UnicodeDecodeError:
+        try:
+            with open(f_path, "r", encoding="latin1") as file_obj:
+                return file_obj.read()
+        except Exception:
+            return None
+    except Exception:
+        return None
+
+def avaliar_conteudo_para_contexto(content: str, is_dm: bool = True, termos_secretos=None, caminho_relativo=None):
+    """
+    Aplica as MESMAS regras usadas para montar o contexto do mundo enviado à IA.
+    Retorna (conteudo_filtrado, motivo_exclusao). Se o arquivo entra no contexto,
+    motivo_exclusao é None; caso contrário conteudo_filtrado é "" e o motivo é:
+    'vazio', 'todo', 'rascunho', 'marcador' ou 'segredo'.
+    Para jogadores, se 'caminho_relativo' for informado e o nome do arquivo ou de
+    uma de suas pastas contiver um termo secreto, o arquivo inteiro é ocultado.
+    """
+    if not is_dm and caminho_relativo is not None:
+        if termos_secretos is None:
+            termos_secretos = sf.obter_termos_secretos_configurados()
+        if _nome_revela_segredo(Path(caminho_relativo), termos_secretos):
+            return "", "segredo"
+    if not content.strip():
+        return "", "vazio"
+    # Ignora arquivos que possuam tags de TODO ou marcações ignoradas
+    if any(tag in content for tag in TAG_ALVO):
+        return "", "todo"
+    if any(ignore in content for ignore in IGNORELIST):
+        return "", "rascunho" if eh_rascunho(content) else "marcador"
+
+    content_filtrado = sf.filtrar_conteudo_por_permissao(content, is_dm=is_dm, termos_custom=termos_secretos)
+    if not content_filtrado:
+        return "", "segredo"
+    return content_filtrado, None
+
+def formatar_bloco_contexto(nome_arquivo: str, conteudo_filtrado: str) -> str:
+    return f"\n==== {nome_arquivo} ====\n{conteudo_filtrado}\n"
 
 def carregar_projeto(is_dm: bool = True):
     caminho = Path(CAMINHO_PROJETO)
     if not caminho.exists():
-        print(f"⚠️ Alerta: Pasta '{PASTA_PROJETO}' não encontrada.")
+        print(t("projeto.pasta_nao_encontrada", nome=PASTA_PROJETO))
         return ""
-    
+
     conteudo_total = []
-    
+    termos = None if is_dm else sf.obter_termos_secretos_configurados()
+
     # Itera diretamente sobre todos os .md canônicos do cofre
     for f_path in sorted(caminho.rglob("*.md")):
-        if any(ignore in f_path.parts for ignore in IGNORELIST):
+        if arquivo_em_pasta_ignorada(f_path):
             continue
 
-        try:
-            with open(f_path, "r", encoding="utf-8") as file_obj:
-                content = file_obj.read()
-        except UnicodeDecodeError:
-            try:
-                with open(f_path, "r", encoding="latin1") as file_obj:
-                    content = file_obj.read()
-            except Exception:
-                continue
-
-        # Ignora arquivos que possuam tags de TODO ou marcações ignoradas
-        if any(tag in content for tag in TAG_ALVO) or any(ignore in content for ignore in IGNORELIST):
+        content = ler_markdown(f_path)
+        if content is None:
             continue
 
-        content_filtrado = sf.filtrar_conteudo_por_permissao(content, is_dm=is_dm)
+        content_filtrado, _ = avaliar_conteudo_para_contexto(
+            content, is_dm=is_dm, termos_secretos=termos, caminho_relativo=f_path.relative_to(caminho)
+        )
         if not content_filtrado:
-            continue            
+            continue
 
-        conteudo_total.append(f"\n==== {f_path.name} ====\n{content_filtrado}\n")
-        
+        conteudo_total.append(formatar_bloco_contexto(f_path.name, content_filtrado))
+
     return "\n\n".join(conteudo_total)
+
+def montar_contexto_mundo(is_dm: bool = True) -> str:
+    """Bundle completo do mundo (estrutura + índice + conteúdo filtrado), igual ao enviado às IAs."""
+    # Lê os termos secretos uma única vez para os trechos do contexto dos jogadores
+    termos = None if is_dm else sf.obter_termos_secretos_configurados()
+    return (
+        carregar_estrutura_projeto(is_dm=is_dm, termos_secretos=termos) + "\n\n" +
+        gerar_indice(is_dm=is_dm, termos_secretos=termos) + "\n\n" +
+        carregar_projeto(is_dm=is_dm)
+    )
 
 def request_cancellation():
     """Dispara a solicitação de parada para todas as threads em execução."""
@@ -506,6 +606,6 @@ def carregar_conhecimento_discord(guild_id: str = "global") -> str:
                 if texto:
                     conteudo.append(f"=== CANAL DISCORD: #{arq.stem} ===\n{texto}")
         except Exception as e:
-            print(f"Erro ao ler conhecimento do Discord ({arq.name}): {e}")
+            print(t("projeto.erro_conhecimento_discord", nome=arq.name, erro=e))
 
     return "\n\n".join(conteudo)

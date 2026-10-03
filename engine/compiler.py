@@ -1,6 +1,8 @@
 import os, re, unicodedata
 from pathlib import Path
 import engine.project_utils as pu
+import core.eventos as ev
+from core.i18n import t, tc
 
 def _limpar_titulo_exibicao(nome: str) -> str:
     """Remove prefixos numéricos (ex: '0.', '01_') e sufixos de versão (_v01) para exibição limpa."""
@@ -8,13 +10,26 @@ def _limpar_titulo_exibicao(nome: str) -> str:
     nome_limpo = re.sub(r'_v\d+$', '', nome_limpo, flags=re.IGNORECASE)
     return nome_limpo.replace("_", " ").strip().title()
 
+def _slug_documento(nome: str) -> str:
+    """
+    Âncora HTML de um documento. Usada TANTO no id do artigo quanto nos [[wikilinks]],
+    para que os links internos do livro sempre encontrem o destino
+    (ignora maiúsculas, acentos, separadores, extensão .md e sufixos _v01).
+    """
+    nome = nome.strip()
+    if nome.lower().endswith(".md"):
+        nome = nome[:-3]
+    nome = re.sub(r'_v\d+$', '', nome, flags=re.IGNORECASE)
+    nome = unicodedata.normalize("NFKD", nome).encode("ASCII", "ignore").decode("ASCII")
+    return "doc-" + re.sub(r'[^a-z0-9]', '', nome.lower())
+
 def _limpar_conteudo_markdown(texto: str) -> str:
     """Remove metadados de rascunho e tags TODO do texto final do livro."""
     linhas = []
     for linha in texto.splitlines():
         if any(tag in linha for tag in pu.TAG_ALVO):
             continue
-        if "status: rascunho" in linha.lower():
+        if pu.eh_rascunho(linha):
             continue
         linhas.append(linha)
     return "\n".join(linhas).strip()
@@ -100,7 +115,7 @@ def _markdown_para_html(md_texto: str) -> str:
     def _substituir_wikilink(match):
         target = match.group(1).strip()
         alias = match.group(2).strip() if match.group(2) else target
-        slug = f"doc-{re.sub(r'[^a-zA-Z0-9]', '', target.lower())}"
+        slug = _slug_documento(target.split("#")[0])
         return f'<a href="#{slug}" class="obsidian-link">{alias}</a>'
 
     resultado = re.sub(r'\[\[([^\|\]]+)(?:\|([^\]]+))?\]\]', _substituir_wikilink, resultado)
@@ -129,7 +144,7 @@ def _obter_estrutura_ordenada(caminho_raiz):
 
         if arquivos_md:
             relativo = pasta_atual.relative_to(caminho_raiz)
-            nome_capitulo = str(relativo) if str(relativo) != "." else "Visão Geral do Mundo"
+            nome_capitulo = str(relativo)  # "." = raiz do projeto
             estrutura.append((nome_capitulo, arquivos_md))
 
         for sub in subpastas:
@@ -142,14 +157,14 @@ def compilar_livro_cenario():
     """Compila todo o projeto de lore em um documento HTML formatado como livro de RPG."""
     caminho = Path(pu.CAMINHO_PROJETO)
     if not caminho.exists():
-        print(f"Erro: Pasta do projeto '{pu.PASTA_PROJETO}' não encontrada.")
+        ev.log(t("projeto.pasta_nao_encontrada", nome=pu.PASTA_PROJETO))
         return None
 
     # 1. Obtém a estrutura na ordem manual exata definida no Explorer
     estrutura_capitulos = _obter_estrutura_ordenada(caminho)
 
     if not estrutura_capitulos:
-        print("Nenhum conteúdo válido encontrado para compilar.")
+        ev.log(t("acoes.erro_livro_vazio"))
         return None
 
     # 2. Gerar Sumário (TOC) e Conteúdo HTML
@@ -161,18 +176,19 @@ def compilar_livro_cenario():
         cap_slug = f"capitulo-{capitulo_id}"
         
         # Limpa o título do capítulo (ex: "0.InTheBeginning" vira "In The Beginning")
-        if cap_caminho_rel != "Visão Geral do Mundo":
+        if cap_caminho_rel != ".":
             partes_cap = [_limpar_titulo_exibicao(p) for p in Path(cap_caminho_rel).parts]
             cap_titulo_limpo = " › ".join(partes_cap)
         else:
-            cap_titulo_limpo = "Visão Geral do Mundo"
+            cap_titulo_limpo = tc("livro.visao_geral")
 
         # Item do Capítulo no Sumário
-        indice_html.append(f'<li><a href="#{cap_slug}"><strong>Capítulo {capitulo_id}: {cap_titulo_limpo}</strong></a><ul>')
+        rotulo_capitulo = tc("livro.capitulo", n=capitulo_id)
+        indice_html.append(f'<li><a href="#{cap_slug}"><strong>{rotulo_capitulo}: {cap_titulo_limpo}</strong></a><ul>')
         
         # Início do Capítulo no Livro
         conteudo_html.append(f'<section class="capitulo" id="{cap_slug}">')
-        conteudo_html.append(f'<h1 class="capitulo-titulo">Capítulo {capitulo_id}<br><span>{cap_titulo_limpo}</span></h1>')
+        conteudo_html.append(f'<h1 class="capitulo-titulo">{rotulo_capitulo}<br><span>{cap_titulo_limpo}</span></h1>')
 
         for arq in lista_arquivos:
             try:
@@ -181,7 +197,7 @@ def compilar_livro_cenario():
             except UnicodeDecodeError:
                 continue
 
-            doc_slug = f"doc-{re.sub(r'[^a-zA-Z0-9]', '', arq.stem)}"
+            doc_slug = _slug_documento(arq.stem)
             doc_titulo = _limpar_titulo_exibicao(arq.stem)
 
             # Item do Documento no Sumário
@@ -203,10 +219,10 @@ def compilar_livro_cenario():
     nome_mundo = pu.PASTA_PROJETO.upper()
 
     documento_completo = f"""<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="{tc('livro.lang')}">
 <head>
     <meta charset="UTF-8">
-    <title>Compêndio de {nome_mundo} - Livro do Cenário</title>
+    <title>{tc('livro.titulo_html', mundo=nome_mundo)}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -403,12 +419,12 @@ def compilar_livro_cenario():
         
         <div class="cover-page">
             <h1>{nome_mundo}</h1>
-            <p>Compêndio Oficial de Cenário</p>
-            <p style="font-size: 0.9rem; margin-top: 40px; color: #6b7280;">Gerado por Silent Multiverse Console</p>
+            <p>{tc('livro.subtitulo_capa')}</p>
+            <p style="font-size: 0.9rem; margin-top: 40px; color: #6b7280;">{tc('livro.gerado_por')}</p>
         </div>
 
         <div class="toc-box">
-            <h2>Sumário do Mundo</h2>
+            <h2>{tc('livro.sumario')}</h2>
             <ul>
                 {"".join(indice_html)}
             </ul>
@@ -424,10 +440,10 @@ def compilar_livro_cenario():
     # 4. Salva o HTML
     pasta_export = pu.PASTA_EXPORTS
     pasta_export.mkdir(exist_ok=True, parents=True)
-    caminho_saida = pasta_export / f"Livro_do_Cenario_{pu.PASTA_PROJETO}.html"
+    caminho_saida = pasta_export / tc("livro.nome_arquivo", projeto=pu.PASTA_PROJETO)
 
     with open(caminho_saida, "w", encoding="utf-8") as f:
         f.write(documento_completo)
 
-    print(f"Livro do Cenário compilado com sucesso em: {caminho_saida}")
+    ev.log(t("livro.log_ok", caminho=caminho_saida))
     return caminho_saida
