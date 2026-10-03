@@ -96,6 +96,17 @@ def salvar_configuracoes(config):
     except Exception as e:
         print(f"Erro ao salvar configurações: {e}")
 
+def atualizar_configuracoes(novos_valores: dict) -> dict:
+    """
+    Relê o settings.json do disco, aplica apenas as chaves informadas e grava.
+    Evita sobrescrever alterações feitas por outras partes do programa
+    (projeto ativo, servidores do Discord, modo dos modelos...).
+    """
+    cfg = carregar_configuracoes()
+    cfg.update(novos_valores)
+    salvar_configuracoes(cfg)
+    return cfg
+
 def obter_configuracao_servidor(guild_id: str = None) -> dict:
     """
     Retorna a configuração resolvida para um servidor específico.
@@ -403,8 +414,7 @@ class OptionsFrame(ttk.Frame):
     def _on_provider_change(self, event):
         label_escolhido = self.combo_provider.get()
         valor_env = PROVEDORES_IA.get(label_escolhido, "gemini")
-        self.settings["ai_provider_ativo"] = label_escolhido
-        salvar_configuracoes(self.settings)
+        self.settings = atualizar_configuracoes({"ai_provider_ativo": label_escolhido})
         
         # 🟢 Atualiza no cofre em vez de no .env
         se.salvar_credencial("AI_PROVIDER", valor_env)
@@ -431,24 +441,9 @@ class OptionsFrame(ttk.Frame):
         if self.toast_callback:
             self.toast_callback("💾 Credenciais criptografadas e salvas com sucesso!")
 
-    def _salvar_campos_discord(self, event):
-        prefixo = self.var_prefix.get().strip() or "!ao"
-        self.settings["discord_prefix"] = prefixo
-        self.settings["discord_roles_dm"] = self.var_roles.get().strip()
-        self.settings["discord_channels_allowed"] = self.var_allowed.get().strip()
-        self.settings["discord_channels_blocked"] = self.var_blocked.get().strip()
-        
-        try:
-            self.settings["discord_cooldown_seconds"] = int(self.var_cooldown.get().strip())
-        except ValueError:
-            self.settings["discord_cooldown_seconds"] = 5
-
-        salvar_configuracoes(self.settings)
-
     def _on_tom_change(self, event):
         novo_tom = self.combo_tom.get()
-        self.settings["tom_clima_perfil"] = novo_tom
-        salvar_configuracoes(self.settings)
+        self.settings = atualizar_configuracoes({"tom_clima_perfil": novo_tom})
         escrever_arquivo_estilo_tom(novo_tom)
 
         if self.log_callback:
@@ -458,8 +453,7 @@ class OptionsFrame(ttk.Frame):
 
     def _on_sistema_change(self, event):
         novo_sis = self.combo_sistema.get()
-        self.settings["rpg_sistema_ativo"] = novo_sis
-        salvar_configuracoes(self.settings)
+        self.settings = atualizar_configuracoes({"rpg_sistema_ativo": novo_sis})
 
         if self.log_callback:
             self.log_callback(f"Sistema de RPG alterado para: {novo_sis}")
@@ -471,8 +465,7 @@ class OptionsFrame(ttk.Frame):
 
     def _on_auto_expander_change(self):
         habilitado = self.is_auto_expander_enabled()
-        self.settings["auto_expander"] = habilitado
-        salvar_configuracoes(self.settings)
+        self.settings = atualizar_configuracoes({"auto_expander": habilitado})
 
         status_str = "Habilitado" if habilitado else "Desabilitado"
         if self.log_callback:
@@ -501,8 +494,7 @@ class OptionsFrame(ttk.Frame):
 
     def _on_wb_setting_change(self, chave_setting, var, titulo):
         habilitado = bool(var.get())
-        self.settings[chave_setting] = habilitado
-        salvar_configuracoes(self.settings)
+        self.settings = atualizar_configuracoes({chave_setting: habilitado})
         status_str = "HABILITADO" if habilitado else "DESABILITADO"
         if self.log_callback:
             self.log_callback(f"WorldBuilder -> {titulo} {status_str}")
@@ -614,8 +606,7 @@ class OptionsFrame(ttk.Frame):
     def _salvar_termos_secretos(self, event=None):
         """Salva a blacklist de palavras no settings.json em tempo real a cada tecla."""
         termos = self.var_termos_secretos.get().strip()
-        self.settings["termos_secretos"] = termos
-        salvar_configuracoes(self.settings)
+        self.settings = atualizar_configuracoes({"termos_secretos": termos})
 
     def _salvar_campos_discord(self, event=None):
         """Salva as alterações digitadas na partição correta (global ou servidor específico)."""

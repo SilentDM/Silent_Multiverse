@@ -55,7 +55,7 @@ def ask_ai(
     """
     client = get_claude_client()
     if not client:
-        return "❌ Nenhuma chave da API Claude (CLAUDE_TOKEN) foi configurada. Acesse a aba 'Opções' para cadastrar sua chave."
+        raise RuntimeError("Nenhuma chave da API Claude (CLAUDE_TOKEN) foi configurada. Acesse a aba 'Opções' para cadastrar sua chave.")
 
     if not system_instruction:
         system_instruction = DEFAULT_SYSTEM_INSTRUCTION
@@ -108,10 +108,10 @@ def ask_ai(
         )
     except anthropic.APIStatusError as e:
         print(f"❌ Erro na chamada da API Claude ({e.status_code}): {e}")
-        return f"❌ Erro ao consultar a IA Claude ({e.status_code}): {e}"
+        raise RuntimeError(f"Erro ao consultar a IA Claude ({e.status_code}): {e}") from e
     except Exception as e:
         print(f"❌ Erro inesperado na chamada da API Claude: {e}")
-        return f"❌ Erro ao consultar a IA Claude: {e}"
+        raise RuntimeError(f"Erro ao consultar a IA Claude: {e}") from e
 
     texto_partes = [
         bloco.text for bloco in response.content

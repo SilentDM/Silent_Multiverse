@@ -221,6 +221,14 @@ class RoleplayFrame(ttk.Frame):
                 self.after(0, _atualizar)
             except Exception as e:
                 self.log_callback(f"Erro no diálogo de roleplay: {e}")
+                def _mostrar_erro(err=str(e)):
+                    self.chat_display.config(state=tk.NORMAL)
+                    self.chat_display.delete("end-3l", "end")
+                    self.chat_display.insert(tk.END, "Narrador: ", "system")
+                    self.chat_display.insert(tk.END, f"⚠️ Não foi possível obter resposta: {err}\n\n", "system")
+                    self.chat_display.see(tk.END)
+                    self.chat_display.config(state=tk.DISABLED)
+                self.after(0, _mostrar_erro)
 
         threading.Thread(target=_worker, daemon=True).start()
 
@@ -315,8 +323,10 @@ class RoleplayFrame(ttk.Frame):
             self.toast("⚠️ Selecione ou crie um personagem primeiro!")
             return
 
-        dados, historico = pe.carregar_persona(self.current_persona)
-        nome_npc = dados.get("nome", self.current_persona)
+        # Fixa a persona alvo agora: o usuário pode trocar de persona enquanto a imagem é gerada
+        persona_alvo = self.current_persona
+        dados, _ = pe.carregar_persona(persona_alvo)
+        nome_npc = dados.get("nome", persona_alvo)
 
         self.toast(f"🎨 Gerando retrato para '{nome_npc}'...")
         self.btn_gerar_portrait.config(state=tk.DISABLED)
@@ -326,9 +336,16 @@ class RoleplayFrame(ttk.Frame):
                 # 🟢 Passa o dicionário completo com os atributos físicos e o prompt_visual_ingles
                 caminho = aimg.gerar_portrait_persona(nome_npc, dados)
                 if caminho:
-                    dados["portrait_path"] = str(caminho)
-                    pe.salvar_persona(self.current_persona, dados, historico)
-                    self.after(0, lambda: self._atualizar_foto_portrait(caminho))
+                    # Relê do disco para não descartar mensagens trocadas durante a geração
+                    dados_atuais, historico_atual = pe.carregar_persona(persona_alvo)
+                    dados_atuais = dados_atuais or dados
+                    dados_atuais["portrait_path"] = str(caminho)
+                    pe.salvar_persona(persona_alvo, dados_atuais, historico_atual)
+
+                    def _mostrar():
+                        if self.current_persona == persona_alvo:
+                            self._atualizar_foto_portrait(caminho)
+                    self.after(0, _mostrar)
                     self.toast(f"🖼️ Retrato de '{nome_npc}' concluído!")
                 else:
                     self.toast("⚠️ Não foi possível gerar a imagem no momento.")

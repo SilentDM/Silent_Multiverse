@@ -80,7 +80,7 @@ def arquivar_versao_para_historico(caminho_original):
 
 def obter_arquivos_relacionados(titulo):
     relacionados = []
-    for arquivo in Path(pu.PASTA_PROJETO).rglob("*.md"):
+    for arquivo in Path(pu.CAMINHO_PROJETO).rglob("*.md"):
         if any(part in pu.IGNORELIST for part in arquivo.parts):
             continue
         try:
@@ -249,16 +249,15 @@ DIRETRIZES DE REVISÃO:
 TEXTO GERADO PARA REVISÃO:
 {texto_bruto_limpo}
 """
-            revisao_resultado = au.ask_ai(
-                contents=prompt_revisao,
-                system_instruction="Você é um validador rigoroso de consistência de universos fictícios. Responda estritamente através do schema JSON.",
-                temperature=0.1,
-                response_schema=RevisaoLore,
-                use_world_context=True
-            )
-
             conteudo_salvar = None
             try:
+                revisao_resultado = au.ask_ai(
+                    contents=prompt_revisao,
+                    system_instruction="Você é um validador rigoroso de consistência de universos fictícios. Responda estritamente através do schema JSON.",
+                    temperature=0.1,
+                    response_schema=RevisaoLore,
+                    use_world_context=True
+                )
                 json_str = remover_markdown_fences(str(revisao_resultado))
                 revisao_obj = RevisaoLore.model_validate_json(json_str)
 
@@ -274,7 +273,7 @@ TEXTO GERADO PARA REVISÃO:
                     conteudo_salvar = texto_bruto_limpo
 
             except Exception as e:
-                print(f"⚠️ Falha ao decodificar JSON de revisão ({e}). Usando texto original gerado como fallback seguro.")
+                print(f"⚠️ Falha na revisão ({e}). Usando texto original gerado como fallback seguro.")
                 conteudo_salvar = texto_bruto_limpo
 
             # --- ETAPA 3: PERSISTÊNCIA COMPATÍVEL COM OBSIDIAN ---
@@ -294,7 +293,7 @@ TEXTO GERADO PARA REVISÃO:
         ARQUIVOS_EM_PROCESSAMENTO.discard(caminho_abs)
 
 def processar_arquivos():
-    caminho_projeto = Path(pu.PASTA_PROJETO)
+    caminho_projeto = Path(pu.CAMINHO_PROJETO)
     encontrou_tag = False
     
     for arquivo in caminho_projeto.rglob("*.md"):

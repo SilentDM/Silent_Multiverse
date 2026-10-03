@@ -685,21 +685,65 @@ class ExplorerFrame(ttk.Frame):
 
     def save_current_file_on_timer(self):
         self.autosave_timer = None
-        self.save_current_file()
+        if self.save_current_file() == "alterado_externamente":
+            self.recarregar_arquivo_do_disco(self.current_file)
+
+    def _registrar_versao_disco(self, caminho):
+        """Guarda o mtime do arquivo exibido no editor para detectar alterações feitas fora dele (IA)."""
+        try:
+            self._mtime_carregado = os.stat(caminho).st_mtime_ns
+        except OSError:
+            self._mtime_carregado = None
+
+    def _arquivo_alterado_externamente(self) -> bool:
+        mtime_carregado = getattr(self, "_mtime_carregado", None)
+        if not self.current_file or mtime_carregado is None:
+            return False
+        try:
+            return os.stat(self.current_file).st_mtime_ns != mtime_carregado
+        except OSError:
+            return False
 
     def save_current_file(self):
+        """Salva o editor no disco. Retorna 'salvo', 'alterado_externamente' ou None."""
         self.autosave_timer = None
-        if self.current_file and os.path.isfile(self.current_file):
-            try:
-                conteudo = self.editor.get("1.0", tk.END)
-                if conteudo.endswith("\n"):
-                    conteudo = conteudo[:-1]
+        if not (self.current_file and os.path.isfile(self.current_file)):
+            return None
 
-                with open(self.current_file, "w", encoding="utf-8") as f:
-                    f.write(conteudo)
-                self.log_callback(f"Auto-salvo: {os.path.basename(self.current_file)}")
-            except Exception as e:
-                self.log_callback(f"Falha ao auto-salvar {self.current_file}: {e}")
+        nome_arq = os.path.basename(self.current_file)
+
+        # 🛡️ Nunca sobrescreve um arquivo que a IA está processando ou que já foi alterado por ela
+        if wb.ex.esta_em_processamento(self.current_file):
+            self.log_callback(f"Auto-save ignorado: '{nome_arq}' está sendo processado pela IA.")
+            return None
+        if self._arquivo_alterado_externamente():
+            self.log_callback(f"'{nome_arq}' foi alterado fora do editor (IA). O conteúdo do editor não foi gravado por cima.")
+            self.toast(f"🔄 '{nome_arq}' foi atualizado pela IA. Recarregando a versão nova.")
+            return "alterado_externamente"
+
+        try:
+            conteudo = self.editor.get("1.0", tk.END)
+            if conteudo.endswith("\n"):
+                conteudo = conteudo[:-1]
+
+            with open(self.current_file, "w", encoding="utf-8") as f:
+                f.write(conteudo)
+            self._registrar_versao_disco(self.current_file)
+            self.log_callback(f"Auto-salvo: {nome_arq}")
+            return "salvo"
+        except Exception as e:
+            self.log_callback(f"Falha ao auto-salvar {self.current_file}: {e}")
+            return None
+
+    def verificar_alteracao_externa(self):
+        """Se o arquivo aberto mudou no disco (ex: Expander/WorldBuilder), recarrega o editor."""
+        if (self.current_file and os.path.isfile(self.current_file)
+                and not wb.ex.esta_em_processamento(self.current_file)
+                and self._arquivo_alterado_externamente()):
+            if self.autosave_timer:
+                self.after_cancel(self.autosave_timer)
+                self.autosave_timer = None
+            self.recarregar_arquivo_do_disco(self.current_file)
 
     def on_select(self, event=None):
         try:
@@ -774,6 +818,7 @@ class ExplorerFrame(ttk.Frame):
                         texto = f.read()
                 except Exception as e:
                     self.log_callback(f"Erro ao ler arquivo {novo_caminho}: {e}")
+                self._registrar_versao_disco(novo_caminho)
 
                 self.editor.insert("1.0", texto)
 
@@ -889,6 +934,7 @@ class ExplorerFrame(ttk.Frame):
         except Exception as e:
             self.log_callback(f"Erro ao recarregar {caminho_abs}: {e}")
             return
+        self._registrar_versao_disco(caminho_abs)
 
         # Atualiza o ScrolledText do editor
         self.editor.config(state=tk.NORMAL)
@@ -1418,6 +1464,7 @@ class ExplorerFrame(ttk.Frame):
         self.populate_tree(root_node, pasta_projeto)
         self.restore_open_folders(open_folders)
         self.restore_current_file(current_file)
+        self.verificar_alteracao_externa()
         self.log_callback("Árvore do diretório sincronizada.")
 
     def populate_tree(self, parent_node, path, depth=0, max_depth=15):

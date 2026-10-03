@@ -334,7 +334,7 @@ def ask_ai(
     is_dm: Optional[bool] = True
 ) -> str:
     if not os.getenv("GOOGLE_API_KEY", "").strip():
-        return "Nenhuma chave de API da IA (GOOGLE_API_KEY) foi configurada. Acesse a aba 'Opções' para cadastrar sua chave."
+        raise RuntimeError("Nenhuma chave de API da IA (GOOGLE_API_KEY) foi configurada. Acesse a aba 'Opções' para cadastrar sua chave.")
 
     if not system_instruction:
         system_instruction = DEFAULT_SYSTEM_INSTRUCTION
