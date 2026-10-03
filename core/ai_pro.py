@@ -28,11 +28,7 @@ def _montar_contexto_mundo(is_dm: bool = True) -> str:
     de arquivos equivalente ao Files API do Gemini.
     """
     try:
-        return (
-            pu.carregar_estrutura_projeto() + "\n\n" +
-            pu.gerar_indice() + "\n\n" +
-            pu.carregar_projeto(is_dm=is_dm)
-        )
+        return pu.montar_contexto_mundo(is_dm=is_dm)
     except Exception as e:
         print(f"⚠️ Erro ao montar contexto do mundo para o Pro: {e}")
         return ""

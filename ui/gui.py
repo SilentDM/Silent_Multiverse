@@ -12,6 +12,8 @@ import ui.explorer as expl
 import ui.gui_logger as gl
 import ui.roleplay_frame as rp
 import ui.settings as st
+import ui.token_report as tr
+import engine.token_counter as tc
 import ui.setup_env as se
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext, filedialog
@@ -464,7 +466,9 @@ class SilentDesktopApp:
         # --- QUADRO 5: Exportação do Cenário ---
         export_box = ttk.LabelFrame(self.wb_scroll_frame, text=" Exportação do Cenário ")
         self.btn_export_book = ttk.Button(export_box, text="▶ Gerar e Abrir Livro do Cenário (HTML/PDF)", command=self.export_sourcebook)
-        self.btn_export_book.pack(fill=tk.X, padx=10, pady=10)
+        self.btn_export_book.pack(fill=tk.X, padx=10, pady=(10, 5))
+        self.btn_token_report = ttk.Button(export_box, text="📊 Analisar Tamanho do Projeto (Tokens)", command=self.open_token_report)
+        self.btn_token_report.pack(fill=tk.X, padx=10, pady=(0, 10))
 
         # --- QUADRO 6: Gerenciamento do Projeto ---
         db_box = ttk.LabelFrame(self.wb_scroll_frame, text=" Gerenciamento do Projeto ")
@@ -1066,6 +1070,36 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
                 self.toast("❌ Erro ao compilar o livro.")
 
         threading.Thread(target=_run_compile, daemon=True).start()
+
+    # ------------------------------------------------------------------
+    # RELATÓRIO DE TAMANHO DO PROJETO (TOKENS)
+    # ------------------------------------------------------------------
+    def open_token_report(self):
+        self.explorer_pane.save_current_file()
+        self.btn_token_report.config(state=tk.DISABLED)
+        self.start_spinner("Analisando tamanho do projeto")
+        self.log_activity("Analisando tamanho do projeto (tokens por arquivo)...")
+
+        def _worker():
+            try:
+                analise = tc.analisar_projeto()
+
+                def _abrir():
+                    self.stop_spinner("Análise de tokens concluída")
+                    self.btn_token_report.config(state=tk.NORMAL)
+                    tr.TokenReportWindow(self.root, analise, self.log_activity, self.toast)
+                    self.log_activity(f"Análise concluída: {len(analise.arquivos)} arquivos .md.")
+                self.root.after(0, _abrir)
+            except Exception as e:
+                self.log_activity(f"Erro ao analisar tamanho do projeto: {e}")
+
+                def _falha(err=str(e)):
+                    self.stop_spinner("Análise de tokens falhou", is_error=True)
+                    self.btn_token_report.config(state=tk.NORMAL)
+                    messagebox.showerror("Erro na Análise", err)
+                self.root.after(0, _falha)
+
+        threading.Thread(target=_worker, daemon=True).start()
 
     # ------------------------------------------------------------------
     # Backup full do projeto
@@ -1743,6 +1777,7 @@ Se o universo estiver 100% coerente, elogie a consistência da lore!
         add_p("• WorldBuilder: Executa um plano autônomo completo (cria pastas, arquivos e expande a lore) com base no objetivo que você definir.", "bullet")
         add_p("• WorldBuilder: A criação de pastas, arquivos e melhoria de arquivos podem ser habilitadas ou desabilitadas na aba Opções, para melhor controlar o que o Worldbuilder irá fazer.", "bullet")
         add_p("• Auditoria de Lore: Analisa todo o universo do seu projeto em busca de incoerências históricas, furos de cronologia ou contradições geográficas.", "bullet")
+        add_p("• Analisar Tamanho do Projeto: Mostra, por pasta e por arquivo, quantos tokens o projeto ocupa no contexto enviado à IA (versão do Mestre e dos Jogadores) e quanto isso representa do limite do provedor. O botão 'Contagem exata' mede os totais reais pela API do provedor ativo, sem custo.", "bullet")
         add_p("• Gerar e Abrir Livro do Cenário:  Compila todos os arquivos Markdown, cria um arquivo HTML de todo o projeto com índice e links, e já abre ele no seu Browser padrão, esse documento pode ser salvo como PDF.", "bullet")
         add_p("• Backup do Projeto: Gera um arquivo .zip completo com todas as suas pastas e memórias gravado na raiz do disco onde o executável está rodando, pode dar erro se tentar no C:/, mas funciona bem em outros volumes.", "bullet")
         add_p("• Excluir todas as Memórias: Deleta todos os arquivos da pasta memories, que contém a conversa local da aba Converse com Ao e todas as conversas do Bot do Discord com qualquer usuário em qualquer servidor.", "bullet")

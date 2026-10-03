@@ -41,17 +41,8 @@ def prepare_world_context(is_dm: bool = True, ttl_hours=12):
         print("⚠️ Nenhuma GOOGLE_API_KEY configurada para criar o Bundle do mundo.")
         return None
 
-    context_dm = (
-        pu.carregar_estrutura_projeto() + "\n\n" + 
-        pu.gerar_indice() + "\n\n" + 
-        pu.carregar_projeto(is_dm=True)
-    )
-
-    context_player = (
-        pu.carregar_estrutura_projeto() + "\n\n" + 
-        pu.gerar_indice() + "\n\n" + 
-        pu.carregar_projeto(is_dm=False)
-    )
+    context_dm = pu.montar_contexto_mundo(is_dm=True)
+    context_player = pu.montar_contexto_mundo(is_dm=False)
 
     # 3. Attempt Explicit Context Caching (For Billing-Enabled Accounts)
     print("Fazendo upload do Bundle!")

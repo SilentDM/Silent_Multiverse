@@ -357,40 +357,77 @@ def carregar_estrutura_projeto():
             )
     return "\n".join(resultado)
 
+def arquivo_em_pasta_ignorada(f_path: Path) -> bool:
+    """True se o arquivo está dentro de uma pasta da IGNORELIST (.obsidian, .git, .trash...)."""
+    return any(ignore in Path(f_path).parts for ignore in IGNORELIST)
+
+def ler_markdown(f_path: Path):
+    """Lê um .md em UTF-8 (com fallback para latin1). Retorna None se o arquivo for ilegível."""
+    try:
+        with open(f_path, "r", encoding="utf-8") as file_obj:
+            return file_obj.read()
+    except UnicodeDecodeError:
+        try:
+            with open(f_path, "r", encoding="latin1") as file_obj:
+                return file_obj.read()
+        except Exception:
+            return None
+    except Exception:
+        return None
+
+def avaliar_conteudo_para_contexto(content: str, is_dm: bool = True, termos_secretos=None):
+    """
+    Aplica as MESMAS regras usadas para montar o contexto do mundo enviado à IA.
+    Retorna (conteudo_filtrado, motivo_exclusao). Se o arquivo entra no contexto,
+    motivo_exclusao é None; caso contrário conteudo_filtrado é "" e o motivo é:
+    'todo', 'rascunho', 'marcador' ou 'segredo'.
+    """
+    # Ignora arquivos que possuam tags de TODO ou marcações ignoradas
+    if any(tag in content for tag in TAG_ALVO):
+        return "", "todo"
+    if any(ignore in content for ignore in IGNORELIST):
+        return "", "rascunho" if "status: rascunho" in content else "marcador"
+
+    content_filtrado = sf.filtrar_conteudo_por_permissao(content, is_dm=is_dm, termos_custom=termos_secretos)
+    if not content_filtrado:
+        return "", "segredo"
+    return content_filtrado, None
+
+def formatar_bloco_contexto(nome_arquivo: str, conteudo_filtrado: str) -> str:
+    return f"\n==== {nome_arquivo} ====\n{conteudo_filtrado}\n"
+
 def carregar_projeto(is_dm: bool = True):
     caminho = Path(CAMINHO_PROJETO)
     if not caminho.exists():
         print(f"⚠️ Alerta: Pasta '{PASTA_PROJETO}' não encontrada.")
         return ""
-    
+
     conteudo_total = []
-    
+
     # Itera diretamente sobre todos os .md canônicos do cofre
     for f_path in sorted(caminho.rglob("*.md")):
-        if any(ignore in f_path.parts for ignore in IGNORELIST):
+        if arquivo_em_pasta_ignorada(f_path):
             continue
 
-        try:
-            with open(f_path, "r", encoding="utf-8") as file_obj:
-                content = file_obj.read()
-        except UnicodeDecodeError:
-            try:
-                with open(f_path, "r", encoding="latin1") as file_obj:
-                    content = file_obj.read()
-            except Exception:
-                continue
-
-        # Ignora arquivos que possuam tags de TODO ou marcações ignoradas
-        if any(tag in content for tag in TAG_ALVO) or any(ignore in content for ignore in IGNORELIST):
+        content = ler_markdown(f_path)
+        if content is None:
             continue
 
-        content_filtrado = sf.filtrar_conteudo_por_permissao(content, is_dm=is_dm)
+        content_filtrado, _ = avaliar_conteudo_para_contexto(content, is_dm=is_dm)
         if not content_filtrado:
-            continue            
+            continue
 
-        conteudo_total.append(f"\n==== {f_path.name} ====\n{content_filtrado}\n")
-        
+        conteudo_total.append(formatar_bloco_contexto(f_path.name, content_filtrado))
+
     return "\n\n".join(conteudo_total)
+
+def montar_contexto_mundo(is_dm: bool = True) -> str:
+    """Bundle completo do mundo (estrutura + índice + conteúdo filtrado), igual ao enviado às IAs."""
+    return (
+        carregar_estrutura_projeto() + "\n\n" +
+        gerar_indice() + "\n\n" +
+        carregar_projeto(is_dm=is_dm)
+    )
 
 def request_cancellation():
     """Dispara a solicitação de parada para todas as threads em execução."""
