@@ -1,0 +1,53 @@
+"""Integração com o sistema operacional (abrir arquivos/pastas, liberar memória)."""
+import os
+import subprocess
+import sys
+from pathlib import Path
+from core.i18n import t
+
+
+def abrir_no_sistema(caminho):
+    """Abre arquivo ou pasta no programa padrão do sistema (Explorer, navegador, visualizador...)."""
+    caminho = str(Path(caminho))
+    if os.name == "nt":
+        os.startfile(caminho)
+    elif sys.platform == "darwin":
+        subprocess.call(["open", caminho])
+    else:
+        subprocess.call(["xdg-open", caminho])
+
+
+def revelar_no_explorer(caminho):
+    """Abre o gerenciador de arquivos com o item selecionado (ou a pasta, se for diretório)."""
+    caminho = os.path.normpath(str(caminho))
+    if os.name == "nt":
+        if os.path.isfile(caminho):
+            subprocess.run(["explorer", "/select,", caminho])
+        else:
+            os.startfile(caminho)
+    elif sys.platform == "darwin":
+        subprocess.call(["open", "-R", caminho] if os.path.isfile(caminho) else ["open", caminho])
+    else:
+        subprocess.call(["xdg-open", os.path.dirname(caminho) if os.path.isfile(caminho) else caminho])
+
+
+def liberar_memoria():
+    """No Windows, pede ao sistema para devolver a memória de trabalho inativa do processo."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        handle = ctypes.windll.kernel32.GetCurrentProcess()
+        ctypes.windll.psapi.EmptyWorkingSet(handle)
+    except Exception as e:
+        print(t("sistema.log_erro_ram", erro=e))
+
+
+def caminho_icone():
+    """icon.ico embutido pelo PyInstaller (_MEIPASS) ou ao lado do programa; None se não existir."""
+    candidatos = []
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        candidatos.append(Path(sys._MEIPASS) / "icon.ico")
+    import engine.project_utils as pu
+    candidatos.append(pu.BASE_DIR / "icon.ico")
+    return next((c for c in candidatos if c.exists()), None)

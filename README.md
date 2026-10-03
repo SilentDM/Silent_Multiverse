@@ -85,12 +85,48 @@ O **Silent Multiverse Nexus** é uma suíte completa de ferramentas desktop para
 
 | Marcador / Sintaxe | Onde usar | Comportamento |
 | :--- | :--- | :--- |
-| `<-- TO DO: motivo` | Em qualquer `.md` | O **Expander** preenche a lacuna com IA contextualizada. |
-| `[SEGREDO]` | No título de uma seção | Oculta a seção inteira dos jogadores no Discord e no cache. |
-| `status: segredo` | No Frontmatter YAML | Oculta o arquivo inteiro das consultas dos jogadores. |
-| `status: rascunho` | No Frontmatter YAML | Ignorado pela IA até que você finalize o rascunho. |
+| `<-- TODO: motivo` | Em qualquer `.md` | O **Expander** preenche a lacuna com IA contextualizada. |
+| `[segredo]` ou `[secret]` | No título de uma seção | Oculta a seção inteira dos jogadores no Discord e no cache. |
+| `status: segredo` ou `status: secret` | No Frontmatter YAML | Oculta o arquivo inteiro das consultas dos jogadores. |
+| `status: rascunho` ou `status: draft` | No Frontmatter YAML | Ignorado pela IA até que você finalize o rascunho. |
 | `Termos Secretos` | Aba Opções (ex: `Hastur`) | Elimina qualquer menção ao nome do conhecimento dos jogadores. |
 | `![[imagem.png]]` | Em qualquer `.md` | Renderiza portraits e battlemaps nativamente no preview. |
+
+Os marcadores são lidos nos dois idiomas, então projetos antigos continuam funcionando ao trocar o idioma; arquivos novos são criados com o marcador do idioma ativo.
+
+---
+
+## 🌐 Idioma (PT-BR / EN-US)
+
+Em **Opções → Idioma** você escolhe entre Português (Brasil) e English (US).
+
+* **IA e conteúdo gerado** mudam na hora: todos os prompts, as descrições dos schemas enviados ao Gemini, os títulos do Markdown gerado (aventuras, testes de conhecimento, fichas, livro compilado) e as respostas do bot do Discord passam a usar o novo idioma na próxima chamada.
+* **A interface** muda ao reiniciar o programa.
+* Seus arquivos de lore, `Templates/` e `Style/` não são traduzidos.
+
+Os textos ficam na pasta `locale/`:
+
+```
+locale/
+  pt_br/  e  en_us/
+    ui.json          textos da interface
+    mensagens.json   mensagens de log e avisos
+    conteudo.json    títulos e rótulos do conteúdo gerado
+    schemas.json     descrições dos campos dos schemas da IA
+    manual.md        manual exibido no programa
+    prompts/*.md     um arquivo por chamada de IA (variáveis no formato {{nome}})
+```
+
+Para ajustar um texto ou prompt, edite o arquivo nos **dois** idiomas (os testes conferem se as chaves e variáveis batem). Um executável gerado pelo PyInstaller precisa embutir essa pasta (`--add-data "locale;locale"`).
+
+---
+
+## 🧱 Organização do Código
+
+* `ui/` só monta a tela: cada botão chama uma função de `core/`, `engine/` ou `bot/`. Nada de arquivos, IA, threads ou regras de negócio na interface (um teste garante isso).
+* `core/` configuração, cofre de credenciais, idioma, prompts, eventos de log e tarefas em segundo plano.
+* `engine/` operações de arquivo, editor, ações (Expander, WorldBuilder, auditoria, livro, backup), schemas e contexto do mundo.
+* `bot/` bot do Discord.
 
 ---
 
@@ -141,6 +177,11 @@ O **Silent Multiverse Nexus** é uma suíte completa de ferramentas desktop para
    build.bat
    ```
    O executável otimizado será gerado na pasta `dist/SilentMultiverse.exe`.
+
+6. **Rodar os testes** (não usam rede nem suas chaves; trabalham em uma pasta temporária):
+   ```bash
+   python -m unittest discover -s tests -t .
+   ```
 
 ---
 

@@ -167,5 +167,15 @@ def processar_rolagem(texto: str) -> Optional[str]:
         return f"`{total}` <—— {motivo}{detalhes}"
 
     except Exception as e:
-        print(f"[DICE] Erro ao processar rolagem: {e}")
+        print(t("bot.log_erro_dados", erro=e))
         return None
+
+
+def rolar_dados(expr: str) -> str:
+    """Rola a expressão informada após um comando (!r, !rolar, !ao rolar) e sempre devolve uma mensagem."""
+    expr = (expr or "").strip()
+    from core.i18n import tc
+    uso = tc("bot.dados_uso")
+    if not expr or not eh_comando_dado(expr):
+        return uso
+    return processar_rolagem(expr) or uso

@@ -6,6 +6,7 @@ from io import BytesIO
 from google import genai
 from google.genai import types
 import engine.project_utils as pu
+from core.i18n import t
 
 PASTA_IMAGENS = pu.PASTA_DADOS_NEXUS / "images"
 PASTA_IMAGENS.mkdir(parents=True, exist_ok=True)
@@ -32,7 +33,7 @@ def _gerar_via_gemini(prompt: str) -> Path:
         temperature=0.7
     )
 
-    print(f"🎨 [IMAGEM-GEMINI] Tentando gerar via {MODELO_IMAGEM_GEMINI}...")
+    print(t("imagem.log_gemini", modelo=MODELO_IMAGEM_GEMINI))
     response = client.models.generate_content(
         model=MODELO_IMAGEM_GEMINI,
         contents=[prompt],
@@ -50,7 +51,7 @@ def _gerar_via_gemini(prompt: str) -> Path:
                 caminho_saida = PASTA_IMAGENS / nome_arquivo
                 img.save(caminho_saida, format="PNG")
                 
-                print(f"✅ [IMAGEM-GEMINI] Gerada com sucesso pelo Gemini: {caminho_saida.name}")
+                print(t("imagem.log_gemini_ok", nome=caminho_saida.name))
                 return caminho_saida
 
     return None
@@ -58,7 +59,7 @@ def _gerar_via_gemini(prompt: str) -> Path:
 
 def _gerar_via_pollinations(prompt: str, width: int = 768, height: int = 768) -> Path:
     """Fallback 100% gratuito e open-source via Pollinations (Flux / SDXL)."""
-    print(f"🌐 [IMAGEM-FALLBACK] Acionando motor gráfico gratuito Pollinations...")
+    print(t("imagem.log_pollinations"))
     prompt_encoded = urllib.parse.quote(prompt)
     url = f"https://image.pollinations.ai/prompt/{prompt_encoded}?width={width}&height={height}&nologo=true&seed={int(time.time())}"
 
@@ -75,7 +76,7 @@ def _gerar_via_pollinations(prompt: str, width: int = 768, height: int = 768) ->
         caminho_saida = PASTA_IMAGENS / nome_arquivo
         img.save(caminho_saida, format="PNG")
 
-        print(f"✅ [IMAGEM-FALLBACK] Gerada com sucesso pelo Pollinations: {caminho_saida.name}")
+        print(t("imagem.log_pollinations_ok", nome=caminho_saida.name))
         return caminho_saida
 
 
@@ -92,15 +93,15 @@ def gerar_imagem_com_fallback(prompt: str, width: int = 768, height: int = 768) 
     except Exception as e:
         err_str = str(e).lower()
         if "429" in err_str or "resource_exhausted" in err_str or "limit: 0" in err_str:
-            print("ℹ️ [IMAGEM] Chave sem cota paga no Gemini (limit: 0). Chaveando para motor gratuito...")
+            print(t("imagem.log_sem_cota"))
         else:
-            print(f"⚠️ [IMAGEM] Falha no Gemini ({e}). Tentando fallback...")
+            print(t("imagem.log_falha_gemini", erro=e))
 
     # 2. Fallback garantido gratuito
     try:
         return _gerar_via_pollinations(prompt, width=width, height=height)
     except Exception as e:
-        print(f"❌ [IMAGEM] Falha também no motor de fallback: {e}")
+        print(t("imagem.log_falha_total", erro=e))
         return None
 
 
@@ -137,7 +138,7 @@ def gerar_portrait_persona(nome: str, dados_persona: dict) -> Path:
             "Dark fantasy concept art, dramatic rim lighting, highly detailed face, neutral background, masterpiece, 8k"
         )
 
-    print(f"🎨 [PORTRAIT-PROMPT]: {prompt_final[:100]}...")
+    print(t("imagem.log_prompt", prompt=prompt_final[:100]))
     return gerar_imagem_com_fallback(prompt_final, width=768, height=768)
 
 

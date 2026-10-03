@@ -1,11 +1,12 @@
 import os, threading, time, json, concurrent.futures
 import engine.project_utils as pu
-import ui.settings as st
+import core.config as st
 from typing import Any, Optional, Type
 from pydantic import BaseModel
 from google import genai
 from google.genai import types, errors
 import core.cache_gemini as cg
+from core.i18n import t
 
 _api_lock = threading.Lock()
 
@@ -136,14 +137,14 @@ def _calcular_score_modelo(model_name: str, max_input_tokens: int, max_output_to
 
     return score
 
-def findmodel(file_path=pu.log_path("models.json")):
+def findmodel(file_path=pu.log_path("models.json"), forcar: bool = False):
     client_fast = get_gemini_client(timeout_seconds=20)
     
     if not client_fast:
-        print("Nenhuma GOOGLE_API_KEY configurada. Pulando ranqueamento de modelos.")
+        print(t("gemini.log_sem_chave_ranking"))
         return
 
-    print("Verificando e ranqueando modelos disponíveis para Worldbuilding...")
+    print(t("gemini.log_verificando_modelos"))
     
     data = pu.ler_json_seguro(file_path, pu.LOCK_MODELS, padrao=None)
     is_empty = not data
@@ -152,15 +153,15 @@ def findmodel(file_path=pu.log_path("models.json")):
     if file_path.exists():
         is_older_than_7_days = (time.time() - os.path.getmtime(file_path)) > (7 * 24 * 60 * 60)
 
-    if not is_older_than_7_days and not is_empty:
-        print("Lista de modelos disponíveis OK!")
+    if not forcar and not is_older_than_7_days and not is_empty:
+        print(t("gemini.log_modelos_ok"))
         return
 
-    print("Atualizando compêndio de modelos da API...")
+    print(t("gemini.log_atualizando_modelos"))
     try:
         all_models = client_fast.models.list()
     except Exception as e:
-        print(f"Erro ao listar modelos da API: {e}")
+        print(t("gemini.log_erro_listar", erro=e))
         return
 
     working_models = []
@@ -213,14 +214,14 @@ def findmodel(file_path=pu.log_path("models.json")):
         time.sleep(0.3)
 
     if not working_models:
-        print("Nenhum modelo compatível respondeu com sucesso ao benchmark.")
+        print(t("gemini.log_nenhum_modelo"))
         return
 
     # Ordena combinando taxa de sucesso inicial, qualidade arquitetural e velocidade
     working_models.sort(key=_criterio_ordenacao_eficiencia)
 
     pu.salvar_json_seguro(file_path, working_models, pu.LOCK_MODELS)
-    print(f"{len(working_models)} modelos válidos ranqueados com sucesso para Worldbuilding!")
+    print(t("gemini.log_ranking_ok", total=len(working_models)))
 
 def improvemodel(model, success, response_time=None):
     file_path = pu.log_path("models.json")
@@ -290,11 +291,23 @@ def generate_content_with_fallback(contents: Any, config: types.GenerateContentC
     for model in data:
         model_name = model["name"]
         config_to_use = config.model_copy(deep=True)
+        contents_to_use = contents
 
         if config_to_use.cached_content and cache_model and cache_model != model_name:
             config_to_use.cached_content = None
 
-        if model.get("supports_tools", False):
+        if config_to_use.cached_content:
+            # A API recusa system_instruction / tools junto com cached_content.
+            # As instruções vão para o início do conteúdo da própria requisição.
+            if config_to_use.system_instruction:
+                bloco_instrucoes = f"[INSTRUÇÕES DO SISTEMA]\n{config_to_use.system_instruction}\n[FIM DAS INSTRUÇÕES]"
+                if isinstance(contents, list):
+                    contents_to_use = [bloco_instrucoes, *contents]
+                else:
+                    contents_to_use = [bloco_instrucoes, contents]
+                config_to_use.system_instruction = None
+            config_to_use.tools = None
+        elif model.get("supports_tools", False):
             config_to_use.tools = [types.Tool(google_search=types.GoogleSearch())]
         else:
             config_to_use.tools = []
@@ -303,7 +316,7 @@ def generate_content_with_fallback(contents: Any, config: types.GenerateContentC
         try:
             response = client.models.generate_content(
                 model=model_name,
-                contents=contents,
+                contents=contents_to_use,
                 config=config_to_use
             )
             response_time = round(time.time() - start_time, 4)
@@ -317,11 +330,11 @@ def generate_content_with_fallback(contents: Any, config: types.GenerateContentC
             
             err_msg = str(e).lower()
             if _is_rate_limit_error(e):
-                print(f"Rate Limit atingido no modelo {model_name}. Pulando para o próximo...")
+                print(t("gemini.log_rate_limit", modelo=model_name))
             elif "timeout" in err_msg or "timed out" in err_msg or "deadline" in err_msg:
-                print(f"⏱️ Timeout no modelo {model_name} após {response_time}s. Pulando para o próximo...")
+                print(t("gemini.log_timeout", modelo=model_name, segundos=response_time))
             else:
-                print(f"Erro no modelo {model_name}: {e}")
+                print(t("gemini.log_erro_modelo", modelo=model_name, erro=e))
 
     raise RuntimeError("Todos os modelos de fallback falharam em gerar conteúdo.")
 
@@ -334,7 +347,7 @@ def ask_ai(
     is_dm: Optional[bool] = True
 ) -> str:
     if not os.getenv("GOOGLE_API_KEY", "").strip():
-        return "Nenhuma chave de API da IA (GOOGLE_API_KEY) foi configurada. Acesse a aba 'Opções' para cadastrar sua chave."
+        raise RuntimeError("Nenhuma chave de API da IA (GOOGLE_API_KEY) foi configurada. Acesse a aba 'Opções' para cadastrar sua chave.")
 
     if not system_instruction:
         system_instruction = DEFAULT_SYSTEM_INSTRUCTION
@@ -370,7 +383,7 @@ def ask_ai(
                     config.cached_content = world_context["id"]
                     cache_model = world_context.get("model")
         except Exception as e:
-            print(f"World Context não disponível: {e}")
+            print(t("gemini.log_sem_contexto", erro=e))
         
     with _api_lock:
         response = generate_content_with_fallback(contents_to_send, config, cache_model=cache_model)

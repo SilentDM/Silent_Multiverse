@@ -30,11 +30,7 @@ def _montar_contexto_mundo(is_dm: bool = True) -> str:
     não usa Files API / Context Cache explícito da mesma forma do Gemini.
     """
     try:
-        return (
-            pu.carregar_estrutura_projeto() + "\n\n" +
-            pu.gerar_indice() + "\n\n" +
-            pu.carregar_projeto(is_dm=is_dm)
-        )
+        return pu.montar_contexto_mundo(is_dm=is_dm)
     except Exception as e:
         print(f"⚠️ Erro ao montar contexto do mundo para o Claude: {e}")
         return ""
@@ -55,7 +51,7 @@ def ask_ai(
     """
     client = get_claude_client()
     if not client:
-        return "❌ Nenhuma chave da API Claude (CLAUDE_TOKEN) foi configurada. Acesse a aba 'Opções' para cadastrar sua chave."
+        raise RuntimeError("Nenhuma chave da API Claude (CLAUDE_TOKEN) foi configurada. Acesse a aba 'Opções' para cadastrar sua chave.")
 
     if not system_instruction:
         system_instruction = DEFAULT_SYSTEM_INSTRUCTION
@@ -108,10 +104,10 @@ def ask_ai(
         )
     except anthropic.APIStatusError as e:
         print(f"❌ Erro na chamada da API Claude ({e.status_code}): {e}")
-        return f"❌ Erro ao consultar a IA Claude ({e.status_code}): {e}"
+        raise RuntimeError(f"Erro ao consultar a IA Claude ({e.status_code}): {e}") from e
     except Exception as e:
         print(f"❌ Erro inesperado na chamada da API Claude: {e}")
-        return f"❌ Erro ao consultar a IA Claude: {e}"
+        raise RuntimeError(f"Erro ao consultar a IA Claude: {e}") from e
 
     texto_partes = [
         bloco.text for bloco in response.content
