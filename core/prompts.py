@@ -87,4 +87,4 @@ def schema_localizado(modelo, idioma: str = None):
 def instrucao_idioma(idioma: str = None) -> str:
     """Frase curta reforçando o idioma de resposta (vai ao final das instruções de sistema)."""
     return i18n.traduzir("ia.responder_no_idioma", i18n.normalizar_idioma(idioma or i18n.idioma_ativo()),
-                         idioma=i18n.nome_idioma_ia(idioma))
+                         nome_idioma=i18n.nome_idioma_ia(idioma))

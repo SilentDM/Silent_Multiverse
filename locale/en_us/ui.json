@@ -7,7 +7,6 @@
   "nav.performance": "Gemini Performance",
   "nav.logs": "Activity Log",
   "nav.guide": "📖 Manual & Guide",
-
   "wb.title": "Autonomous WorldBuilder",
   "wb.subtitle": "Autonomous agent that analyzes and expands your world in real time.",
   "wb.goal_label": "WorldBuilder Goal:",
@@ -21,7 +20,6 @@
   "wb.perm_file": "Create Files (CreateFile)",
   "wb.perm_improve": "Improve Files (ImproveFile)",
   "wb.log_title": " WorldBuilder Real-Time Log & Output ",
-
   "actions.title": "Scenario Action Center",
   "actions.subtitle": "Manual tools for expansion, auditing, compiling, and maintenance.",
   "actions.stop_all": "⛔⛔ STOP ALL CURRENT EXECUTIONS ⛔⛔",
@@ -34,5 +32,14 @@
   "actions.export_btn": "▶ Generate and Open Sourcebook (HTML/PDF)",
   "actions.mgmt_title": " Project Management ",
   "actions.backup_btn": "▶ Create Full Backup (.zip)",
-  "actions.del_memories_btn": "⛔ Delete All Memories ⛔"
+  "actions.del_memories_btn": "⛔ Delete All Memories ⛔",
+  "style.tom.dark_fantasy": "Dark Fantasy (Grimdark)",
+  "style.tom.high_fantasy": "Epic High Fantasy",
+  "style.tom.misterio": "Mystery & Investigation",
+  "style.tom.cyberpunk": "Cyberpunk / Sci-Fi",
+  "style.tom.neutro": "None / Neutral",
+  "style.sistema.dnd5e": "D&D 5e",
+  "style.sistema.tormenta20": "Tormenta20",
+  "style.sistema.pf2e": "Pathfinder 2e",
+  "style.sistema.generico": "Generic / Freeform Rules"
 }

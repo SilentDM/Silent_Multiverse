@@ -1,0 +1,22 @@
+{
+  "style.conteudo.dark_fantasy": "# DIRETRIZ DE TOM E CLIMA: DARK FANTASY (GRIMDARK)\n\n- As descrições devem focar em atmosfera sombria, visceral, perigo iminente e decadência.\n- Evite resoluções fáceis, vilões caricatos ou maniqueísmo puro (bem vs mal absoluto).\n- Destaque detalhes sensoriais: o frio, o cheiro de ferrugem, o ranger de madeira, a penumbra e o silêncio desconfortável.\n- A magia e o desconhecido devem parecer perigosos e imprevisíveis.",
+  "style.conteudo.high_fantasy": "# DIRETRIZ DE TOM E CLIMA: HIGH FANTASY ÉPICO\n\n- As descrições devem ser grandiosas, vibrantes e solenes, destacando o heroísmo e maravilhas mágicas.\n- Destaque arquiteturas imponentes, linhagens nobres, relíquias reluzentes e grande profundidade histórica.\n- A magia é uma força presente e visível no mundo, moldando paisagens e reinos.",
+  "style.conteudo.misterio": "# DIRETRIZ DE TOM E CLIMA: MISTÉRIO E INVESTIGAÇÃO\n\n- Foque em pistas sutis, segredos velados, meias-verdades e motivações ocultas.\n- As descrições devem instigar a curiosidade, deixando lacunas para o leitor ou jogador conectar os pontos.\n- Mantenha um tom sóbrio, analítico e repleto de suspense.",
+  "style.conteudo.cyberpunk": "# DIRETRIZ DE TOM E CLIMA: CYBERPUNK / SCI-FI\n\n- Descrições focadas no contraste entre alta tecnologia e decadência urbana/social.\n- Use terminologias técnicas, luzes de neon na escuridão, intriga corporativa e atmosferas cínicas.",
+  "style.conteudo.neutro": "# DIRETRIZ DE TOM E CLIMA: NEUTRO\n\n- Mantenha um tom informativo, claro e descritivo padrão para worldbuilding de RPG sem viés de gênero.",
+  "marcador.rascunho": "status: rascunho",
+  "marcador.segredo": "status: segredo",
+  "arquivos.stub_com_template": "# {titulo}\n{marcador_rascunho}\n---\n<-- TODO: Preencha as informações de {titulo} usando o template.",
+  "arquivos.stub_simples": "# {titulo}\n\n<-- TODO: Crie informações para {titulo}.",
+  "arquivos.stub_wikilink": "# {titulo}\n\nDocumento criado a partir de wikilink em [[{origem}]].",
+  "arquivos.sufixo_copia": "copia",
+  "ia.responder_no_idioma": "IDIOMA: Responda SEMPRE em {nome_idioma}, mesmo que os documentos do mundo estejam escritos em outro idioma.",
+  "chat.bloco_anexo": "--- ARQUIVO ANEXADO PELO USUÁRIO ({nome}) ---\n{conteudo}",
+  "chat.bloco_historico": "--- HISTÓRICO RECENTE DE CONVERSAS ---\n{historico}",
+  "chat.bloco_mensagem": "--- MENSAGEM DO USUÁRIO ---\n{mensagem}",
+  "auditoria.nome_relatorio": "Auditoria_Lore_{projeto}.md",
+  "wb.objetivo_padrao": "Completar o Projeto",
+  "acoes.padrao_melhorar": "Melhorar a qualidade, riqueza de detalhes, estilo e coesão do arquivo com o restante do universo.",
+  "acoes.padrao_aventura": "Criar uma aventura desafiadora e imersiva de D&D 5e temática sobre {nome}.",
+  "acoes.padrao_conhecimento": "Cobrir origens, política, rumores e segredos operacionais da entidade."
+}

@@ -1,0 +1,22 @@
+{
+  "style.conteudo.dark_fantasy": "# TONE AND MOOD GUIDELINE: DARK FANTASY (GRIMDARK)\n\n- Descriptions should focus on a grim, visceral atmosphere, looming danger and decay.\n- Avoid easy resolutions, cartoonish villains or pure black-and-white morality (absolute good vs evil).\n- Highlight sensory details: the cold, the smell of rust, creaking wood, half-light and uncomfortable silence.\n- Magic and the unknown should feel dangerous and unpredictable.",
+  "style.conteudo.high_fantasy": "# TONE AND MOOD GUIDELINE: EPIC HIGH FANTASY\n\n- Descriptions should be grand, vibrant and solemn, highlighting heroism and magical wonders.\n- Highlight imposing architecture, noble bloodlines, gleaming relics and deep history.\n- Magic is a present, visible force in the world, shaping landscapes and kingdoms.",
+  "style.conteudo.misterio": "# TONE AND MOOD GUIDELINE: MYSTERY AND INVESTIGATION\n\n- Focus on subtle clues, veiled secrets, half-truths and hidden motives.\n- Descriptions should spark curiosity, leaving gaps for the reader or player to connect the dots.\n- Keep a sober, analytical tone full of suspense.",
+  "style.conteudo.cyberpunk": "# TONE AND MOOD GUIDELINE: CYBERPUNK / SCI-FI\n\n- Descriptions focused on the contrast between high technology and urban/social decay.\n- Use technical terminology, neon lights in the dark, corporate intrigue and cynical atmospheres.",
+  "style.conteudo.neutro": "# TONE AND MOOD GUIDELINE: NEUTRAL\n\n- Keep a standard informative, clear and descriptive tone for RPG worldbuilding, without genre bias.",
+  "marcador.rascunho": "status: draft",
+  "marcador.segredo": "status: secret",
+  "arquivos.stub_com_template": "# {titulo}\n{marcador_rascunho}\n---\n<-- TODO: Fill in the information for {titulo} using the template.",
+  "arquivos.stub_simples": "# {titulo}\n\n<-- TODO: Create information for {titulo}.",
+  "arquivos.stub_wikilink": "# {titulo}\n\nDocument created from a wikilink in [[{origem}]].",
+  "arquivos.sufixo_copia": "copy",
+  "ia.responder_no_idioma": "LANGUAGE: Always answer in {nome_idioma}, even if the world documents are written in another language.",
+  "chat.bloco_anexo": "--- FILE ATTACHED BY THE USER ({nome}) ---\n{conteudo}",
+  "chat.bloco_historico": "--- RECENT CONVERSATION HISTORY ---\n{historico}",
+  "chat.bloco_mensagem": "--- USER MESSAGE ---\n{mensagem}",
+  "auditoria.nome_relatorio": "Lore_Audit_{projeto}.md",
+  "wb.objetivo_padrao": "Complete the Project",
+  "acoes.padrao_melhorar": "Improve the quality, richness of detail, style and cohesion of the file with the rest of the universe.",
+  "acoes.padrao_aventura": "Create a challenging and immersive D&D 5e adventure themed around {nome}.",
+  "acoes.padrao_conhecimento": "Cover the entity's origins, politics, rumors and operational secrets."
+}

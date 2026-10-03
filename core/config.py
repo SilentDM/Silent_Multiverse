@@ -140,3 +140,17 @@ def servidores_conhecidos() -> list:
         elif isinstance(item, (list, tuple)) and len(item) >= 2:
             lista.append((str(item[0]), str(item[1])))
     return lista
+
+
+def provedor_ia_ativo() -> str:
+    """Rótulo do provedor de IA ativo (chave de PROVEDORES_IA)."""
+    import core.credentials as cred
+    valor = cred.obter_credencial("AI_PROVIDER", "gemini").lower()
+    return next((rotulo for rotulo, v in PROVEDORES_IA.items() if v == valor), "Gemini")
+
+
+def definir_provedor_ia(rotulo: str):
+    """Grava a escolha (settings + cofre). Vale na próxima chamada de IA, sem reiniciar."""
+    import core.credentials as cred
+    atualizar_configuracoes({"ai_provider_ativo": rotulo})
+    cred.salvar_credencial("AI_PROVIDER", PROVEDORES_IA.get(rotulo, "gemini"))

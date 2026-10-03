@@ -29,7 +29,17 @@ def ask_ai(contents=None, system_instruction=None, temperature=None, response_sc
     Se um dia você quiser trocar de provedor, ou adicionar um terceiro,
     a mudança acontece SÓ aqui em cima, em _obter_implementacao(). Nenhum
     outro arquivo do projeto precisa ser tocado.
+
+    Também garante o IDIOMA de todas as chamadas, num lugar só:
+    - acrescenta às instruções de sistema "responda sempre em <idioma ativo>";
+    - troca o response_schema por uma cópia com as descrições dos campos traduzidas.
     """
+    import core.prompts as prompts
+    instrucao_idioma = prompts.instrucao_idioma()
+    system_instruction = f"{system_instruction}\n\n{instrucao_idioma}" if system_instruction else instrucao_idioma
+    if response_schema is not None:
+        response_schema = prompts.schema_localizado(response_schema)
+
     return _obter_implementacao()(
         contents=contents,
         system_instruction=system_instruction,

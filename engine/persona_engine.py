@@ -136,3 +136,47 @@ REGRAS DE INTERPRETAÇÃO (ROLEPLAY):
     salvar_persona(nome_persona, dados, historico)
 
     return str(resposta).strip()
+
+
+# ----------------------------------------------------------------------
+# FICHA E RETRATO (usados pela página de Roleplay)
+# ----------------------------------------------------------------------
+AUTOR_INTERLOCUTOR = "Interlocutor"  # marcador interno do histórico salvo
+
+
+def ficha(nome_persona: str) -> dict:
+    """Dados prontos para exibir: Markdown da ficha, histórico e caminho do retrato."""
+    dados, historico = carregar_persona(nome_persona)
+    if not dados:
+        return {"markdown": "", "historico": historico, "retrato": None, "nome": nome_persona}
+    try:
+        markdown = persona_para_markdown(PersonaRoleplay(**dados))
+    except Exception:
+        markdown = json.dumps(dados, ensure_ascii=False, indent=2)
+    retrato = dados.get("portrait_path")
+    if retrato and not Path(retrato).exists():
+        retrato = None
+    return {"markdown": markdown, "historico": historico, "retrato": retrato, "nome": dados.get("nome", nome_persona)}
+
+
+def gerar_retrato(nome_persona: str):
+    """Gera o retrato e o grava na persona certa (relendo o histórico atual). Devolve o caminho ou None."""
+    import core.ai_image as aimg
+    dados, _ = carregar_persona(nome_persona)
+    caminho = aimg.gerar_portrait_persona(dados.get("nome", nome_persona), dados)
+    if not caminho:
+        return None
+    dados_atuais, historico_atual = carregar_persona(nome_persona)
+    dados_atuais = dados_atuais or dados
+    dados_atuais["portrait_path"] = str(caminho)
+    salvar_persona(nome_persona, dados_atuais, historico_atual)
+    return str(caminho)
+
+
+def nome_sugerido_retrato(nome_persona: str) -> str:
+    return f"portrait_{nome_arquivo_seguro(nome_persona).replace(' ', '_').lower()}.png"
+
+
+def exportar_retrato(origem: str, destino: str):
+    import shutil
+    shutil.copy2(origem, destino)

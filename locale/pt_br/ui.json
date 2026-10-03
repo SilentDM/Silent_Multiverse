@@ -7,7 +7,6 @@
   "nav.performance": "Performance Gemini",
   "nav.logs": "Log de Atividades",
   "nav.guide": "📖 Manual & Guia",
-
   "wb.title": "WorldBuilder Autônomo",
   "wb.subtitle": "Planejador autônomo que analisa e expande seu universo em tempo real.",
   "wb.goal_label": "Objetivo do WorldBuilder:",
@@ -21,7 +20,6 @@
   "wb.perm_file": "Criar Arquivos (CreateFile)",
   "wb.perm_improve": "Melhorar Arquivos (ImproveFile)",
   "wb.log_title": " Output & Logs do WorldBuilder em Tempo Real ",
-
   "actions.title": "Central de Ações do Cenário",
   "actions.subtitle": "Ferramentas manuais para expansão, auditoria, compilador e manutenção.",
   "actions.stop_all": "⛔⛔ PARAR QUALQUER EXECUÇÃO ATUAL ⛔⛔",
@@ -34,5 +32,14 @@
   "actions.export_btn": "▶ Gerar e Abrir Livro do Cenário (HTML/PDF)",
   "actions.mgmt_title": " Gerenciamento do Projeto ",
   "actions.backup_btn": "▶ Criar Backup Completo (.zip)",
-  "actions.del_memories_btn": "⛔ Excluir Todas as Memórias ⛔"
+  "actions.del_memories_btn": "⛔ Excluir Todas as Memórias ⛔",
+  "style.tom.dark_fantasy": "Dark Fantasy (Grimdark)",
+  "style.tom.high_fantasy": "High Fantasy Épico",
+  "style.tom.misterio": "Mistério & Investigação",
+  "style.tom.cyberpunk": "Cyberpunk / Sci-Fi",
+  "style.tom.neutro": "Nenhum / Neutro",
+  "style.sistema.dnd5e": "D&D 5e",
+  "style.sistema.tormenta20": "Tormenta20",
+  "style.sistema.pf2e": "Pathfinder 2e",
+  "style.sistema.generico": "Genérico / Regras Livres"
 }

@@ -136,7 +136,7 @@ def _calcular_score_modelo(model_name: str, max_input_tokens: int, max_output_to
 
     return score
 
-def findmodel(file_path=pu.log_path("models.json")):
+def findmodel(file_path=pu.log_path("models.json"), forcar: bool = False):
     client_fast = get_gemini_client(timeout_seconds=20)
     
     if not client_fast:
@@ -152,7 +152,7 @@ def findmodel(file_path=pu.log_path("models.json")):
     if file_path.exists():
         is_older_than_7_days = (time.time() - os.path.getmtime(file_path)) > (7 * 24 * 60 * 60)
 
-    if not is_older_than_7_days and not is_empty:
+    if not forcar and not is_older_than_7_days and not is_empty:
         print("Lista de modelos disponíveis OK!")
         return
 

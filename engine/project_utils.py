@@ -217,7 +217,9 @@ ROOT_EMBUTIDO = obter_caminho_base()
 
 def normalizar_nome(nome: str) -> str:
     """Normaliza o nome removendo extensão, sufixos de versão, acentos e separadores."""
-    nome = Path(nome).stem  # Remove extensão .md se houver
+    nome = str(nome).strip()
+    if nome.lower().endswith(".md"):  # Remove só a extensão .md (Path.stem cortaria "St. Gregor" em "St")
+        nome = nome[:-3]
     nome = re.sub(r'_v\d+$', '', nome, flags=re.IGNORECASE)  # Remove sufixos como _v01
     nome = unicodedata.normalize("NFKD", nome).encode("ASCII", "ignore").decode("ASCII")
     nome = nome.lower().strip()

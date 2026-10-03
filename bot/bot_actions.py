@@ -2,6 +2,7 @@
 import discord, asyncio
 import core.ai_utils as au
 import core.memory as memory
+import core.ao_persona as ao_persona
 import engine.project_utils as pu
 
 def _parse_lista_texto(raw_str: str) -> list[str]:
@@ -53,19 +54,7 @@ def dividir_em_chunks_limpos(texto: str, max_chars: int = 1900) -> list[str]:
     return chunks
 
 async def processar_mensagem_ia(prompt: str, eh_mestre: bool, user_name: str, guild_id: str, guild_name: str, userid: str) -> str:
-    persona = (
-        "[Personalidade]\n"
-        "- Você é Ao, o criador do universo de RPG. Responda com sabedoria, mistério e gentileza.\n"
-        "- Evite comentar assuntos descritos como segredos para jogadores comuns.\n"
-    )
-    regras = (
-        "[REGRAS E LINKS DE REFERÊNCIA]\n"
-        "- Responda de forma clara, concisa e imersiva;\n"
-        "- Não altere informações já definidas no universo;\n"
-        "- JAMAIS mencione nomes de arquivos técnicos como 'regraslocais.md' ou diretórios do Windows.\n"
-        "- REGRA OBRIGATÓRIA DE LINK: Se a resposta utilizar regras ou registros do servidor que possuem um link '🔗 [Ver no Discord](URL)', INCLUA o link no final da sua explicação.\n"
-    )
-    instrucao_sistema = f"{persona}\n\n{regras}"
+    instrucao_sistema = ao_persona.instrucoes_discord()
 
     extra = pu.detectar_intencao(prompt)
     conhecimento_discord = pu.carregar_conhecimento_discord(guild_id=guild_id)
