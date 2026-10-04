@@ -30,13 +30,14 @@ Available in **English** and **Brazilian Portuguese**: the interface and everyth
 
 ### AI tools (Google Gemini)
 * **Expander**: write `<-- TODO: what you want` anywhere and the AI fills the gap using your whole world as context, then a reviewer checks it for consistency before saving.
-* **WorldBuilder**: give it a goal ("create the three noble houses of the capital") and it plans and executes the work: folders, files from your templates, and improvements, with a live log.
+* **Three levels of AI requests**: a `<-- TODO:` tag for a small change inside a file, **Improve with AI** to rewrite a whole file, and the **WorldBuilder** to build a whole campaign.
+* **WorldBuilder**: write your idea in a few paragraphs and it works in three steps, with your review in between: a GM-only **Canon** sheet with the official names, facts and secrets (you edit it), a **plan checklist** (you check, uncheck and edit items), then **execution by phases** (world, places, people, monsters, adventures). Secret files stay hidden from players, and an interrupted run continues where it stopped.
 * **Council**: four specialist agents (Architect, Chronicler, the Voice of the NPCs, Tactics & Chaos) discuss a file; you edit their views, and a Supreme Judge writes the final version.
 * **Lore Audit**: finds contradictions, timeline gaps and geographic inconsistencies.
 * **Improve with AI**, **5-Room Dungeon adventures** (with a statblock and a battlemap of the final room) and **Lore Checks** (knowledge tables with DC ranges), all from a right-click on a file.
 * **Talk to Silent**: chat with the keeper of the Nexus, who knows your whole world, for brainstorming and questions.
 * **Roleplay (Theater of the Mind)**: forge personas for your NPCs from the world context and talk to them in character, with generated portraits.
-* Every file the AI changes is archived first (`_v01`, `_v02`...), so nothing is lost.
+* Every file the AI changes is archived first (`_v01`, `_v02`...). Right-click → **Version History** shows every version and restores one with a click.
 
 ### Discord bot
 * Players ask about the lore with a prefix (e.g. `!silent What is the Silver Cathedral?`) and get answers from the **public** lore only.

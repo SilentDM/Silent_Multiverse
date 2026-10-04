@@ -30,13 +30,14 @@ Disponível em **português do Brasil** e **inglês**: a interface e tudo o que 
 
 ### Ferramentas de IA (Google Gemini)
 * **Expander**: escreva `<-- TODO: o que você quer` em qualquer lugar e a IA preenche a lacuna usando o mundo inteiro como contexto; depois, um revisor confere a consistência antes de salvar.
-* **WorldBuilder**: dê um objetivo ("criar as três casas nobres da capital") e ele planeja e executa o trabalho: pastas, arquivos a partir dos seus templates e melhorias, com log ao vivo.
+* **Três níveis de pedidos à IA**: uma tag `<-- TODO:` para uma mudança pequena dentro do arquivo, **Melhorar com IA** para reescrever um arquivo inteiro e o **WorldBuilder** para montar uma campanha inteira.
+* **WorldBuilder**: escreva a sua ideia em poucos parágrafos e ele trabalha em três etapas, com a sua revisão entre elas: uma ficha de **Cânone** só do Mestre com os nomes, fatos e segredos oficiais (você edita), uma **lista do plano** (você marca, desmarca e edita os itens) e a **execução por fases** (mundo, lugares, pessoas, monstros, aventuras). Arquivos secretos ficam escondidos dos jogadores, e uma execução interrompida continua de onde parou.
 * **Conselho**: quatro agentes especialistas (Arquiteto, Cronista, a Voz dos NPCs, Tática & Caos) discutem um arquivo; você edita as visões deles e um Juiz Supremo escreve a versão final.
 * **Auditoria de Lore**: encontra contradições, buracos na linha do tempo e inconsistências geográficas.
 * **Melhorar com IA**, **aventuras 5-Room Dungeon** (com ficha do oponente e mapa de batalha da sala final) e **Testes de Conhecimento** (tabelas com faixas de CD), tudo com o botão direito em um arquivo.
 * **Converse com Silent**: converse com o guardião do Nexus, que conhece o seu mundo inteiro, para brainstorming e dúvidas.
 * **Roleplay (Teatro da Mente)**: crie personas para os seus NPCs a partir do contexto do mundo e converse com eles em personagem, com retratos gerados.
-* Todo arquivo que a IA altera é arquivado antes (`_v01`, `_v02`...), então nada se perde.
+* Todo arquivo que a IA altera é arquivado antes (`_v01`, `_v02`...). Botão direito → **Histórico de Versões** mostra todas as versões e restaura qualquer uma com um clique.
 
 ### Bot do Discord
 * Os jogadores perguntam sobre a lore com um prefixo (ex.: `!silent O que é a Catedral de Prata?`) e recebem respostas só da lore **pública**.
