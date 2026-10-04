@@ -38,6 +38,9 @@ Available in **English** and **Brazilian Portuguese**: the interface and everyth
 * **Talk to Silent**: chat with the keeper of the Nexus, who knows your whole world, for brainstorming and questions.
 * **Roleplay (Theater of the Mind)**: forge personas for your NPCs from the world context and talk to them in character, with generated portraits.
 * Every file the AI changes is archived first (`_v01`, `_v02`...). Right-click → **Version History** shows every version and restores one with a click.
+* **Requests tab**: before any whole-file request, fine-tune it: style in four axes (**Genre, Tone, Mood, Writing style**), extra guidelines, reference files, rewrite or append, depth, player-facing text, party level, creativity, presets. It opens with the project defaults.
+* **Combat statblocks** for NPCs and monsters in your rules system; in 5e the program checks the SRD math (modifiers, proficiency, XP).
+* **GM Notes**: save Silent's ideas and Roleplay testimonies into a secret section of any file. Every AI tool takes them into account, and the **Council** uses testimonies as the NPCs' real voice.
 
 ### Discord bot
 * Players ask about the lore with a prefix (e.g. `!silent What is the Silver Cathedral?`) and get answers from the **public** lore only.

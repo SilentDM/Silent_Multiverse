@@ -38,6 +38,9 @@ Disponível em **português do Brasil** e **inglês**: a interface e tudo o que 
 * **Converse com Silent**: converse com o guardião do Nexus, que conhece o seu mundo inteiro, para brainstorming e dúvidas.
 * **Roleplay (Teatro da Mente)**: crie personas para os seus NPCs a partir do contexto do mundo e converse com eles em personagem, com retratos gerados.
 * Todo arquivo que a IA altera é arquivado antes (`_v01`, `_v02`...). Botão direito → **Histórico de Versões** mostra todas as versões e restaura qualquer uma com um clique.
+* **Aba Requisições**: antes de qualquer pedido sobre um arquivo inteiro, ajuste os detalhes: estilo em quatro eixos (**Gênero, Tom, Clima, Estilo de escrita**), diretrizes extras, arquivos de referência, reescrever ou só acrescentar, profundidade, texto para jogadores, nível do grupo, criatividade e presets. Ela abre com os padrões do projeto.
+* **Fichas de combate** de NPCs e monstros no seu sistema de regras; no 5e o programa confere a matemática do SRD (modificadores, proficiência, XP).
+* **Notas do Mestre**: guarde ideias do Silent e depoimentos do Roleplay numa seção secreta de qualquer arquivo. Todas as ferramentas de IA as levam em conta, e o **Conselho** usa os depoimentos como a voz real dos NPCs.
 
 ### Bot do Discord
 * Os jogadores perguntam sobre a lore com um prefixo (ex.: `!silent O que é a Catedral de Prata?`) e recebem respostas só da lore **pública**.

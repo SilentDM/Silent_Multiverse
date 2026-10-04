@@ -27,7 +27,8 @@
 - Project folder: your folders and Markdown files. Have as many projects as you like.
 - .silent_data (next to the program): everything the program keeps for you:
 - Templates/: templates for new files (e.g. npc.md, cidade.md). Edit them or add your own; they appear in the New File window.
-- Style/: writing and mood guidelines read by the AI. Tom_e_Clima.md follows the tone chosen in Options; any other .md you put there is used too.
+- Style/: the truths and rules of your setting (e.g. Estilo_Narrativa.md). Every .md in this folder is read by the AI in every creation.
+- Estilos/: styles you create, in the subfolders Genero, Tom, Clima and Escrita (one .md per option). They appear in the selectors next to the program's own.
 - memories/: recent history of the local chat and Discord conversations (summarized automatically when it grows).
 - exports/: HTML sourcebooks and reports.
 - logs/: settings (settings.json), the AI context cache and previous versions of files changed by the AI (history, named _v01, _v02...).
@@ -57,9 +58,11 @@
 - ✨ Improve with AI: rewrites the file with more detail and cohesion, following an optional instruction.
 - 🎲 Generate 5e Adventure: creates a 5-room dungeon from the file (hook, rooms, checks, statblock, treasure) plus a battlemap image of the final room.
 - 📜 Generate Lore Checks: creates knowledge checks with difficulty ranges based on the file.
+- ⚔️ Generate Combat Statblock: creates (or redoes) the NPC's or creature's statblock in the project's rules system. In 5e, the program checks the SRD math (modifiers, proficiency and XP).
 - 🏛️ Consolidate with the Council: sends the file to the Council page.
 - 💬 Ask Silent about this file: attaches the whole document to the chat.
 - 🕘 Version History: shows every previous version of the file and restores one with a click (the current one is kept first).
+> Improve, Adventure, Lore Checks, Statblock and Council open the Requests tab first (you can turn this off in Options). See section 6.
 ## Safety
 - While the AI works on a file, it is locked: you can't edit it until the AI finishes.
 - If the AI (or another program) changes a file you have open, the Editor reloads it and never overwrites the new version with old text.
@@ -82,11 +85,15 @@
 - status: draft (or status: rascunho) keeps the file out of the AI context until you finish it. Empty files and files with pending <-- TODO tags are also left out.
 ## Images
 - ![[image.png]] shows portraits and battlemaps in the preview and in the sourcebook.
+## GM Notes
+- The "🤫 GM Notes" section at the end of a file keeps notes from Silent, Roleplay testimonies and your own notes.
+- It is secret (players never see it) and every AI tool reads it to guide future creations about the file, without rewriting it.
+- You can also write in it by hand: each note starts with ### and a title.
 
 # 6. WORLDBUILDER
 ## Three levels of AI requests
 - Low: a <-- TODO: tag inside a file (Expander) for a small, direct change.
-- Medium: right-click → Improve with AI to rewrite a whole file.
+- Medium: right-click → Improve with AI (or Adventure, Lore Checks, Statblock, Council) to work on a whole file, through the Requests tab.
 - High: the WorldBuilder turns an idea into a complete campaign.
 ## How the WorldBuilder works
 - 1 · Canon: write the idea (or leave it blank) and click Generate Canon. The AI writes Canon/<title>.md with the official names, facts and secrets (GM only). Edit it freely.
@@ -94,6 +101,14 @@
 - 3 · Execute: Execute Checked runs the plan phase by phase (world, places, people, monsters, adventures). Secret files are hidden from players.
 - If you stop it, Execute Checked continues where it stopped. The result lists new [[links]] that still have no file.
 - Permissions and the maximum number of actions are on the page.
+- Besides creating files, the WorldBuilder can Create NPC and Create Monster (text + combat statblock), and generate Adventures and Lore Checks.
+- Each plan item has a genre: the secret laboratory can be Cosmic Horror while the capital is Political Intrigue. The genre picks the template (e.g. Templates/misterio/local.md) and the writing style.
+- In Silent's chat, 🌍 Send to WorldBuilder turns the conversation into the WorldBuilder idea.
+## The Requests tab
+- Opens with the project defaults and shows the whole file. Anything you change applies to this request only.
+- Style in four axes: Genre, Tone, Mood and Writing style (e.g. in a Mystery adventure, the Lovecraftian cave can use Cosmic Horror).
+- Extra guidelines, reference files (files linked by [[links]] are suggested), mode (rewrite everything or only add), depth, audience (GM or player-facing text), party level, number of players, creativity and the 🤫 secret mark.
+- Presets keep combinations you use often; the size estimate shows how many tokens the request will use.
 
 # 7. ACTIONS
 - Stop All Current Executions: interrupts every AI task that is running.
@@ -110,10 +125,13 @@
 - Silent is the entity that keeps the Nexus: it knows your whole world (secrets included) and helps you brainstorm, answer questions and review ideas.
 - The conversation is remembered per project and summarized automatically when it gets long.
 - To discuss a specific file, right-click it in the Editor and choose "Ask Silent about this file".
+- 📝 Note (or right-click a message): keeps the reply in the GM Notes of the chosen file. "Save and apply now" opens the Requests tab to work the note into the text.
+- 🌍 Send to WorldBuilder: the conversation becomes the WorldBuilder idea.
 
 # 9. ROLEPLAY (THEATER OF THE MIND)
 - Click ➕ New Persona, type the character's name and describe their role, motivation or mystery. The AI builds the full persona from your world context.
 - Talk in character on the right side. Each persona remembers its conversation.
+- 📝 Testimony (or right-click a line): keeps the line in the GM Notes, preferably in the character's own file. It is their version: they may lie or be wrong.
 - 🎨 Generate NPC Portrait creates an image of the character. Right-click the image to open it, save it or show it in the data folder.
 > Images (portraits and adventure battlemaps) use Gemini's image model. If it isn't available for your key or its quota is used up, the program falls back to the free Pollinations service (only the image description is sent).
 
@@ -121,13 +139,15 @@
 - Pick a file (or use Consolidate with the Council in the Editor) and write a directive.
 - Step 1: four specialists give their view: the Architect (expansion), the Chronicler (facts and continuity), the Voice of the NPCs (first person) and Tactics & Chaos (mechanics and dilemmas). You can edit their texts.
 - Step 2: the Supreme Judge merges the panels into the final version of the file. The previous version is archived.
+- The Council uses what the other perspectives already said about the file: Roleplay testimonies become the NPCs' real voice, notes from Silent and from you guide the Architect and the Chronicler, and recent Roleplay conversations with cited characters are included too. The "The Council used" line shows the sources.
 
 # 11. OPTIONS
 - Language: see section 3.
 - Secure Credentials: Gemini key, Discord bot token and GM Discord IDs. Gemini is the supported provider; Claude and OpenAI fields exist but are not maintained.
 - Discord Bot: rules per server (see section 13).
 - Secret Filter: words and names hidden from players.
-- Tone and Mood: the style profile written to Style/Tom_e_Clima.md.
+- Project Style: the default Genre, Tone, Mood and Writing style for every creation, and the option to open the Requests tab before each request.
+- Gemini cache: on accounts without billing the program stops trying the cache and uploads the bundle instead; "Try caching again" retries (so does changing the key).
 - RPG Rules System: the system the AI follows for mechanics (5e, Tormenta20, Pathfinder 2e or generic).
 - Expander Automation: runs the Expander when you save (Ctrl+S) or leave an edited file that contains a <-- TODO tag.
 - About & Updates: version, update check and the legal notice.
