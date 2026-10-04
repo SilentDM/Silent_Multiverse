@@ -1,13 +1,38 @@
 Proximos passos:
-	Ao usar uma dessas opções (Requisito médio para melhorar arquivo inteiro, Gerar aventura, Gerar teste de conhecimento e Conselho)
-	Ao invés de ir direto para a IA, vai ocorrer um passo no meio, uma aba chamada 'Requisições', que vai exibir o arquivo inteiro em uma caixa de texto e vários opções ao redor
-	Opções para os guias de escrita já existentes: Estilo / Tom e Clima; E um campo para diretrizes extras opcional.
-	Por que? Se eu estiver em uma aventura que é de estilo Mistério, mas os jogadores entraram em uma caverna que tem coisas de Lovecraft Mythos acontecendo, precisa mudar para algo de horror apenas para essa criação;
+	1. Ao usar uma dessas opções (Requisito médio para melhorar arquivo inteiro, Gerar aventura, Gerar teste de conhecimento e Conselho)
+		Ao invés de ir direto para a IA, vai ocorrer um passo no meio, uma aba chamada 'Requisições', que vai exibir o arquivo inteiro em uma caixa de texto e vários opções ao redor
+		Opções para os guias de escrita já existentes: Estilo / Tom e Clima; E um campo para diretrizes extras opcional.
+		Por que? Se eu estiver em uma aventura que é de estilo Mistério, mas os jogadores entraram em uma caverna que tem coisas de Lovecraft Mythos acontecendo, precisa mudar para algo de horror apenas para essa criação;
+		Com base nisso, evoluir toda essa área de arquivos de controle.
+		Separar o que é Clima, o que é Estilo, o que é Tom e criar descrições para cada um, com exemplos de escrita.
+		Ter vários arquivos para cada um dentro de uma pasta(separar por língua) e colocar opções dropdown para cada um, tanto na aba opções(que vai ser geral para o projeto), quanto nessa aba de requisições que já vai abrir com os valores padrão do projeto, mas permitir alteração para o arquivo.
+		Fazer brainstorming do que mais poderia ser adicionado nessa aba "Requisições" para melhorar 'nos detalhes' cada requisição.
+	2. Quando o código falha em criar cache no gemini por não ser conta paga, ele altera uma flag que impede a função de tentar novamente com o mesmo token gemini sendo usado.
+		Se o token for alterado, essa flag é zerada e a função vai tentar novamente.
+		Assim o programa para de tentar gerar o cache todas as vezes que precisa atualizar o bundle.
+	3. Criar mais ações para o worldbuilder seguir.
+		Já temos:
+			criar pasta/arquivo
+			melhorar arquivo
+			Aventura de 5 rooms 
+			Teste de conhecimento 
+		Precisamos:
+			Criar NPC, mas acredito isso seja apenas melhorar o template de NPC para incluir uma ficha estilo D&D
+			Criar Monstro, igualmente, um template com ficha de D&D embutida
+		Resumo:
+			Precisamos aumentar a quantidade de Templates, talvez até criar uma série deles baseados no estilo do jogo.
+			Um jogo de fantasia pode ter locais sensacionais, um jogo de mistério vai ter lugares mundanos, o template deveria mudar de acordo o estilo.
+			Algo como Fantasia/Local.md, DarkFantasy/Local.md, cada um deles precisam de detalhes diferentes.
+			Com esses, as ações do WorldBuilder se tornam mais completas, ele poderia distinguir um local que a aventura exige investigação e tensão e usar o template apropriado, enquanto outro local é de alta magia e fantasia e precisa de outro template.
+	4. Brainstorming em como fazer um overhaul no conselho
+	5. Ao fazer um brainstorming sobre o projeto com a entidade Silent, permitir que o que for discutido ali, já possa ser inserido/alterado em arquivos ou no projeto.
+	6. Igualmente ao 5, quando o Roleplay for usado para ter o ponto de vista de um personagem, que a resposta do personagem possa ser inserida no projeto ou ser levada em conta quando precisar, principalmente no Conselho!
+		Os objetivos 4,5,6 são para que essas funcionalidades possam ser usadas para afetar o continuidade do projeto de formas únicas. 
+		São 3 pontos de vista diferentes, o Roleplay está dentro da história, o Conselho representa uma série de ajudantes dentro e fora da história, o Silent é um observador puramente externo.
+		Os 3 juntos, formam um conselho-mor ainda maior do que o próprio conselho é capaz de produzir.
+		Podemos até mudar o Conselho para refletir isso, ele verifica se o assunto que ele está trabalhando tem inputs do Silent e do Roleplay, se não tiver, ele faz as coisas dele normalmente, se tiver, ele substitui alguns de seus pontos pelo que esses outros criaram para ser mais completo e correto.
+			Acredito que a frase acima já é a resposta da requisição 4 sobre Overhaul do conselho!
+	
 
-	Com base nisso, evoluir toda essa área de arquivos de controle.
-	Separar o que é Clima, o que é Estilo, o que é Tom e criar descrições para cada um, com exemplos de escrita.
-	Ter vários arquivos para cada um dentro de uma pasta(separar por língua) e colocar opções dropdown para cada um, tanto na aba opções(que vai ser geral para o projeto), quanto nessa aba de requisições que já vai abrir com os valores padrão do projeto, mas permitir alteração para o arquivo.
-
-	Fazer brainstorming do que mais poderia ser adicionado nessa aba "Requisições" para melhorar 'nos detalhes' cada requisição.
 
 
