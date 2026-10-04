@@ -36,7 +36,7 @@ class TesteModelosIniciais(unittest.TestCase):
 
     def test_instala_e_troca_so_o_que_nao_foi_editado(self):
         copiados = pu.instalar_modelos_iniciais("pt_br", self.dados)
-        self.assertEqual(len(copiados), 7)
+        self.assertEqual(len(copiados), 8)
         self.assertIn("# Aventura:", self._ler("Templates/aventura.md"))
         self.assertEqual(pu.instalar_modelos_iniciais("pt_br", self.dados), [])   # nada a fazer
 
@@ -51,6 +51,19 @@ class TesteModelosIniciais(unittest.TestCase):
         pu.instalar_modelos_iniciais("pt_br", self.dados)                            # volta ao português
         self.assertIn("# Aventura:", self._ler("Templates/aventura.md"))
         self.assertEqual(self._ler("Templates/npc.md"), "# Meu NPC editado")
+
+    def test_modelo_novo_chega_uma_vez_em_instalacao_existente(self):
+        import json
+        pu.instalar_modelos_iniciais("pt_br", self.dados)
+        registro = self.dados / "logs" / "modelos_iniciais.json"
+        dados = json.loads(registro.read_text(encoding="utf-8"))
+        dados["conhecidos"].remove("Templates/monstro.md")          # simula a versão anterior do programa
+        registro.write_text(json.dumps(dados), encoding="utf-8")
+        (self.dados / "Templates/monstro.md").unlink()
+        (self.dados / "Templates/aventura.md").unlink()               # o usuário apagou um modelo antigo
+        self.assertEqual([Path(c).name for c in pu.instalar_modelos_iniciais("pt_br", self.dados)], ["monstro.md"])
+        (self.dados / "Templates/monstro.md").unlink()
+        self.assertEqual(pu.instalar_modelos_iniciais("pt_br", self.dados), [])   # só uma vez
 
     def test_instalacao_antiga_fica_como_esta(self):
         (self.dados / "Templates").mkdir()

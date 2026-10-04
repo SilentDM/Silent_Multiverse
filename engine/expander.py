@@ -3,7 +3,6 @@ Expander: encontra tags <-- TODO nos arquivos e usa a IA para preencher o trecho
 seguido de uma revisão de consistência. Prompts em locale/<idioma>/prompts/expander_*.md.
 """
 import re
-import shutil
 from pathlib import Path
 
 from pydantic import BaseModel, Field
@@ -13,6 +12,7 @@ import core.eventos as ev
 import engine.project_utils as pu
 from core.i18n import t
 from core.prompts import carregar_prompt
+from engine.historico import arquivar_versao_para_historico, obter_proximo_caminho_historico  # noqa: F401 (usados por outros módulos)
 
 ARQUIVOS_EM_PROCESSAMENTO = set()
 
@@ -39,51 +39,6 @@ def marcar_processamento(caminho, ativo: bool):
         ARQUIVOS_EM_PROCESSAMENTO.add(caminho_abs)
     else:
         ARQUIVOS_EM_PROCESSAMENTO.discard(caminho_abs)
-
-
-# ----------------------------------------------------------------------
-# HISTÓRICO DE VERSÕES
-# ----------------------------------------------------------------------
-def obter_proximo_caminho_historico(caminho_original):
-    """
-    Descobre o próximo nome versionado para arquivar dentro de logs/history/,
-    preservando a hierarquia de subpastas do projeto.
-    Exemplo: logs/history/Reinos/reinado_phaeton_v01.md
-    """
-    caminho_obj = Path(caminho_original).resolve()
-    pasta_historico = pu.PASTA_LOGS / "history"
-    try:
-        destino_dir = pasta_historico / caminho_obj.relative_to(pu.CAMINHO_PROJETO).parent
-    except ValueError:
-        destino_dir = pasta_historico
-    destino_dir.mkdir(parents=True, exist_ok=True)
-
-    nome_base_limpo = re.sub(r'_v\d+$', '', caminho_obj.stem)
-    extensao = caminho_obj.suffix or ".md"
-    maior_versao = 0
-    for arq in destino_dir.glob(f"{nome_base_limpo}_v*{extensao}"):
-        match = re.search(r'_v(\d+)$', arq.stem, flags=re.IGNORECASE)
-        if match:
-            maior_versao = max(maior_versao, int(match.group(1)))
-    return destino_dir / f"{nome_base_limpo}_v{maior_versao + 1:02d}{extensao}"
-
-
-def arquivar_versao_para_historico(caminho_original):
-    """
-    Copia a versão atual do arquivo para a pasta de histórico com sufixo de versão.
-    Usamos cópia (não mover) para que, se a escrita da nova versão falhar, o original fique intacto.
-    """
-    caminho_original = Path(caminho_original)
-    try:
-        if not caminho_original.exists():
-            return None
-        destino = obter_proximo_caminho_historico(caminho_original)
-        shutil.copy2(str(caminho_original), str(destino))
-        ev.log(t("expander.log_backup", nome=destino.name))
-        return destino
-    except Exception as e:
-        ev.log(t("expander.log_erro_backup", nome=caminho_original.name, erro=e))
-        return None
 
 
 # ----------------------------------------------------------------------

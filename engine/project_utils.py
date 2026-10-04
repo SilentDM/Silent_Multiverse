@@ -115,6 +115,7 @@ def instalar_modelos_iniciais(idioma: str = None, pasta_dados: Path = None) -> l
 
     - Primeira vez: uma pasta (Templates ou Style) sem nenhum .md recebe todos os modelos dela.
       Pastas que já têm arquivos (instalações antigas) ficam como estão.
+    - Modelo novo numa versão nova do programa (nunca oferecido antes): é copiado uma vez, se faltar.
     - Troca de idioma: os modelos que ainda são a cópia original são trocados pela versão
       do novo idioma. Arquivos editados ou criados pelo usuário nunca são alterados.
     """
@@ -126,21 +127,22 @@ def instalar_modelos_iniciais(idioma: str = None, pasta_dados: Path = None) -> l
         registro = json.loads(arquivo_registro.read_text(encoding="utf-8"))
     except Exception:
         registro = None
-    if registro and registro.get("idioma") == idioma:
-        return []
 
     instalados = dict(registro.get("arquivos", {})) if registro else {}
+    conhecidos = set(registro.get("conhecidos", instalados)) if registro else set()
+    troca_idioma = bool(registro) and registro.get("idioma") != idioma
     copiados, substituir = [], set()
-    # Modelos antigos nunca editados saem para dar lugar à versão do novo idioma
-    for relativo, hash_original in list(instalados.items()):
-        destino = pasta_dados / relativo
-        if destino.is_file() and _hash_arquivo(destino) == hash_original:
-            try:
-                destino.unlink()
-                substituir.add(relativo)
-            except OSError:
-                pass
-        instalados.pop(relativo)
+    if troca_idioma:
+        # Modelos antigos nunca editados saem para dar lugar à versão do novo idioma
+        for relativo, hash_original in list(instalados.items()):
+            destino = pasta_dados / relativo
+            if destino.is_file() and _hash_arquivo(destino) == hash_original:
+                try:
+                    destino.unlink()
+                    substituir.add(relativo)
+                except OSError:
+                    pass
+            instalados.pop(relativo)
 
     for nome_pasta in PASTAS_MODELOS:
         pasta_origem = origem / ("Style" if nome_pasta == PASTA_ESTILO_NOME else nome_pasta)
@@ -151,8 +153,10 @@ def instalar_modelos_iniciais(idioma: str = None, pasta_dados: Path = None) -> l
         pasta_destino.mkdir(parents=True, exist_ok=True)
         for arq in sorted(pasta_origem.glob("*.md")):
             relativo = f"{nome_pasta}/{arq.name}"
+            novo_na_versao = registro is not None and relativo not in conhecidos
+            conhecidos.add(relativo)
             destino = pasta_destino / arq.name
-            if destino.exists() or not (primeira_vez or relativo in substituir):
+            if destino.exists() or not (primeira_vez or novo_na_versao or relativo in substituir):
                 continue
             try:
                 shutil.copy2(arq, destino)
@@ -161,13 +165,14 @@ def instalar_modelos_iniciais(idioma: str = None, pasta_dados: Path = None) -> l
             except OSError:
                 pass
 
-    try:
-        arquivo_registro.parent.mkdir(parents=True, exist_ok=True)
-        arquivo_registro.write_text(json.dumps({"idioma": idioma, "arquivos": instalados}, indent=2), encoding="utf-8")
-    except OSError:
-        pass
+    novo_registro = {"idioma": idioma, "arquivos": instalados, "conhecidos": sorted(conhecidos)}
+    if novo_registro != registro:
+        try:
+            arquivo_registro.parent.mkdir(parents=True, exist_ok=True)
+            arquivo_registro.write_text(json.dumps(novo_registro, indent=2), encoding="utf-8")
+        except OSError:
+            pass
     return copiados
-
 
 instalar_modelos_iniciais()
 

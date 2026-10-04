@@ -17,6 +17,18 @@ except Exception:
     TEM_TELA = False
 
 
+def fechar(root):
+    """Cancela os timers pendentes (toasts, autosave) antes de fechar: senão eles disparam na janela do próximo teste."""
+    try:
+        for timer in root.tk.splitlist(root.tk.call("after", "info")):
+            root.tk.call("after", "cancel", timer)
+    except Exception:
+        pass
+    import core.eventos as ev
+    ev.cancelar_inscricoes()      # as páginas fechadas não devem receber eventos do próximo teste
+    root.destroy()
+
+
 @unittest.skipUnless(TEM_TELA, "sem ambiente gráfico")
 class TesteInterface(unittest.TestCase):
     def setUp(self):
@@ -55,7 +67,28 @@ class TesteInterface(unittest.TestCase):
                         self.assertEqual(janela.pagina_atual, chave)
                     self.assertEqual(janela.botoes_nav["actions"].cget("text").strip().split()[-1], palavra)
                 finally:
-                    root.destroy()
+                    fechar(root)
+
+    def test_janela_de_historico_restaura(self):
+        import engine.historico as hist
+        from ui.dialogs.history import JanelaHistorico
+        root, janela = self._montar("en_us")
+        try:
+            alvo = self.raiz_projeto / "Valia.md"
+            hist.arquivar_versao_para_historico(alvo)
+            alvo.write_text("# Valia\nnova", encoding="utf-8")
+            restaurados = []
+            dialogo = JanelaHistorico(root, str(alvo), ao_restaurar=restaurados.append)
+            root.update()
+            self.assertEqual(len(dialogo.versoes), 1)
+            with mock.patch("ui.dialogs.history.messagebox.askyesno", return_value=True):
+                dialogo._restaurar()
+            self.assertEqual(alvo.read_text(encoding="utf-8"), "# Valia\ntexto")
+            self.assertEqual(restaurados, [str(alvo)])
+            self.assertEqual(len(dialogo.versoes), 2)          # a versão substituída também foi guardada
+            dialogo.destroy()
+        finally:
+            fechar(root)
 
     def test_editor_preserva_alteracao_da_ia(self):
         root, janela = self._montar("pt_br")
@@ -77,7 +110,7 @@ class TesteInterface(unittest.TestCase):
             finally:
                 ex.marcar_processamento(alvo, False)
         finally:
-            root.destroy()
+            fechar(root)
 
 
 if __name__ == "__main__":

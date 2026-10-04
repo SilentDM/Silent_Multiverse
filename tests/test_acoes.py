@@ -16,10 +16,10 @@ class TesteAcoes(unittest.TestCase):
         self.alvo = str(self.raiz / "A.md")
         self.estados = []
         ev.inscrever_evento("acao.estado", self.estados.append)
-        self._original = acoes.wb.improvefile
+        self._original = acoes.melhorar.melhorar_arquivo
 
     def tearDown(self):
-        acoes.wb.improvefile = self._original
+        acoes.melhorar.melhorar_arquivo = self._original
         ev.cancelar_inscricoes()
         cfg.atualizar_configuracoes({"auto_expander": False})
         apagar(self.raiz)
@@ -27,12 +27,12 @@ class TesteAcoes(unittest.TestCase):
     def test_trava_durante_a_ia_e_recusa_duplicada(self):
         durante = {}
 
-        def melhorar_falso(caminho, reason=""):
+        def melhorar_falso(caminho, objetivo="", canon=None):
             durante["travado"] = acoes.arquivo_em_processamento(caminho)
             time.sleep(0.2)
             return True
 
-        acoes.wb.improvefile = melhorar_falso
+        acoes.melhorar.melhorar_arquivo = melhorar_falso
         fim, resultado = threading.Event(), {}
         self.assertTrue(acoes.executar_acao_arquivo("melhorar", self.alvo, "",
                                                     ao_concluir=lambda r: (resultado.setdefault("r", r), fim.set())))

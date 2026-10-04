@@ -21,6 +21,9 @@ import core.sistema as sistema
 import core.tarefas as tarefas
 import engine.compiler as comp
 import engine.expander as ex
+import engine.geradores as geradores
+import engine.historico as hist
+import engine.melhorar as melhorar
 import engine.lore_auditor as auditor
 import engine.project_utils as pu
 import engine.token_counter as tc_tokens
@@ -86,9 +89,51 @@ def objetivo_padrao_worldbuilder() -> str:
     return tc("wb.objetivo_padrao")
 
 
-def executar_worldbuilder(objetivo: str, ao_concluir=None, ao_falhar=None) -> bool:
-    objetivo = (objetivo or "").strip() or objetivo_padrao_worldbuilder()
-    return _iniciar("worldbuilder", wb.taskplanner, objetivo, ao_concluir=ao_concluir, ao_falhar=ao_falhar,
+# --- WorldBuilder (nível alto): Cânone -> Plano -> Execução ---
+def wb_sessao() -> dict:
+    return wb.carregar_sessao()
+
+
+def wb_nova_sessao() -> dict:
+    return wb.nova_sessao()
+
+
+def wb_caminho_canon():
+    caminho = wb.caminho_canon()
+    return str(caminho) if caminho else None
+
+
+def wb_atualizar_item(indice: int, **campos) -> dict:
+    return wb.atualizar_item(indice, **campos)
+
+
+def wb_opcoes() -> dict:
+    """Listas para os seletores da página (tipos, modelos, fases) e limites atuais."""
+    return {"tipos": list(wb.TIPOS), "templates": list(wb.TEMPLATES), "fases": list(wb.FASES),
+            "max_acoes": wb.max_acoes()}
+
+
+def wb_definir_max_acoes(valor) -> int:
+    try:
+        valor = max(1, min(200, int(valor)))
+    except (TypeError, ValueError):
+        valor = wb.MAX_ACOES_PADRAO
+    cfg.atualizar_configuracoes({"wb_max_acoes": valor})
+    return valor
+
+
+def wb_gerar_canon(objetivo: str, ao_concluir=None, ao_falhar=None) -> bool:
+    return _iniciar("worldbuilder", wb.gerar_canon, objetivo, ao_concluir=ao_concluir, ao_falhar=ao_falhar,
+                    reiniciar_cancelamento=True)
+
+
+def wb_gerar_plano(ao_concluir=None, ao_falhar=None) -> bool:
+    return _iniciar("worldbuilder", wb.gerar_plano, ao_concluir=ao_concluir, ao_falhar=ao_falhar,
+                    reiniciar_cancelamento=True)
+
+
+def wb_executar(ao_concluir=None, ao_falhar=None) -> bool:
+    return _iniciar("worldbuilder", wb.executar_plano, ao_concluir=ao_concluir, ao_falhar=ao_falhar,
                     reiniciar_cancelamento=True)
 
 
@@ -189,17 +234,33 @@ def executar_acao_arquivo(tipo: str, caminho: str, texto_usuario: str = "", ao_c
     def _rodar():
         try:
             if tipo == "melhorar":
-                return wb.improvefile(caminho, reason=texto)
+                return melhorar.melhorar_arquivo(caminho, texto)
             if tipo == "aventura":
-                return wb.gerar_aventura_completa(caminho, reason=texto)
+                return geradores.gerar_aventura_completa(caminho, reason=texto)
             if tipo == "conhecimento":
-                return wb.gerar_tabelas_de_conhecimento(caminho, foco_especifico=texto)
+                return geradores.gerar_tabelas_de_conhecimento(caminho, foco_especifico=texto)
             ex.processar_arquivo_unico(caminho)
             return True
         finally:
             ex.marcar_processamento(caminho, False)
 
     return _iniciar(f"arquivo:{caminho}", _rodar, ao_concluir=ao_concluir, ao_falhar=ao_falhar)
+
+
+# ----------------------------------------------------------------------
+# HISTÓRICO DE VERSÕES DE UM ARQUIVO
+# ----------------------------------------------------------------------
+def versoes_do_arquivo(caminho: str) -> list:
+    return hist.listar_versoes(caminho)
+
+
+def ler_versao(versao) -> str:
+    return hist.ler_versao(versao)
+
+
+def restaurar_versao(caminho: str, versao) -> str:
+    """Restaura a versão (a atual vai para o histórico). Lança hist.ErroHistorico com mensagem pronta."""
+    return str(hist.restaurar_versao(caminho, versao))
 
 
 def deve_auto_expandir(caminho: str) -> bool:

@@ -90,11 +90,15 @@ class TesteIdiomaDaIA(unittest.TestCase):
         usar_idioma("en_us")
         cfg.atualizar_configuracoes({"wb_allow_create_folder": False})
         try:
-            with ia_falsa(json.dumps({"actions": []})) as ia:
-                wb.taskplanner("goal X")
-                instrucao = ia.chamadas[0]["system_instruction"]
+            canon = {"titulo": "T", "premissa": "p", "visao_geral_publica": "v", "entidades": []}
+            with ia_falsa(lambda k: json.dumps(canon if k["response_schema"].__name__ == "CanonCampanha" else {"actions": []})) as ia:
+                wb.gerar_canon("goal X")
+                wb.gerar_plano()
+                self.assertIn("goal X", ia.chamadas[0]["contents"])
+                instrucao = ia.chamadas[1]["system_instruction"]
                 self.assertIn("FORBIDDEN", instrucao)
-                self.assertIn("goal X", instrucao)
+                self.assertNotIn("CreateFolder", instrucao.split("ALLOWED TOOLS")[1].split("WHAT EACH TOOL")[0])
+                self.assertIn("goal X", ia.chamadas[1]["contents"])
         finally:
             cfg.atualizar_configuracoes({"wb_allow_create_folder": True})
 

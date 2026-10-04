@@ -1,7 +1,7 @@
 GOAL:
 {{objetivo}}
 The FULL PROJECT is in the cache for analysis!
-
+{{canon}}
 ORIGINAL CONTENT:
 {{conteudo}}
 

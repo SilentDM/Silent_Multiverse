@@ -1,4 +1,7 @@
-Analise a estrutura atual do projeto no cache.
-Objetivo do Mestre: {{objetivo}}
+IDEIA / OBJETIVO DO MESTRE:
+{{objetivo}}
 
-Crie o plano de ação no formato JSON estruturado com as próximas etapas prioritárias usando APENAS as ferramentas permitidas.
+CÂNONE DA CAMPANHA (revisado pelo Mestre — siga exatamente):
+{{canon}}
+
+O projeto atual está no cache. Crie o plano no formato JSON estruturado, com no máximo {{max_acoes}} ações, usando APENAS as ferramentas permitidas.

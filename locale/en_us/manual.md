@@ -59,6 +59,7 @@
 - 📜 Generate Lore Checks: creates knowledge checks with difficulty ranges based on the file.
 - 🏛️ Consolidate with the Council: sends the file to the Council page.
 - 💬 Ask Silent about this file: attaches the whole document to the chat.
+- 🕘 Version History: shows every previous version of the file and restores one with a click (the current one is kept first).
 ## Safety
 - While the AI works on a file, it is locked: you can't edit it until the AI finishes.
 - If the AI (or another program) changes a file you have open, the Editor reloads it and never overwrites the new version with old text.
@@ -83,11 +84,16 @@
 - ![[image.png]] shows portraits and battlemaps in the preview and in the sourcebook.
 
 # 6. WORLDBUILDER
-- Write a goal (e.g. "Create the three noble houses of the capital and their rivalries") and click Run WorldBuilder.
-- The WorldBuilder plans a list of actions (create folders, create files from templates, improve files), shows the plan, and executes it step by step.
-- The Live Log shows each step; at the end, the changes of this run are listed (they are also recorded in changelog.jsonl).
-- Agent Permissions: turn off what the WorldBuilder may not do (create folders, create files, improve files).
-- Stop Execution interrupts the run; actions already finished are kept.
+## Three levels of AI requests
+- Low: a <-- TODO: tag inside a file (Expander) for a small, direct change.
+- Medium: right-click → Improve with AI to rewrite a whole file.
+- High: the WorldBuilder turns an idea into a complete campaign.
+## How the WorldBuilder works
+- 1 · Canon: write the idea (or leave it blank) and click Generate Canon. The AI writes Canon/<title>.md with the official names, facts and secrets (GM only). Edit it freely.
+- 2 · Plan: click Generate Plan. Review the checklist: click ✔ to check/uncheck, select an item to edit its path, goal, template or 🤫 secret flag, then Save Item.
+- 3 · Execute: Execute Checked runs the plan phase by phase (world, places, people, monsters, adventures). Secret files are hidden from players.
+- If you stop it, Execute Checked continues where it stopped. The result lists new [[links]] that still have no file.
+- Permissions and the maximum number of actions are on the page.
 
 # 7. ACTIONS
 - Stop All Current Executions: interrupts every AI task that is running.

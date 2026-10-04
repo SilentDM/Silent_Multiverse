@@ -17,6 +17,7 @@ import engine.markdown_spans as ms
 import engine.preview_renderer as prev
 import ui.theme as tema
 from core.i18n import t
+from ui.dialogs.history import JanelaHistorico
 from ui.dialogs.new_file import DialogoNovoArquivo
 from ui.widgets import PaginaBase, cabecalho
 
@@ -262,6 +263,22 @@ class PaginaEditor(PaginaBase):
             return
         self._exibir_texto(texto)
 
+    def abrir_arquivo(self, caminho):
+        """Abre um arquivo no editor a partir de outra página (ex.: o Cânone do WorldBuilder)."""
+        if not caminho or not arq.eh_arquivo(caminho):
+            return
+        self.salvar_agora()
+        self.atualizar_arvore()
+        self._abrir(caminho)
+        self.selecionar_caminho(caminho)
+
+    def _historico(self, caminho):
+        """Janela com as versões anteriores do arquivo; ao restaurar, o editor relê o arquivo."""
+        if self.sessao.eh_atual(caminho):
+            self.salvar_agora()
+        JanelaHistorico(self.app.root, caminho, toast_callback=self.app.toast,
+                        ao_restaurar=lambda c: self.recarregar_arquivo(c) if self.sessao.eh_atual(c) else None)
+
     def recarregar_arquivo(self, caminho):
         """Relê o arquivo do disco (após a IA alterá-lo) e o exibe."""
         if not caminho or not arq.eh_arquivo(caminho):
@@ -456,6 +473,8 @@ class PaginaEditor(PaginaBase):
             m.add_command(label=t("editor.menu_aventura"), command=lambda: self._acao_ia("aventura", caminho))
             m.add_command(label=t("editor.menu_conhecimento"), command=lambda: self._acao_ia("conhecimento", caminho))
             m.add_command(label=t("editor.menu_conselho"), command=lambda: self._enviar_conselho(caminho))
+            m.add_separator()
+            m.add_command(label=t("editor.menu_historico"), command=lambda: self._historico(caminho))
         m.post(evento.x_root, evento.y_root)
 
     def _duplo_clique(self, _evento=None):

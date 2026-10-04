@@ -59,6 +59,7 @@
 - 📜 Gerar Testes de Conhecimento: cria testes com faixas de dificuldade baseados no arquivo.
 - 🏛️ Consolidar com o Conselho: envia o arquivo para a página do Conselho.
 - 💬 Perguntar a Silent sobre este arquivo: anexa o documento inteiro ao chat.
+- 🕘 Histórico de Versões: mostra todas as versões anteriores do arquivo e restaura uma com um clique (a atual é guardada antes).
 ## Segurança
 - Enquanto a IA trabalha em um arquivo, ele fica travado: não dá para editá-lo até a IA terminar.
 - Se a IA (ou outro programa) alterar um arquivo que você está com aberto, o Editor o recarrega e nunca sobrescreve a versão nova com o texto antigo.
@@ -83,11 +84,16 @@
 - ![[imagem.png]] mostra retratos e mapas de batalha na visualização e no livro de cenário.
 
 # 6. WORLDBUILDER
-- Escreva um objetivo (ex.: "Criar as três casas nobres da capital e suas rivalidades") e clique em Executar WorldBuilder.
-- O WorldBuilder planeja uma lista de ações (criar pastas, criar arquivos a partir dos templates, melhorar arquivos), mostra o plano e o executa passo a passo.
-- O Log ao Vivo mostra cada passo; no fim, as alterações desta execução são listadas (também ficam registradas em changelog.jsonl).
-- Permissões do Agente: desligue o que o WorldBuilder não pode fazer (criar pastas, criar arquivos, melhorar arquivos).
-- Parar Execução interrompe a execução; as ações já concluídas são mantidas.
+## Três níveis de pedidos à IA
+- Baixo: uma tag <-- TODO: dentro do arquivo (Expander) para uma mudança pequena e direta.
+- Médio: botão direito → Melhorar com IA para reescrever um arquivo inteiro.
+- Alto: o WorldBuilder transforma uma ideia em uma campanha completa.
+## Como o WorldBuilder funciona
+- 1 · Cânone: escreva a ideia (ou deixe em branco) e clique em Gerar Cânone. A IA escreve Canon/<título>.md com os nomes, fatos e segredos oficiais (só o Mestre vê). Edite à vontade.
+- 2 · Plano: clique em Gerar Plano. Revise a lista: clique em ✔ para marcar/desmarcar, selecione um item para editar caminho, objetivo, modelo ou a marca 🤫 de segredo e clique em Salvar Item.
+- 3 · Execução: Executar Marcadas roda o plano por fases (mundo, lugares, pessoas, monstros, aventuras). Arquivos secretos ficam escondidos dos jogadores.
+- Se você parar, Executar Marcadas continua de onde parou. O resultado lista os [[links]] novos que ainda não têm arquivo.
+- As permissões e o máximo de ações ficam na própria página.
 
 # 7. AÇÕES
 - Parar Qualquer Execução Atual: interrompe todas as tarefas de IA em andamento.
