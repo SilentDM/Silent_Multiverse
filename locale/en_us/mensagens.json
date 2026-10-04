@@ -199,5 +199,8 @@
   "wb.aviso.nome_parecido": "Note: similar name to '{nome}', which already exists in this folder.",
   "wb.aviso.duplicado": "Duplicate: another plan action already uses this path.",
   "wb.aviso.acima_do_limite": "Over the {limite}-action limit: unchecked.",
-  "wb.aviso.pasta_nao_existe": "The folder doesn't exist and folder creation is turned off."
+  "wb.aviso.pasta_nao_existe": "The folder doesn't exist and folder creation is turned off.",
+  "gemini.log_cache_desativado": "ℹ️ This key doesn't allow explicit caching (free account). The program will upload the bundle instead and won't try caching again with this key.",
+  "gemini.log_cache_pulado": "Explicit caching is off for this key: uploading the world bundle.",
+  "gemini.log_cache_reativado": "🔄 Explicit caching will be tried again on the next context rebuild."
 }

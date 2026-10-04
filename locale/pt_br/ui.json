@@ -482,5 +482,9 @@
   "wb.template.npc": "NPC",
   "wb.template.reinado": "Reino",
   "wb.template.nenhum": "Nenhum",
-  "historico.tamanho_bytes": "{bytes} B"
+  "historico.tamanho_bytes": "{bytes} B",
+  "options.cache_tentar": "🔄 Tentar cache de novo",
+  "options.cache_desativado": "Cache do Gemini: desativado para esta chave desde {data} (conta sem faturamento). O programa usa o envio do bundle.",
+  "options.cache_ativo": "Cache do Gemini: será usado se a sua conta permitir.",
+  "options.toast_cache": "🔄 O cache será tentado de novo na próxima atualização do contexto."
 }

@@ -482,5 +482,9 @@
   "wb.template.npc": "NPC",
   "wb.template.reinado": "Kingdom",
   "wb.template.nenhum": "None",
-  "historico.tamanho_bytes": "{bytes} B"
+  "historico.tamanho_bytes": "{bytes} B",
+  "options.cache_tentar": "🔄 Try caching again",
+  "options.cache_desativado": "Gemini cache: off for this key since {data} (account without billing). The program uploads the bundle instead.",
+  "options.cache_ativo": "Gemini cache: used if your account allows it.",
+  "options.toast_cache": "🔄 Caching will be tried again on the next context update."
 }

@@ -163,6 +163,15 @@ def criar_backup(ao_concluir=None, ao_falhar=None) -> bool:
     return _iniciar("backup", pu.criar_backup_projeto, ao_concluir=ao_concluir, ao_falhar=ao_falhar)
 
 
+def status_cache_gemini() -> dict:
+    return cg.status_cache()
+
+
+def reativar_cache_gemini():
+    cg.reativar_cache()
+    ev.log(t("gemini.log_cache_reativado"))
+
+
 def reconstruir_contexto(ao_concluir=None, ao_falhar=None) -> bool:
     return _iniciar("contexto", cg.force_rebuild_world_context, ao_concluir=ao_concluir, ao_falhar=ao_falhar)
 

@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 
 import bot.runner as discord_runner
 import core.atualizacoes as atualizacoes
+import engine.acoes as acoes
 import core.config as cfg
 import core.i18n as i18n
 import core.sistema as sistema
@@ -85,6 +86,24 @@ class PaginaOpcoes(PaginaBase):
             entrada.pack(fill=tk.X, padx=10, pady=(0, 4))
             self.entradas_cred[chave] = entrada
         ttk.Button(caixa, text=t("options.cred_salvar"), command=self._salvar_credenciais).pack(anchor=tk.E, padx=10, pady=10)
+        linha_cache = ttk.Frame(caixa)
+        linha_cache.pack(fill=tk.X, padx=10, pady=(0, 10))
+        self.lbl_cache = ttk.Label(linha_cache, text="", font=("Segoe UI", 8), wraplength=300, justify="left")
+        self.lbl_cache.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Button(linha_cache, text=t("options.cache_tentar"), command=self._reativar_cache).pack(side=tk.RIGHT)
+        self._atualizar_status_cache()
+
+    def _atualizar_status_cache(self):
+        status = acoes.status_cache_gemini()
+        if status["sem_suporte"]:
+            self.lbl_cache.config(text=t("options.cache_desativado", data=status["data"]), foreground=tema.AMARELO)
+        else:
+            self.lbl_cache.config(text=t("options.cache_ativo"), foreground=tema.SUAVE)
+
+    def _reativar_cache(self):
+        acoes.reativar_cache_gemini()
+        self._atualizar_status_cache()
+        self.app.toast(t("options.toast_cache"))
 
     def _mudar_provedor(self, rotulo):
         cfg.definir_provedor_ia(rotulo)

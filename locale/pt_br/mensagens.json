@@ -199,5 +199,8 @@
   "wb.aviso.nome_parecido": "Atenção: nome parecido com '{nome}', que já existe nesta pasta.",
   "wb.aviso.duplicado": "Repetido: outra ação do plano já usa este caminho.",
   "wb.aviso.acima_do_limite": "Acima do limite de {limite} ações: desmarcado.",
-  "wb.aviso.pasta_nao_existe": "A pasta não existe e a criação de pastas está desligada."
+  "wb.aviso.pasta_nao_existe": "A pasta não existe e a criação de pastas está desligada.",
+  "gemini.log_cache_desativado": "ℹ️ Esta chave não permite cache explícito (conta gratuita). O programa vai usar o envio do bundle e não tentará o cache de novo com esta chave.",
+  "gemini.log_cache_pulado": "Cache explícito desativado para esta chave: enviando o bundle do mundo.",
+  "gemini.log_cache_reativado": "🔄 O cache explícito será tentado de novo na próxima reconstrução do contexto."
 }
