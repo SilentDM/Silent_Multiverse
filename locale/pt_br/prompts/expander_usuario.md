@@ -10,6 +10,7 @@
 {{conteudo}}
 </arquivo_alvo>
 
+{{notas}}
 <instrucao_tarefa>
 Identifique a tag '{{tag}}' dentro de <arquivo_alvo>.
 Substitua essa tag pelo conteúdo expandido, mantendo total coesão com <contexto_local> e <arquivos_relacionados>.

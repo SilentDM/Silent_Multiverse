@@ -30,14 +30,15 @@ from ui.pages.log import PaginaLog
 from ui.pages.manual import PaginaManual
 from ui.pages.models import PaginaModelos
 from ui.pages.options import PaginaOpcoes
+from ui.pages.requests import PaginaRequisicoes
 from ui.pages.roleplay import PaginaRoleplay
 from ui.pages.worldbuilder import PaginaWorldBuilder
 from ui.widgets import mostrar_toast
 
-PAGINAS_TOPO = ["editor", "worldbuilder", "actions", "chat", "roleplay", "council", "options", "models"]
+PAGINAS_TOPO = ["editor", "requisicoes", "worldbuilder", "actions", "chat", "roleplay", "council", "options", "models"]
 PAGINAS_RODAPE = ["log", "manual"]
 CLASSES_PAGINAS = {
-    "editor": PaginaEditor, "worldbuilder": PaginaWorldBuilder, "actions": PaginaAcoes,
+    "editor": PaginaEditor, "requisicoes": PaginaRequisicoes, "worldbuilder": PaginaWorldBuilder, "actions": PaginaAcoes,
     "chat": PaginaChat, "roleplay": PaginaRoleplay, "council": PaginaConselho,
     "options": PaginaOpcoes, "models": PaginaModelos, "log": PaginaLog, "manual": PaginaManual,
 }
@@ -296,6 +297,11 @@ class SilentApp:
         pagina.tkraise()
         for nome, botao in self.botoes_nav.items():
             botao.configure(style="NavActive.TButton" if nome == chave else "Nav.TButton")
+
+    def abrir_requisicao(self, tipo: str, caminho: str):
+        """Abre a aba Requisições para um pedido de nível médio sobre o arquivo."""
+        self.paginas["requisicoes"].abrir(tipo, caminho)
+        self.mostrar_pagina("requisicoes")
 
     def pagina(self, chave: str):
         return self.paginas[chave]

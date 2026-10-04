@@ -117,8 +117,12 @@ class PaginaWorldBuilder(PaginaBase):
         ttk.Checkbutton(editor, text=t("wb.campo_segredo"), variable=self.var_segredo).grid(row=2, column=2, sticky="w")
         self.btn_salvar_item = ttk.Button(editor, text=t("wb.btn_salvar_item"), command=self._salvar_item)
         self.btn_salvar_item.grid(row=2, column=3, sticky="e")
+        ttk.Label(editor, text=t("wb.campo_genero")).grid(row=3, column=0, sticky="w")
+        self._generos = opcoes["generos"]
+        self.combo_genero = ttk.Combobox(editor, state="readonly", width=24, values=[nome for _, nome in self._generos])
+        self.combo_genero.grid(row=3, column=1, columnspan=2, sticky="w", pady=2)
         self.lbl_aviso = ttk.Label(editor, text=t("wb.plan_empty"), foreground=tema.SUAVE, wraplength=640, justify="left")
-        self.lbl_aviso.grid(row=3, column=0, columnspan=4, sticky="w", pady=(4, 0))
+        self.lbl_aviso.grid(row=4, column=0, columnspan=4, sticky="w", pady=(4, 0))
 
         caixa_log = ttk.LabelFrame(corpo, text=t("wb.log_title"))
         corpo.add(caixa_log, weight=2)
@@ -140,6 +144,11 @@ class PaginaWorldBuilder(PaginaBase):
     # ------------------------------------------------------------------
     def projeto_alterado(self):
         self._exibir_sessao(acoes.wb_sessao())
+
+    def receber_ideia(self, texto):
+        """Preenche a ideia (ex.: uma conversa com Silent levada ao WorldBuilder)."""
+        self.txt_objetivo.delete("1.0", tk.END)
+        self.txt_objetivo.insert("1.0", texto)
 
     def _exibir_sessao(self, sessao):
         self._sessao = sessao or {}
@@ -312,6 +321,8 @@ class PaginaWorldBuilder(PaginaBase):
         template = item.get("template", "nenhum")
         self.combo_template.current(self._templates.index(template) if template in self._templates else len(self._templates) - 1)
         self.var_segredo.set(bool(item.get("segredo")))
+        ids = [ident for ident, _ in self._generos]
+        self.combo_genero.current(ids.index(item.get("genero", "")) if item.get("genero", "") in ids else 0)
         self.lbl_aviso.config(text=item.get("aviso") or t("wb.item_ok"),
                               foreground=tema.AMARELO if item.get("aviso") else tema.SUAVE)
 
@@ -323,7 +334,8 @@ class PaginaWorldBuilder(PaginaBase):
         self._atualizar_item(self._selecionado, path=self.var_caminho.get().strip(),
                              objective=self.txt_item.get("1.0", "end").strip(),
                              template=self._templates[indice] if indice >= 0 else None,
-                             segredo=bool(self.var_segredo.get()))
+                             segredo=bool(self.var_segredo.get()),
+                             genero=self._generos[max(self.combo_genero.current(), 0)][0])
         self.app.toast(t("wb.toast_item"))
 
     def _atualizar_item(self, indice, **campos):

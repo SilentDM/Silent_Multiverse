@@ -180,17 +180,22 @@ class PaginaOpcoes(PaginaBase):
                   foreground=tema.AZUL).pack(anchor=tk.W, padx=10, pady=(0, 10))
 
     def _caixa_estilo(self):
-        caixa = self.grade.nova_caixa(t("options.tom_titulo"))
-        self._rotulo(caixa, t("options.tom_texto"))
-        self._combo(caixa, estilo.listar_perfis_tom(), estilo.perfil_tom_ativo(), self._mudar_tom)
-        estilo.escrever_arquivo_estilo_tom()
+        caixa = self.grade.nova_caixa(t("options.estilo_titulo"))
+        self._rotulo(caixa, t("options.estilo_texto"), wraplength=420)
+        for eixo, (atual, opcoes) in acoes.estilos_do_projeto().items():
+            self._rotulo(caixa, t(f"req.eixo.{eixo}"), font=("Segoe UI", 9, "bold"))
+            self._combo(caixa, opcoes, atual, lambda ident, e=eixo: self._mudar_estilo(e, ident))
+        self.var_requisicoes = tk.BooleanVar(value=bool(cfg.obter("abrir_requisicoes", True)))
+        ttk.Checkbutton(caixa, text=t("options.abrir_requisicoes"), variable=self.var_requisicoes,
+                        command=lambda: cfg.atualizar_configuracoes({"abrir_requisicoes": bool(self.var_requisicoes.get())})
+                        ).pack(anchor=tk.W, padx=10, pady=(0, 10))
         caixa = self.grade.nova_caixa(t("options.sistema_titulo"))
         self._rotulo(caixa, t("options.sistema_texto"))
         self._combo(caixa, estilo.listar_sistemas(), estilo.sistema_ativo(), self._mudar_sistema)
 
-    def _mudar_tom(self, perfil):
-        estilo.definir_perfil_tom(perfil)
-        self.app.toast(t("options.toast_tom", nome=t(f"style.tom.{perfil}")))
+    def _mudar_estilo(self, eixo, ident):
+        acoes.definir_estilo_do_projeto(eixo, ident)
+        self.app.toast(t("options.toast_estilo", eixo=t(f"req.eixo.{eixo}")))
 
     def _mudar_sistema(self, sistema):
         estilo.definir_sistema(sistema)

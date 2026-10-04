@@ -27,7 +27,7 @@ class TesteAcoes(unittest.TestCase):
     def test_trava_durante_a_ia_e_recusa_duplicada(self):
         durante = {}
 
-        def melhorar_falso(caminho, objetivo="", canon=None):
+        def melhorar_falso(caminho, objetivo="", canon=None, requisicao=None):
             durante["travado"] = acoes.arquivo_em_processamento(caminho)
             time.sleep(0.2)
             return True

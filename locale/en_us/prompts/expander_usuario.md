@@ -10,6 +10,7 @@
 {{conteudo}}
 </target_file>
 
+{{notas}}
 <task_instruction>
 Find the tag '{{tag}}' inside <target_file>.
 Replace that tag with the expanded content, keeping full cohesion with <local_context> and <related_files>.

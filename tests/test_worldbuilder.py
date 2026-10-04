@@ -166,7 +166,7 @@ class TesteWorldBuilder(unittest.TestCase):
         self._canon_e_plano()
         chamadas = []
 
-        def melhorar_que_para(caminho, objetivo=None, canon=None):
+        def melhorar_que_para(caminho, objetivo=None, canon=None, requisicao=None):
             chamadas.append(str(caminho))
             pu.request_cancellation()          # o Mestre clica em Parar durante a primeira ação de arquivo
             return True
@@ -176,9 +176,10 @@ class TesteWorldBuilder(unittest.TestCase):
             self.assertTrue(resumo["interrompido"])
             self.assertEqual(wb.carregar_sessao()["etapa"], wb.ETAPA_PLANO)
             feitos = [i["path"] for i in wb.carregar_sessao()["plano"] if i["estado"] == "concluida"]
-            pu.reset_cancellation()
-            chamadas.clear()
-            mock.patch.object(wb.melhorar, "melhorar_arquivo", return_value=True).start()
+        pu.reset_cancellation()
+        chamadas.clear()
+        with mock.patch.object(wb.melhorar, "melhorar_arquivo", return_value=True), \
+                mock.patch.object(wb.geradores, "gerar_ficha", return_value=True), ia_falsa(resposta_falsa):
             wb.executar_plano()
         refeitos = [i["path"] for i in wb.carregar_sessao()["plano"] if i["estado"] == "concluida"]
         self.assertTrue(set(feitos) < set(refeitos))
@@ -194,6 +195,39 @@ class TesteWorldBuilder(unittest.TestCase):
         item = wb.atualizar_item(indice, path="../../fora")
         self.assertFalse(item["ativo"])
         self.assertTrue(wb.carregar_sessao()["plano"][indice]["aviso"])
+
+    def test_npc_com_ficha_e_template_do_genero(self):
+        from tests.test_requisicoes_notas import ficha_5e
+        acoes = {"actions": [
+            {"type": "CreateNPC", "path": "NPCs/Capitã Brasa", "priority": 5, "objective": "A capitã", "fase": 3},
+            {"type": "CreateFile", "path": "Locais/Taverna", "priority": 5, "objective": "Onde ocorreu o crime",
+             "template": "local", "fase": 2, "genero": "misterio"},
+            {"type": "CreateFile", "path": "Locais/Outro", "priority": 1, "objective": "x", "fase": 2, "genero": "inexistente"}]}
+
+        def resposta(chamada):
+            nome = getattr(chamada.get("response_schema"), "__name__", "")
+            if nome == "CanonCampanha":
+                return json.dumps(CANON)
+            if nome == "ActionPlan":
+                return json.dumps(acoes)
+            if nome == "FichaCombate5e":
+                return ficha_5e(nome="Capitã Brasa")
+            return "# Texto\nConteúdo."
+
+        with ia_falsa(resposta) as ia:
+            wb.gerar_canon(IDEIA)
+            itens = wb.gerar_plano()
+            self.assertEqual(self._item(itens, "Locais/Outro.md")["genero"], "")           # gênero inválido: padrão
+            self.assertEqual(self._item(itens, "NPCs/Capitã Brasa.md")["template"], "npc")
+            wb.executar_plano()
+        npc = (self.raiz / "NPCs" / "Capitã Brasa.md").read_text(encoding="utf-8")
+        self.assertIn("## ⚔️ Ficha de Combate", npc)
+        pedido_taverna = next(c["contents"] for c in ia.chamadas
+                              if "Onde ocorreu o crime" in c.get("contents", "") and not c.get("response_schema"))
+        self.assertIn("Pistas Físicas", pedido_taverna)              # template de mistério no esboço
+        instrucao = next(c["system_instruction"] for c in ia.chamadas
+                         if "Onde ocorreu o crime" in c.get("contents", "") and not c.get("response_schema"))
+        self.assertIn("Mistério e Investigação", instrucao)          # e o gênero no estilo do pedido
 
     def test_sem_canon(self):
         with self.assertRaises(wb.ErroWorldBuilder):

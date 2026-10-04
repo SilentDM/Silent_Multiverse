@@ -202,5 +202,12 @@
   "wb.aviso.pasta_nao_existe": "A pasta não existe e a criação de pastas está desligada.",
   "gemini.log_cache_desativado": "ℹ️ Esta chave não permite cache explícito (conta gratuita). O programa vai usar o envio do bundle e não tentará o cache de novo com esta chave.",
   "gemini.log_cache_pulado": "Cache explícito desativado para esta chave: enviando o bundle do mundo.",
-  "gemini.log_cache_reativado": "🔄 O cache explícito será tentado de novo na próxima reconstrução do contexto."
+  "gemini.log_cache_reativado": "🔄 O cache explícito será tentado de novo na próxima reconstrução do contexto.",
+  "ficha.log_inicio": "⚔️ Gerando a ficha de combate de {nome} ({sistema})...",
+  "ficha.log_ok": "✅ Ficha de combate gravada em {nome}.",
+  "ficha.log_erro": "❌ Erro ao gerar a ficha de {nome}: {erro}",
+  "notas.erro_arquivo": "O arquivo '{nome}' não existe.",
+  "notas.erro_vazia": "A nota está vazia.",
+  "notas.erro_travado": "'{nome}' está sendo alterado pela IA agora. Espere terminar para salvar a nota.",
+  "notas.log_adicionada": "📝 Nota adicionada a {nome} ({origem})."
 }

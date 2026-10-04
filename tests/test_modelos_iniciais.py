@@ -36,7 +36,7 @@ class TesteModelosIniciais(unittest.TestCase):
 
     def test_instala_e_troca_so_o_que_nao_foi_editado(self):
         copiados = pu.instalar_modelos_iniciais("pt_br", self.dados)
-        self.assertEqual(len(copiados), 8)
+        self.assertEqual(len(copiados), 16)        # 8 genéricos + 8 por gênero
         self.assertIn("# Aventura:", self._ler("Templates/aventura.md"))
         self.assertEqual(pu.instalar_modelos_iniciais("pt_br", self.dados), [])   # nada a fazer
 

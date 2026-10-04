@@ -13,6 +13,7 @@ PERSONAS JÁ REGISTRADAS VINCULADAS:
 # DIRETRIZES DE ESTILO:
 {{estilo}}
 
+{{insumos}}{{requisicao}}
 SUA TAREFA:
 Preencha rigorosamente os 4 campos do schema:
 1. 'arquiteto': A proposta rica de evolução do documento.

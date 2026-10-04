@@ -76,3 +76,14 @@ def conversar(mensagem: str, anexo: dict = None) -> str:
     if resposta:
         me.salvar_memoria(guild_id, guild_name, userid, user_name, mensagem, resposta)
     return resposta
+
+
+def conversa_como_texto(limite: int = 12) -> str:
+    """As últimas mensagens do chat como texto corrido (para virar a ideia do WorldBuilder)."""
+    linhas = []
+    for papel, conteudo in historico_chat()[-limite:]:
+        if papel == "resumo":
+            linhas.append(tc("chat.texto_resumo", texto=conteudo))
+        else:
+            linhas.append(f"{tc('chat.texto_mestre') if papel == 'usuario' else 'Silent'}: {conteudo}")
+    return "\n\n".join(linhas)

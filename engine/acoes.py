@@ -24,6 +24,9 @@ import engine.expander as ex
 import engine.geradores as geradores
 import engine.historico as hist
 import engine.melhorar as melhorar
+import engine.notas as notas
+import engine.requisicao as requisicao
+import engine.style_manager as estilo
 import engine.lore_auditor as auditor
 import engine.project_utils as pu
 import engine.token_counter as tc_tokens
@@ -110,7 +113,7 @@ def wb_atualizar_item(indice: int, **campos) -> dict:
 def wb_opcoes() -> dict:
     """Listas para os seletores da página (tipos, modelos, fases) e limites atuais."""
     return {"tipos": list(wb.TIPOS), "templates": list(wb.TEMPLATES), "fases": list(wb.FASES),
-            "max_acoes": wb.max_acoes()}
+            "max_acoes": wb.max_acoes(), "generos": [("", t("wb.genero_padrao"))] + estilo.opcoes("genero")}
 
 
 def wb_definir_max_acoes(valor) -> int:
@@ -209,7 +212,7 @@ def trocar_projeto(caminho: str) -> str:
 # ----------------------------------------------------------------------
 # AÇÕES DE IA SOBRE UM ARQUIVO
 # ----------------------------------------------------------------------
-TIPOS_ACAO_ARQUIVO = ("melhorar", "aventura", "conhecimento", "expander")
+TIPOS_ACAO_ARQUIVO = ("melhorar", "aventura", "conhecimento", "ficha", "expander")
 
 
 def texto_padrao_acao(tipo: str, caminho: str) -> str:
@@ -219,6 +222,7 @@ def texto_padrao_acao(tipo: str, caminho: str) -> str:
         "melhorar": tc("acoes.padrao_melhorar"),
         "aventura": tc("acoes.padrao_aventura", nome=nome),
         "conhecimento": tc("acoes.padrao_conhecimento"),
+        "ficha": "",
         "expander": "",
     }[tipo]
 
@@ -227,7 +231,8 @@ def arquivo_em_processamento(caminho: str) -> bool:
     return ex.esta_em_processamento(caminho)
 
 
-def executar_acao_arquivo(tipo: str, caminho: str, texto_usuario: str = "", ao_concluir=None, ao_falhar=None) -> bool:
+def executar_acao_arquivo(tipo: str, caminho: str, texto_usuario: str = "", ao_concluir=None, ao_falhar=None,
+                          requisicao=None) -> bool:
     """
     Roda uma ação de IA sobre o arquivo, travando-o (o editor não grava por cima enquanto isso).
     ao_concluir recebe True/False (sucesso da ação). Devolve False se o arquivo já estava em processamento.
@@ -243,17 +248,86 @@ def executar_acao_arquivo(tipo: str, caminho: str, texto_usuario: str = "", ao_c
     def _rodar():
         try:
             if tipo == "melhorar":
-                return melhorar.melhorar_arquivo(caminho, texto)
+                return melhorar.melhorar_arquivo(caminho, texto, requisicao=requisicao)
             if tipo == "aventura":
-                return geradores.gerar_aventura_completa(caminho, reason=texto)
+                return geradores.gerar_aventura_completa(caminho, reason=texto, requisicao=requisicao)
             if tipo == "conhecimento":
-                return geradores.gerar_tabelas_de_conhecimento(caminho, foco_especifico=texto)
+                return geradores.gerar_tabelas_de_conhecimento(caminho, foco_especifico=texto, requisicao=requisicao)
+            if tipo == "ficha":
+                return geradores.gerar_ficha(caminho, texto, requisicao=requisicao,
+                                             tipo=requisicao.criatura if requisicao else "npc")
             ex.processar_arquivo_unico(caminho)
             return True
         finally:
             ex.marcar_processamento(caminho, False)
 
     return _iniciar(f"arquivo:{caminho}", _rodar, ao_concluir=ao_concluir, ao_falhar=ao_falhar)
+
+
+def executar_requisicao(req, ao_concluir=None, ao_falhar=None) -> bool:
+    """Executa uma Requisição da aba Requisições (o Conselho é aberto pela própria interface)."""
+    return executar_acao_arquivo(req.tipo, req.caminho, req.objetivo, ao_concluir=ao_concluir, ao_falhar=ao_falhar,
+                                 requisicao=req)
+
+
+# ----------------------------------------------------------------------
+# REQUISIÇÕES, ESTILOS E NOTAS
+# ----------------------------------------------------------------------
+def nova_requisicao(tipo: str, caminho: str, objetivo: str = ""):
+    return requisicao.nova(tipo, caminho, objetivo)
+
+
+def opcoes_requisicao() -> dict:
+    """Listas para os seletores da aba Requisições."""
+    return {"eixos": {eixo: estilo.opcoes(eixo) for eixo in estilo.EIXOS}, "modos": list(requisicao.MODOS),
+            "profundidades": list(requisicao.PROFUNDIDADES), "publicos": list(requisicao.PUBLICOS),
+            "criatividades": list(requisicao.CRIATIVIDADES)}
+
+
+def sugerir_referencias(caminho: str) -> list:
+    return requisicao.sugerir_referencias(caminho)
+
+
+def estimar_tokens_requisicao(req) -> int:
+    return requisicao.estimar_tokens(req)
+
+
+def presets_requisicao() -> list:
+    return requisicao.listar_presets()
+
+
+def salvar_preset_requisicao(nome: str, req):
+    requisicao.salvar_preset(nome, req)
+
+
+def aplicar_preset_requisicao(nome: str, req):
+    return requisicao.aplicar_preset(nome, req)
+
+
+def excluir_preset_requisicao(nome: str):
+    requisicao.excluir_preset(nome)
+
+
+def estilos_do_projeto() -> dict:
+    """{eixo: (id_padrão, [(id, nome)])} para as Opções."""
+    return {eixo: (estilo.padrao(eixo), estilo.opcoes(eixo)) for eixo in estilo.EIXOS}
+
+
+def definir_estilo_do_projeto(eixo: str, ident: str):
+    estilo.definir_padrao(eixo, ident)
+
+
+def adicionar_nota(caminho: str, texto: str, origem: str = "mestre", autor: str = "") -> str:
+    """Guarda a nota na seção secreta 'Notas do Mestre' do arquivo. Lança notas.ErroNotas com mensagem pronta."""
+    return notas.adicionar_nota(caminho, texto, origem, autor)
+
+
+def sugerir_destinos_nota(texto: str, arquivo_atual: str = None, nomes=()) -> list:
+    return notas.sugerir_destinos(texto, arquivo_atual, nomes)
+
+
+def notas_do_arquivo(caminho: str) -> list:
+    return notas.listar_notas(caminho)
 
 
 # ----------------------------------------------------------------------

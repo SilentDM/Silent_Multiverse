@@ -202,5 +202,12 @@
   "wb.aviso.pasta_nao_existe": "The folder doesn't exist and folder creation is turned off.",
   "gemini.log_cache_desativado": "ℹ️ This key doesn't allow explicit caching (free account). The program will upload the bundle instead and won't try caching again with this key.",
   "gemini.log_cache_pulado": "Explicit caching is off for this key: uploading the world bundle.",
-  "gemini.log_cache_reativado": "🔄 Explicit caching will be tried again on the next context rebuild."
+  "gemini.log_cache_reativado": "🔄 Explicit caching will be tried again on the next context rebuild.",
+  "ficha.log_inicio": "⚔️ Generating the combat statblock for {nome} ({sistema})...",
+  "ficha.log_ok": "✅ Combat statblock saved to {nome}.",
+  "ficha.log_erro": "❌ Error generating the statblock for {nome}: {erro}",
+  "notas.erro_arquivo": "The file '{nome}' doesn't exist.",
+  "notas.erro_vazia": "The note is empty.",
+  "notas.erro_travado": "'{nome}' is being changed by the AI right now. Wait for it to finish to save the note.",
+  "notas.log_adicionada": "📝 Note added to {nome} ({origem})."
 }

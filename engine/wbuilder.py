@@ -32,16 +32,23 @@ import engine.geradores as geradores
 import engine.historico as hist
 import engine.melhorar as melhorar
 import engine.project_utils as pu
+import engine.requisicao as requisicao
+import engine.style_manager as estilo
 from core.i18n import t, tc
 from core.prompts import carregar_prompt
 
-TIPOS = ("CreateFolder", "CreateFile", "ImproveFile", "GenerateAdventure", "GenerateLoreChecks")
+TIPOS = ("CreateFolder", "CreateFile", "CreateNPC", "CreateMonster", "ImproveFile", "GenerateAdventure",
+         "GenerateLoreChecks")
+TIPOS_QUE_CRIAM = ("CreateFile", "CreateNPC", "CreateMonster", "GenerateAdventure")
 TEMPLATES = ("aventura", "cidade", "local", "monstro", "npc", "reinado", "nenhum")
+TEMPLATE_DO_TIPO = {"CreateNPC": "npc", "CreateMonster": "monstro"}
 CATEGORIAS = ("reino", "cidade", "local", "npc", "monstro", "faccao", "aventura", "outro")
 FASES = (1, 2, 3, 4, 5)
 PERMISSOES = {
     "CreateFolder": "wb_allow_create_folder",
     "CreateFile": "wb_allow_create_file",
+    "CreateNPC": "wb_allow_create_file",
+    "CreateMonster": "wb_allow_create_file",
     "ImproveFile": "wb_allow_improve_file",
     "GenerateAdventure": "wb_allow_generators",
     "GenerateLoreChecks": "wb_allow_generators",
@@ -80,8 +87,8 @@ class CanonCampanha(BaseModel):
 
 
 class Action(BaseModel):
-    type: Literal["CreateFolder", "CreateFile", "ImproveFile", "GenerateAdventure", "GenerateLoreChecks"] = Field(
-        description="Ferramenta a usar")
+    type: Literal["CreateFolder", "CreateFile", "CreateNPC", "CreateMonster", "ImproveFile", "GenerateAdventure",
+                  "GenerateLoreChecks"] = Field(description="Ferramenta a usar")
     path: str = Field(description="Caminho do arquivo ou pasta, a partir da pasta do projeto")
     priority: int = Field(description="Prioridade dentro da fase (maior primeiro)")
     objective: str = Field(description="O que este arquivo deve conter ou o que deve mudar, citando os nomes do cânone")
@@ -89,6 +96,7 @@ class Action(BaseModel):
         default="nenhum", description="Modelo usado ao criar o arquivo")
     segredo: bool = Field(default=False, description="True se o arquivo inteiro deve ficar escondido dos jogadores")
     fase: int = Field(default=3, description="Fase: 1 mundo e reinos, 2 lugares e cidades, 3 pessoas e facções, 4 ameaças e monstros, 5 aventuras e testes de conhecimento")
+    genero: str = Field(default="", description="Gênero deste arquivo (um dos ids da lista de gêneros); vazio usa o padrão do projeto")
 
 
 class ActionPlan(BaseModel):
@@ -122,13 +130,17 @@ def _com_md(caminho: Path) -> Path:
     return caminho if caminho.suffix.lower() == ".md" else caminho.with_name(caminho.name + ".md")
 
 
-def obter_conteudo_template(nome_template: Optional[str]) -> str:
-    """Conteúdo do template (.md) em <projeto>/Templates ou .silent_data/Templates."""
+def obter_conteudo_template(nome_template: Optional[str], genero: str = None) -> str:
+    """
+    Conteúdo do template (.md). Procura primeiro a versão do gênero (Templates/<gênero>/<nome>.md)
+    e depois a genérica, em <projeto>/Templates, .silent_data/Templates e nos modelos do programa.
+    """
     if not nome_template or nome_template.lower() == "nenhum":
         return ""
     nome_arquivo = f"{nome_template.lower().strip()}.md"
-    candidatos = (Path(pu.CAMINHO_PROJETO) / "Templates" / nome_arquivo, pu.PASTA_TEMPLATES / nome_arquivo,
-                  pu.pasta_modelos_iniciais(st.obter("idioma", "pt_br")) / "Templates" / nome_arquivo)
+    pastas = (Path(pu.CAMINHO_PROJETO) / "Templates", pu.PASTA_TEMPLATES,
+              pu.pasta_modelos_iniciais(st.obter("idioma", "pt_br")) / "Templates")
+    candidatos = ([pasta / genero / nome_arquivo for pasta in pastas] if genero else []) + [pasta / nome_arquivo for pasta in pastas]
     for caminho in candidatos:
         if caminho.exists():
             try:
@@ -268,9 +280,14 @@ def gerar_canon(objetivo: str = None) -> str:
 # ----------------------------------------------------------------------
 # ETAPA 2 — PLANO
 # ----------------------------------------------------------------------
+def generos_validos() -> list:
+    return [ident for ident, _ in estilo.opcoes("genero")]
+
+
 def _novo_item(acao: dict) -> dict:
     tipo = acao.get("type") if acao.get("type") in TIPOS else "CreateFile"
-    template = acao.get("template") if acao.get("template") in TEMPLATES else "nenhum"
+    template = TEMPLATE_DO_TIPO.get(tipo) or (acao.get("template") if acao.get("template") in TEMPLATES else "nenhum")
+    genero = acao.get("genero") if acao.get("genero") in generos_validos() else ""
     try:
         fase = min(max(int(acao.get("fase", 3)), FASES[0]), FASES[-1])
     except (TypeError, ValueError):
@@ -281,7 +298,7 @@ def _novo_item(acao: dict) -> dict:
         prioridade = 0
     return {"type": tipo, "path": str(acao.get("path", "")).strip(), "objective": str(acao.get("objective", "")).strip(),
             "template": template, "segredo": bool(acao.get("segredo", False)), "fase": fase, "priority": prioridade,
-            "ativo": True, "estado": "pendente", "aviso": ""}
+            "genero": genero, "ativo": True, "estado": "pendente", "aviso": ""}
 
 
 def _validar_item(item: dict, caminhos_criados: set):
@@ -302,7 +319,7 @@ def _validar_item(item: dict, caminhos_criados: set):
     if item["type"] == "CreateFolder" and destino.is_dir():
         item.update(ativo=False, aviso=t("wb.aviso.pasta_existe"))
         return
-    if item["type"] == "CreateFile" and destino.exists():
+    if item["type"] in ("CreateFile", "CreateNPC", "CreateMonster") and destino.exists():
         item.update(type="ImproveFile", aviso=t("wb.aviso.vira_melhoria"))
     if item["type"] in ("ImproveFile", "GenerateLoreChecks") and not destino.exists() \
             and item["path"] not in caminhos_criados:
@@ -315,7 +332,7 @@ def _validar_item(item: dict, caminhos_criados: set):
             and caminho_relativo(destino.parent) not in caminhos_criados:
         item.update(ativo=False, aviso=t("wb.aviso.pasta_nao_existe"))
         return
-    if item["type"] in ("CreateFile", "CreateFolder", "GenerateAdventure") and not destino.exists():
+    if (item["type"] in TIPOS_QUE_CRIAM or item["type"] == "CreateFolder") and not destino.exists():
         parecido = pu.existe_nome_parecido(destino.stem if item["type"] != "CreateFolder" else destino.name, destino.parent)
         if parecido:
             item["aviso"] = t("wb.aviso.nome_parecido", nome=parecido)
@@ -333,7 +350,7 @@ def validar_plano(acoes: list) -> list:
             item.update(ativo=False, aviso=t("wb.aviso.duplicado"))
         if item["ativo"]:
             vistos.add(chave)
-            if item["type"] in ("CreateFile", "GenerateAdventure", "CreateFolder"):
+            if item["type"] in TIPOS_QUE_CRIAM or item["type"] == "CreateFolder":
                 criados.add(item["path"])
             ativos += 1
             if ativos > limite:
@@ -349,9 +366,10 @@ def gerar_plano() -> list:
     if not ferramentas:
         raise ErroWorldBuilder(t("wb.log_sem_ferramentas"))
     ev.log(t("wb.log_inicio"))
+    generos = "\n".join(f'- "{ident}": {nome}' for ident, nome in estilo.opcoes("genero"))
     instrucao = carregar_prompt(
         "wb_planner_sistema", ferramentas="\n".join(f"- {f}" for f in ferramentas), projeto=pu.PASTA_PROJETO,
-        max_acoes=max_acoes(),
+        max_acoes=max_acoes(), generos=generos, genero_padrao=estilo.padrao("genero"),
         restricao_pastas="" if tipo_permitido("CreateFolder") else carregar_prompt("wb_planner_restricao_pastas"))
     resposta = au.ask_ai(
         contents=carregar_prompt("wb_planner_usuario", objetivo=sessao.get("objetivo") or tc("wb.objetivo_padrao"),
@@ -376,13 +394,13 @@ def atualizar_item(indice: int, **campos) -> dict:
     if not 0 <= indice < len(plano):
         raise ErroWorldBuilder(t("wb.erro_item"))
     item = plano[indice]
-    for chave in ("path", "objective", "template", "segredo", "ativo", "type", "fase"):
+    for chave in ("path", "objective", "template", "segredo", "ativo", "type", "fase", "genero"):
         if chave in campos and campos[chave] is not None:
             item[chave] = campos[chave]
     if item.get("estado") != "concluida":
         quer_ativo = item["ativo"]
         criados = {i["path"] for j, i in enumerate(plano) if j != indice and i["ativo"]
-                   and i["type"] in ("CreateFile", "GenerateAdventure", "CreateFolder")}
+                   and (i["type"] in TIPOS_QUE_CRIAM or i["type"] == "CreateFolder")}
         _validar_item(item, criados)
         if not quer_ativo:
             item["ativo"] = False
@@ -393,28 +411,14 @@ def atualizar_item(indice: int, **campos) -> dict:
 # ----------------------------------------------------------------------
 # ETAPA 3 — EXECUÇÃO
 # ----------------------------------------------------------------------
-def garantir_marcadores(arquivo: Path, segredo: bool):
-    """Tira marcadores de rascunho (arquivos do WorldBuilder entram no contexto) e marca segredo se pedido."""
-    texto = arquivo.read_text(encoding="utf-8", errors="ignore")
-    linhas = [l for l in texto.splitlines() if l.strip().lower() not in pu.MARCADORES_RASCUNHO]
-    inicio = "\n".join(linhas[:40]).lower()
-    if segredo and not any(m in inicio for m in pu.sf.MARCADORES_ARQUIVO_SECRETO):
-        marcador = tc("marcador.segredo")
-        if linhas and linhas[0].strip() == "---":                    # dentro do cabeçalho YAML
-            linhas.insert(1, marcador)
-        else:
-            posicao = next((i + 1 for i, l in enumerate(linhas) if l.startswith("# ")), 0)
-            linhas.insert(posicao, marcador)
-    novo = "\n".join(linhas).rstrip() + "\n"
-    if novo != texto:
-        arquivo.write_text(novo, encoding="utf-8")
+garantir_marcadores = pu.garantir_marcadores_arquivo
 
 
 def _criar_esboco(arquivo: Path, item: dict, com_template: bool):
     titulo = re.sub(r"_v\d+$", "", arquivo.stem)
     conteudo = tc("wb.stub_arquivo", titulo=titulo, motivo=item["objective"])
     if com_template:
-        conteudo += "\n\n" + obter_conteudo_template(item.get("template"))
+        conteudo += "\n\n" + obter_conteudo_template(item.get("template"), item.get("genero") or estilo.padrao("genero"))
     arquivo.parent.mkdir(parents=True, exist_ok=True)
     arquivo.write_text(conteudo.rstrip() + "\n", encoding="utf-8")
     ev.log(t("wb.log_arquivo_criado", caminho=caminho_relativo(arquivo)))
@@ -430,23 +434,28 @@ def _executar_item(item: dict, texto_canon: str) -> bool:
         return True
 
     arquivo = _com_md(destino)
-    if tipo == "CreateFile":
+    # Cada ação vira uma Requisição: o gênero do item (ou o do projeto) e os demais eixos padrão
+    req = requisicao.nova("melhorar", arquivo, item["objective"], genero=item.get("genero") or None)
+    if tipo in ("CreateFile", "CreateNPC", "CreateMonster"):
         if not arquivo.exists():
             _criar_esboco(arquivo, item, com_template=True)
-        ok = melhorar.melhorar_arquivo(arquivo, item["objective"], canon=texto_canon)
+        ok = melhorar.melhorar_arquivo(arquivo, item["objective"], canon=texto_canon, requisicao=req)
+        if ok and tipo in ("CreateNPC", "CreateMonster"):
+            ok = geradores.gerar_ficha(arquivo, item["objective"], requisicao=req,
+                                       tipo="monstro" if tipo == "CreateMonster" else "npc")
     elif tipo == "ImproveFile":
-        ok = melhorar.melhorar_arquivo(arquivo, item["objective"], canon=texto_canon)
+        ok = melhorar.melhorar_arquivo(arquivo, item["objective"], canon=texto_canon, requisicao=req)
     elif tipo == "GenerateAdventure":
         if not arquivo.exists():
             _criar_esboco(arquivo, item, com_template=False)
-        ok = geradores.gerar_aventura_completa(arquivo, reason=item["objective"])
+        ok = geradores.gerar_aventura_completa(arquivo, reason=item["objective"], requisicao=req)
     else:  # GenerateLoreChecks
         if not arquivo.is_file():
             ev.log(t("wb.log_arquivo_invalido", caminho=item["path"]))
             return False
         ex.marcar_processamento(arquivo, True)
         try:
-            ok = geradores.gerar_tabelas_de_conhecimento(arquivo, foco_especifico=item["objective"])
+            ok = geradores.gerar_tabelas_de_conhecimento(arquivo, foco_especifico=item["objective"], requisicao=req)
         finally:
             ex.marcar_processamento(arquivo, False)
     if arquivo.is_file():

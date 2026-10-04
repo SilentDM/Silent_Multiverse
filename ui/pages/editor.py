@@ -9,6 +9,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import ttk, messagebox, simpledialog, scrolledtext
 
+import core.config as cfg
 import core.sistema as sistema
 import engine.acoes as acoes
 import engine.arquivos as arq
@@ -472,6 +473,7 @@ class PaginaEditor(PaginaBase):
             m.add_command(label=t("editor.menu_melhorar"), command=lambda: self._acao_ia("melhorar", caminho))
             m.add_command(label=t("editor.menu_aventura"), command=lambda: self._acao_ia("aventura", caminho))
             m.add_command(label=t("editor.menu_conhecimento"), command=lambda: self._acao_ia("conhecimento", caminho))
+            m.add_command(label=t("editor.menu_ficha"), command=lambda: self._acao_ia("ficha", caminho))
             m.add_command(label=t("editor.menu_conselho"), command=lambda: self._enviar_conselho(caminho))
             m.add_separator()
             m.add_command(label=t("editor.menu_historico"), command=lambda: self._historico(caminho))
@@ -642,12 +644,23 @@ class PaginaEditor(PaginaBase):
         if acoes.arquivo_em_processamento(caminho):
             self.app.toast(t("editor.toast_ja_processando", nome=arq.nome(caminho)))
             return
+        if cfg.obter("abrir_requisicoes", True):
+            self.salvar_agora()
+            self.app.abrir_requisicao(tipo, caminho)
+            return
         texto = simpledialog.askstring(t(f"editor.ia_{tipo}_titulo"), t(f"editor.ia_{tipo}_pergunta", nome=arq.nome(caminho)), parent=self)
         if texto is None:
             return
         self._executar_ia(tipo, caminho, texto)
 
-    def _executar_ia(self, tipo, caminho, texto):
+    def executar_requisicao(self, req):
+        """Chamado pela aba Requisições: roda o pedido com as opções escolhidas."""
+        if acoes.arquivo_em_processamento(req.caminho):
+            self.app.toast(t("editor.toast_ja_processando", nome=arq.nome(req.caminho)))
+            return
+        self._executar_ia(req.tipo, req.caminho, req.objetivo, requisicao=req)
+
+    def _executar_ia(self, tipo, caminho, texto, requisicao=None):
         nome = arq.nome(caminho)
         estava_aberto = self.sessao.eh_atual(caminho)
         if estava_aberto:
@@ -668,7 +681,7 @@ class PaginaEditor(PaginaBase):
             if estava_aberto:
                 self.recarregar_arquivo(caminho)
 
-        if acoes.executar_acao_arquivo(tipo, caminho, texto, ao_concluir=_fim, ao_falhar=_erro):
+        if acoes.executar_acao_arquivo(tipo, caminho, texto, ao_concluir=_fim, ao_falhar=_erro, requisicao=requisicao):
             self.app.toast(t(f"editor.toast_ia_inicio_{tipo}", nome=nome))
         else:
             self.app.toast(t("editor.toast_ja_processando", nome=nome))
@@ -679,10 +692,17 @@ class PaginaEditor(PaginaBase):
         self.app.mostrar_pagina("chat")
 
     def _enviar_conselho(self, caminho):
+        if cfg.obter("abrir_requisicoes", True):
+            self.salvar_agora()
+            self.app.abrir_requisicao("conselho", caminho)
+            return
+        self.enviar_conselho(caminho)
+
+    def enviar_conselho(self, caminho, requisicao=None):
         if self.sessao.eh_atual(caminho):
             self.salvar_agora()
             self.sessao.fechar()
             self._mostrar_aviso(t("editor.conselho_titulo"), t("editor.conselho_texto", nome=arq.nome(caminho)))
-        self.app.pagina("council").carregar_arquivo(caminho)
+        self.app.pagina("council").carregar_arquivo(caminho, requisicao=requisicao)
         self.app.mostrar_pagina("council")
         self.app.toast(t("editor.toast_conselho", nome=arq.nome(caminho)))

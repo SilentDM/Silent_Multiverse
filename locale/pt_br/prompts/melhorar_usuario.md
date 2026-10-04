@@ -6,3 +6,4 @@ CONTEÚDO ORIGINAL:
 {{conteudo}}
 
 Retorne apenas o conteúdo final do arquivo.
+{{requisicao}}{{notas}}

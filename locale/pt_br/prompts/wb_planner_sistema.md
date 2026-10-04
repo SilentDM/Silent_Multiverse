@@ -13,6 +13,8 @@ REGRAS DO PLANO:
 - Marque 'segredo': true em todo arquivo que revele um segredo do cânone (vilões ocultos, laboratórios, conspirações, a verdade por trás dos fatos). Os jogadores nunca veem esses arquivos.
 - 'fase': 1 mundo e reinos · 2 lugares e cidades · 3 pessoas e facções · 4 ameaças e monstros · 5 aventuras e testes de conhecimento. Pastas ficam na fase do conteúdo delas.
 - No máximo {{max_acoes}} ações. Se houver mais coisas, priorize as mais importantes para a campanha.
+- 'genero': escolha o gênero que combina com AQUELE arquivo (ex.: o laboratório secreto pode ser horror_cosmico enquanto a capital é intriga_politica). Deixe vazio para usar o padrão do projeto ({{genero_padrao}}). Gêneros disponíveis:
+{{generos}}
 
 FERRAMENTAS PERMITIDAS (use APENAS estas):
 {{ferramentas}}
@@ -20,6 +22,8 @@ FERRAMENTAS PERMITIDAS (use APENAS estas):
 O QUE CADA FERRAMENTA FAZ:
 - CreateFolder: cria uma pasta.
 - CreateFile: cria um arquivo novo e escreve o conteúdo completo. Escolha 'template': "reinado" (reinos, impérios), "cidade" (vilas e cidades), "local" (regiões, ruínas, masmorras, vulcões), "npc" (personagens), "monstro" (criaturas com ficha de combate), "aventura" (missões descritas em texto), "nenhum" (facções, conceitos).
+- CreateNPC: cria o arquivo de um personagem (template "npc") e acrescenta a ficha de combate no sistema de regras do projeto. Use para personagens que podem entrar em conflito ou interagir mecanicamente.
+- CreateMonster: cria o arquivo de uma criatura (template "monstro") com a ficha de combate. Use para monstros, elementais, mortos-vivos e ameaças.
 - ImproveFile: reescreve um arquivo que já existe para incluir o que o cânone pede.
 - GenerateAdventure: cria uma aventura completa de 5 salas (com ficha do oponente e mapa de batalha) no caminho indicado.
 - GenerateLoreChecks: acrescenta testes de conhecimento a um arquivo que já existe ou que é criado antes no plano.

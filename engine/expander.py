@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 import core.ai_utils as au
 import core.eventos as ev
+import engine.notas as notas
 import engine.project_utils as pu
 from core.i18n import t
 from core.prompts import carregar_prompt
@@ -72,18 +73,27 @@ def obter_arquivos_relacionados(titulo):
     return "\n\n".join(conteudo for _, conteudo, _ in relacionados)
 
 
-def carregar_diretrizes_estilo():
-    """Carrega e unifica as diretrizes de estilo contidas na pasta Style."""
+def carregar_diretrizes_estilo(escolhas: dict = None):
+    """
+    Diretrizes para a IA: os arquivos da pasta Style (verdades e regras do cenário, sempre)
+    mais os quatro eixos de estilo (Gênero, Tom, Clima, Escrita) — os do projeto ou os
+    escolhidos na Requisição.
+    """
+    import engine.style_manager as estilo
     pasta_estilo = pu.CAMINHO_ESTILO
     conteudo_estilo = []
     if pasta_estilo.is_dir():
         for arquivo in sorted(pasta_estilo.glob("*.md")):
             try:
-                titulo = arquivo.stem.replace(" ", "_").replace("-", "_").lower()
                 texto = arquivo.read_text(encoding="utf-8").strip()
+                # O antigo Tom_e_Clima.md gerado pelo programa foi substituído pelos eixos
+                if arquivo.name == estilo.ARQUIVO_TOM_ANTIGO and estilo.eh_tom_e_clima_gerado(texto):
+                    continue
+                titulo = arquivo.stem.replace(" ", "_").replace("-", "_").lower()
                 conteudo_estilo.append(f"\n<{titulo}>\n{texto}\n</{titulo}>\n")
             except Exception as e:
                 ev.log(t("expander.log_erro_estilo", nome=arquivo.name, erro=e))
+    conteudo_estilo.append("\n" + estilo.bloco_estilos(escolhas) + "\n")
     return "".join(conteudo_estilo)
 
 
@@ -123,6 +133,7 @@ def processar_arquivo_unico(path):
     try:
         arquivo = Path(path)
         conteudo = arquivo.read_text(encoding="utf-8")
+        corpo, secao_notas = notas.separar(conteudo)   # as Notas do Mestre orientam, mas não são reescritas
         tag_encontrada = next((tag for tag in pu.TAG_ALVO if tag in conteudo), None)
         if not tag_encontrada:
             return
@@ -132,7 +143,7 @@ def processar_arquivo_unico(path):
         instrucoes = carregar_prompt("expander_sistema", projeto=pu.PASTA_PROJETO, estilo=carregar_diretrizes_estilo())
         prompt = carregar_prompt(
             "expander_usuario", contexto_local=_contexto_local(arquivo), relacionados=obter_arquivos_relacionados(titulo),
-            arquivo=arquivo.name, conteudo=conteudo, tag=tag_encontrada)
+            arquivo=arquivo.name, conteudo=corpo, tag=tag_encontrada, notas=notas.bloco_para_prompt(arquivo, secao_notas))
 
         try:
             with open(pu.log_path("Prompts.txt"), "w", encoding="utf-8") as f:
@@ -169,7 +180,7 @@ def processar_arquivo_unico(path):
             # --- ETAPA 3: GRAVAÇÃO (nome estável, versão anterior no histórico) ---
             if conteudo_salvar:
                 arquivar_versao_para_historico(arquivo)
-                arquivo.write_text(conteudo_salvar, encoding="utf-8")
+                arquivo.write_text(notas.reanexar(conteudo_salvar, secao_notas), encoding="utf-8")
                 ev.log(t("expander.log_atualizado", nome=arquivo.name))
         except Exception as e:
             ev.log(t("expander.log_erro", nome=arquivo.name, erro=e))

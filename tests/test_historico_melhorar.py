@@ -81,7 +81,7 @@ class TesteMelhorarArquivo(unittest.TestCase):
     def test_reescreve_arquiva_e_usa_o_canon(self):
         with ia_falsa("```markdown\n# Valia\nnew\n```") as ia:
             self.assertTrue(melhorar.melhorar_arquivo(self.alvo, "more detail", canon="King Aldren rules Valia"))
-        self.assertEqual(self.alvo.read_text(encoding="utf-8"), "# Valia\nnew")
+        self.assertEqual(self.alvo.read_text(encoding="utf-8"), "# Valia\nnew\n")
         self.assertIn("King Aldren rules Valia", ia.ultima["contents"])
         self.assertIn("CAMPAIGN CANON", ia.ultima["contents"])
         self.assertEqual(hist.ler_versao(hist.listar_versoes(self.alvo)[0]), "# Valia\nold")

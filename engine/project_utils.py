@@ -1,7 +1,7 @@
 # Em engine/project_utils.py
 import sys, os, re, json, threading, unicodedata, difflib, zipfile, ctypes, shutil
 import core.secret_filter as sf
-from core.i18n import t
+from core.i18n import t, tc
 from pathlib import Path
 from datetime import datetime
 
@@ -151,14 +151,16 @@ def instalar_modelos_iniciais(idioma: str = None, pasta_dados: Path = None) -> l
             continue
         primeira_vez = registro is None and not any(pasta_destino.glob("*.md"))
         pasta_destino.mkdir(parents=True, exist_ok=True)
-        for arq in sorted(pasta_origem.glob("*.md")):
-            relativo = f"{nome_pasta}/{arq.name}"
+        for arq in sorted(pasta_origem.rglob("*.md")):          # inclui subpastas (ex.: Templates/misterio/)
+            subcaminho = arq.relative_to(pasta_origem).as_posix()
+            relativo = f"{nome_pasta}/{subcaminho}"
             novo_na_versao = registro is not None and relativo not in conhecidos
             conhecidos.add(relativo)
-            destino = pasta_destino / arq.name
+            destino = pasta_destino / subcaminho
             if destino.exists() or not (primeira_vez or novo_na_versao or relativo in substituir):
                 continue
             try:
+                destino.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(arq, destino)
                 instalados[relativo] = _hash_arquivo(destino)
                 copiados.append(str(destino))
@@ -675,3 +677,20 @@ def carregar_conhecimento_discord(guild_id: str = "global") -> str:
             print(t("projeto.erro_conhecimento_discord", nome=arq.name, erro=e))
 
     return "\n\n".join(conteudo)
+
+
+def garantir_marcadores_arquivo(arquivo: Path, segredo: bool, tirar_rascunho: bool = True):
+    """Tira marcadores de rascunho (o arquivo entra no contexto da IA) e marca o arquivo como segredo se pedido."""
+    texto = arquivo.read_text(encoding="utf-8", errors="ignore")
+    linhas = [l for l in texto.splitlines() if not (tirar_rascunho and l.strip().lower() in MARCADORES_RASCUNHO)]
+    inicio = "\n".join(linhas[:40]).lower()
+    if segredo and not any(m in inicio for m in sf.MARCADORES_ARQUIVO_SECRETO):
+        marcador = tc("marcador.segredo")
+        if linhas and linhas[0].strip() == "---":                    # dentro do cabeçalho YAML
+            linhas.insert(1, marcador)
+        else:
+            posicao = next((i + 1 for i, l in enumerate(linhas) if l.startswith("# ")), 0)
+            linhas.insert(posicao, marcador)
+    novo = "\n".join(linhas).rstrip() + "\n"
+    if novo != texto:
+        arquivo.write_text(novo, encoding="utf-8")
