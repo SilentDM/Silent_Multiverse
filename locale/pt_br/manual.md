@@ -12,7 +12,7 @@
 - Abra o Google AI Studio (https://aistudio.google.com), entre com uma conta Google e clique em "Get API key".
 - Existe um nível gratuito. Os limites mudam com o tempo e aparecem no próprio AI Studio.
 ## 2) Salve a chave
-- Vá em Opções → Credenciais Seguras, cole a chave em "Chave da API Gemini" e clique em "Salvar Credenciais no Cofre".
+- Vá em Opções → IA (Gemini) e cole a chave no campo da chave. Ela é salva sozinha.
 - As chaves ficam no Gerenciador de Credenciais do Windows, nunca em arquivos de texto.
 ## 3) Escolha o idioma
 - Opções → Idioma. A IA muda na hora; a interface muda ao reiniciar.
@@ -20,7 +20,7 @@
 - No topo da barra lateral, clique no ícone 📁 e escolha a pasta com seus arquivos .md (uma pasta vazia começa um projeto novo). Um cofre do Obsidian funciona do jeito que está.
 - Os projetos recentes ficam na lista para trocar rápido.
 ## 5) Teste os modelos
-- Vá em Performance Gemini e clique em "Benchmark de Modelos". O programa testa os modelos disponíveis e os ordena por velocidade e confiabilidade.
+- Em Opções → IA (Gemini), clique em "Benchmark de Modelos". O programa testa os modelos disponíveis e os ordena por velocidade e confiabilidade.
 > Pronto! Abra um arquivo no Editor, escreva uma tag <-- TODO: e rode o Expander para ver a IA trabalhando.
 
 # 2. PASTAS DO PROJETO E DE DADOS
@@ -45,16 +45,24 @@
 
 # 4. EDITOR
 ## Árvore de arquivos
-- Busca: digite na caixa acima da árvore para filtrar os arquivos pelo nome.
+- Busca: digite na caixa acima da árvore para filtrar os arquivos pelo nome ou conteúdo.
+- A árvore se atualiza sozinha quando algo muda na pasta (outro programa, a IA, o Obsidian). O botão ⟳ força a atualização.
+- Ícones ao lado do nome: 🤫 segredo · ✎ rascunho · ⏳ TODO pendente · 🗒 tem Notas do Mestre · ⚙ a IA está trabalhando no arquivo.
 - Arraste e solte arquivos e pastas para movê-los.
 - Clique com o botão direito em um arquivo ou pasta: Novo Arquivo, Nova Pasta, Renomear (F2), Copiar, Recortar, Colar, Duplicar, Excluir e Mostrar no Windows Explorer.
 - Novo Arquivo permite escolher um dos Templates.
 ## Escrevendo
-- As alterações são salvas automaticamente logo depois que você para de digitar, e com Ctrl+S.
-- Visualizar mostra a página formatada (imagens, links, tabelas); Editar volta ao texto; Navegador abre a visualização no seu navegador.
-- Voltar / Avançar (ou Alt+Esquerda / Alt+Direita, ou os botões laterais do mouse) navega entre os documentos abertos.
+- Abas: cada arquivo aberto ganha uma aba acima do texto. Clique para trocar, × (ou botão do meio) para fechar. A posição do cursor de cada aba é lembrada.
+- Ao lado do nome do arquivo, "● Não salvo" ou "✓ Salvo". O programa salva sozinho logo depois que você para de digitar, e com Ctrl+S.
+- Modos: Editar (só o texto), Visualizar (a página formatada) e Lado a lado (texto e visualização juntos, atualizada enquanto você digita). 🌐 abre a visualização no navegador.
+- Barra de formatação: títulos (H1–H3), negrito, itálico, [[link]], lista, citação, linha separadora, tag TODO e seção secreta.
+- [[Links]]: ao digitar [[ aparece uma lista com os arquivos do projeto (↑ ↓ e Enter para escolher). Links para arquivos que ainda não existem ficam em vermelho; clique para criar o arquivo.
+- 🔎 Buscar (Ctrl+F) e Substituir (Ctrl+H) dentro do arquivo, com contagem de ocorrências.
+- Ctrl+P abre qualquer arquivo do projeto pelo nome.
+- Painel lateral (☰): Sumário do arquivo (clique para pular até o título), Citado por (arquivos que linkam este) e as Notas do Mestre do arquivo.
+- Voltar / Avançar (◀ ▶, Alt+Esquerda / Alt+Direita ou os botões laterais do mouse) navega entre os documentos abertos.
 - A barra de status mostra palavras, caracteres, linhas e uma estimativa de tokens do arquivo aberto.
-## Ações de IA (botão direito no arquivo)
+## Ações de IA (botão ✨ IA ou botão direito no arquivo)
 - ✨ Melhorar com IA: reescreve o arquivo com mais detalhe e coesão, seguindo uma instrução opcional.
 - 🎲 Gerar Aventura 5e: cria uma masmorra de 5 salas a partir do arquivo (gancho, salas, testes, ficha do oponente, tesouro) e uma imagem de mapa de batalha da sala final.
 - 📜 Gerar Testes de Conhecimento: cria testes com faixas de dificuldade baseados no arquivo.
@@ -142,17 +150,14 @@
 - O Conselho usa o que as outras perspectivas já disseram sobre o arquivo: os depoimentos do Roleplay viram a voz real dos NPCs, as notas de Silent e as suas orientam o Arquiteto e o Cronista, e conversas recentes de Roleplay com personagens citados também entram. A linha "O Conselho usou" mostra as fontes.
 
 # 11. OPÇÕES
-- Idioma: veja a seção 3.
-- Credenciais Seguras: chave do Gemini, token do bot do Discord e IDs de Mestre no Discord. O Gemini é o provedor suportado; os campos de Claude e OpenAI existem, mas não recebem manutenção.
-- Bot do Discord: regras por servidor (veja a seção 13).
-- Filtro de Segredos: palavras e nomes escondidos dos jogadores.
-- Estilo do Projeto: o padrão de Gênero, Tom, Clima e Estilo de escrita para todas as criações, e a opção de abrir a aba Requisições antes de cada pedido.
+As Opções têm quatro abas. Tudo salva sozinho; um "✓ Salvo" no topo confirma.
+- Geral: idioma, abrir a aba Requisições antes de cada pedido, versão, atualizações e o aviso legal.
+- IA (Gemini): a chave do Gemini, o status do cache e a ordem de uso dos modelos (veja a seção 12).
+- Projeto: Estilo (Gênero, Tom, Clima e Estilo de escrita), Sistema de Regras, palavras secretas e o Expander automático. Estas valem só para o projeto aberto e ficam salvas na pasta dele (.silent_projeto.json); um projeto novo começa com os valores atuais.
+- Discord: token do bot, IDs de Mestre e as regras por servidor (veja a seção 13).
 - Cache do Gemini: em contas sem faturamento o programa para de tentar o cache e usa o envio do bundle; "Tentar cache de novo" volta a tentar (trocar a chave também).
-- Sistema de Regras: o sistema que a IA segue nas mecânicas (5e, Tormenta20, Pathfinder 2e ou genérico).
-- Automação do Expander: roda o Expander quando você salva (Ctrl+S) ou sai de um arquivo editado que tenha uma tag <-- TODO.
-- Sobre e Atualizações: versão, verificação de atualizações e o aviso legal.
 
-# 12. PERFORMANCE GEMINI
+# 12. MODELOS DO GEMINI (Opções → IA)
 - O Benchmark de Modelos testa todos os modelos Gemini disponíveis e os ordena por tempo de resposta e taxa de sucesso.
 - O modo Automático usa essa ordem; o modo Manual deixa você definir a sua.
 - Se um modelo falhar ou atingir o limite, o programa tenta o próximo automaticamente.
@@ -162,7 +167,7 @@
 - Abra o Discord Developer Portal (https://discord.com/developers/applications) → New Application.
 - Em Bot: clique em Reset Token e copie o token. Ative "Message Content Intent".
 - Em OAuth2 → URL Generator: marque "bot"; permissões: View Channels, Send Messages, Embed Links, Read Message History. Abra o link gerado para convidar o bot ao seu servidor.
-- No programa: Opções → Credenciais Seguras → cole o token em "Token do Bot do Discord" e salve. Reinicie o programa para conectar.
+- No programa: Opções → Discord → cole o token em "Token do Bot do Discord" (é salvo sozinho). Reinicie o programa para conectar.
 - IDs de Mestre no Discord: no Discord, ative o Modo Desenvolvedor (Configurações → Avançado), clique com o botão direito no seu nome → Copiar ID do usuário. Quem estiver nessa lista sempre recebe respostas de Mestre.
 ## Configurando por servidor
 - Escolha o servidor (ou o Padrão Geral) no topo da caixa do Discord. Os servidores aparecem depois que o bot conecta.
@@ -199,13 +204,17 @@
 
 # 17. SOLUÇÃO DE PROBLEMAS
 - "O Windows protegeu o computador" na primeira execução: clique em "Mais informações" → "Executar assim mesmo". Isso acontece com programas novos que ainda não têm assinatura digital.
-- A IA não responde: confira a chave nas Opções, rode o Benchmark de Modelos e veja o Log de Atividades. Um erro "429" ou "quota" significa que o limite da chave foi atingido; espere ou use outro modelo.
+- A IA não responde: confira a chave em Opções → IA, rode o Benchmark de Modelos e veja o Log de Atividades. Um erro "429" ou "quota" significa que o limite da chave foi atingido; espere ou use outro modelo.
 - O bot fica offline: confira o token, o Message Content Intent e o Log de Atividades; reinicie o programa depois de salvar o token.
 - Um arquivo está travado: a IA está trabalhando nele. Espere a tarefa terminar ou use Parar Qualquer Execução Atual na página Ações.
 - A visualização não aparece: falta o componente de visualização (tkinterweb); a versão publicada já o inclui.
 
 # 18. ATALHOS
 - [Ctrl + S]: salvar (e rodar o Auto Expander, se ativado).
+- [Ctrl + F] buscar no arquivo · [Ctrl + H] substituir · [F3 / Shift + F3] próxima / anterior.
+- [Ctrl + P]: abrir arquivo pelo nome.
+- [Ctrl + W]: fechar a aba · [Ctrl + Tab / Ctrl + Shift + Tab]: próxima / aba anterior.
+- [Ctrl + B] negrito · [Ctrl + I] itálico · [Ctrl + K] [[link]].
 - [F2]: renomear o item selecionado na árvore de arquivos.
 - [Ctrl + Roda do Mouse] ou [Ctrl + / Ctrl -]: zoom.
 - [Alt + Esquerda / Direita] ou botões laterais do mouse: voltar / avançar entre documentos.

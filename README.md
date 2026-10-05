@@ -81,7 +81,7 @@ Markers work in both languages, so existing projects keep working when you switc
 2. Unzip it into any folder (or your Obsidian vault's root) and run `SilentMultiverse.exe`.
    * If Windows shows "Windows protected your PC", click **More info → Run anyway**. This happens with new programs that don't have a code signature yet.
 3. Get a free Gemini API key at [Google AI Studio](https://aistudio.google.com) ("Get API key").
-4. In the program, go to **Options → Secure Credentials**, paste the key and save.
+4. In the program, go to **Options → AI (Gemini)** and paste the key (it saves by itself).
 5. Choose your language in **Options → Language**, then open your project folder with the 📁 button at the top of the sidebar.
 
 The built-in **📖 Manual & Guide** page covers every feature, including how to set up the Discord bot.

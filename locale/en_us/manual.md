@@ -12,7 +12,7 @@
 - Open Google AI Studio (https://aistudio.google.com), sign in with a Google account and click "Get API key".
 - There is a free tier. Its limits change over time and are shown in AI Studio.
 ## 2) Save the key
-- Go to Options → Secure Credentials, paste the key in "Gemini API Key" and click "Save Credentials to the Vault".
+- Go to Options → AI (Gemini) and paste the key in the key field. It saves by itself.
 - Keys are stored in the Windows Credential Manager, never in plain text files.
 ## 3) Choose the language
 - Options → Language. The AI switches right away; the interface switches after a restart.
@@ -20,7 +20,7 @@
 - At the top of the sidebar, click the 📁 icon and choose the folder with your .md files (an empty folder starts a new project). An Obsidian vault works as is.
 - Recent projects stay in the list for quick switching.
 ## 5) Test the models
-- Go to Gemini Performance and click "Model Benchmark". The program tests the available models and ranks them by speed and reliability.
+- In Options → AI (Gemini), click "Model Benchmark". The program tests the available models and ranks them by speed and reliability.
 > Ready! Open a file in the Editor, write a <-- TODO: tag and run the Expander to see the AI at work.
 
 # 2. PROJECT & DATA FOLDERS
@@ -45,16 +45,24 @@
 
 # 4. EDITOR
 ## File tree
-- Search: type in the box above the tree to filter files by name.
+- Search: type in the box above the tree to filter files by name or content.
+- The tree updates by itself when something changes in the folder (another program, the AI, Obsidian). The ⟳ button forces a refresh.
+- Icons next to the name: 🤫 secret · ✎ draft · ⏳ pending TODO · 🗒 has GM Notes · ⚙ the AI is working on the file.
 - Drag and drop files and folders to move them.
 - Right-click a file or folder: New File, New Folder, Rename (F2), Copy, Cut, Paste, Duplicate, Delete and Show in File Explorer.
 - New File lets you pick one of the Templates.
 ## Writing
-- Changes are saved automatically a moment after you stop typing, and with Ctrl+S.
-- Preview shows the rendered page (images, links, tables); Edit goes back to the text; Browser opens the preview in your web browser.
-- Back / Forward (or Alt+Left / Alt+Right, or the mouse side buttons) moves between the documents you opened.
+- Tabs: every open file gets a tab above the text. Click to switch, × (or the middle button) to close. Each tab remembers its cursor position.
+- Next to the file name, "● Unsaved" or "✓ Saved". The program saves by itself a moment after you stop typing, and with Ctrl+S.
+- Modes: Edit (text only), Preview (the rendered page) and Side by side (text and preview together, updated as you type). 🌐 opens the preview in your browser.
+- Formatting bar: headings (H1–H3), bold, italic, [[link]], list, quote, separator line, TODO tag and secret section.
+- [[Links]]: typing [[ shows a list of the project's files (↑ ↓ and Enter to choose). Links to files that don't exist yet are red; click one to create the file.
+- 🔎 Find (Ctrl+F) and Replace (Ctrl+H) inside the file, with a match count.
+- Ctrl+P opens any file of the project by name.
+- Side panel (☰): the file's Outline (click to jump to a heading), Linked from (files that link to this one) and the file's GM Notes.
+- Back / Forward (◀ ▶, Alt+Left / Alt+Right or the mouse side buttons) moves between the documents you opened.
 - The status bar shows words, characters, lines and an estimate of tokens of the open file.
-## AI actions (right-click the file)
+## AI actions (✨ AI button or right-click the file)
 - ✨ Improve with AI: rewrites the file with more detail and cohesion, following an optional instruction.
 - 🎲 Generate 5e Adventure: creates a 5-room dungeon from the file (hook, rooms, checks, statblock, treasure) plus a battlemap image of the final room.
 - 📜 Generate Lore Checks: creates knowledge checks with difficulty ranges based on the file.
@@ -142,17 +150,14 @@
 - The Council uses what the other perspectives already said about the file: Roleplay testimonies become the NPCs' real voice, notes from Silent and from you guide the Architect and the Chronicler, and recent Roleplay conversations with cited characters are included too. The "The Council used" line shows the sources.
 
 # 11. OPTIONS
-- Language: see section 3.
-- Secure Credentials: Gemini key, Discord bot token and GM Discord IDs. Gemini is the supported provider; Claude and OpenAI fields exist but are not maintained.
-- Discord Bot: rules per server (see section 13).
-- Secret Filter: words and names hidden from players.
-- Project Style: the default Genre, Tone, Mood and Writing style for every creation, and the option to open the Requests tab before each request.
+Options has four tabs. Everything saves by itself; a "✓ Saved" at the top confirms it.
+- General: language, opening the Requests tab before each request, version, updates and the legal notice.
+- AI (Gemini): the Gemini key, the cache status and the order in which models are used (see section 12).
+- Project: Style (Genre, Tone, Mood and Writing style), Rules System, secret words and the auto-Expander. These apply only to the open project and are saved inside its folder (.silent_projeto.json); a new project starts with the current values.
+- Discord: bot token, GM IDs and the rules per server (see section 13).
 - Gemini cache: on accounts without billing the program stops trying the cache and uploads the bundle instead; "Try caching again" retries (so does changing the key).
-- RPG Rules System: the system the AI follows for mechanics (5e, Tormenta20, Pathfinder 2e or generic).
-- Expander Automation: runs the Expander when you save (Ctrl+S) or leave an edited file that contains a <-- TODO tag.
-- About & Updates: version, update check and the legal notice.
 
-# 12. GEMINI PERFORMANCE
+# 12. GEMINI MODELS (Options → AI)
 - Model Benchmark tests every available Gemini model and ranks them by response time and success rate.
 - Automatic mode uses that ranking; Manual mode lets you set your own order.
 - If a model fails or hits its limit, the program automatically tries the next one.
@@ -162,7 +167,7 @@
 - Open the Discord Developer Portal (https://discord.com/developers/applications) → New Application.
 - In Bot: click Reset Token and copy it. Turn on "Message Content Intent".
 - In OAuth2 → URL Generator: check "bot"; permissions: View Channels, Send Messages, Embed Links, Read Message History. Open the generated link to invite the bot to your server.
-- In the program: Options → Secure Credentials → paste the token in "Discord Bot Token" and save. Restart the program to connect.
+- In the program: Options → Discord → paste the token in "Discord Bot Token" (it saves by itself). Restart the program to connect.
 - GM Discord IDs: in Discord, enable Developer Mode (Settings → Advanced), right-click your name → Copy User ID. Users in this list always get GM answers.
 ## Configuring per server
 - Choose the server (or Global Default) at the top of the Discord box. Servers appear after the bot connects.
@@ -199,13 +204,17 @@
 
 # 17. TROUBLESHOOTING
 - "Windows protected your PC" on the first run: click "More info" → "Run anyway". This happens with new programs that are not yet signed.
-- The AI doesn't answer: check the key in Options, run the Model Benchmark and look at the Activity Log. A "429" or "quota" error means the key's limit was reached; wait or use another model.
+- The AI doesn't answer: check the key in Options → AI, run the Model Benchmark and look at the Activity Log. A "429" or "quota" error means the key's limit was reached; wait or use another model.
 - The bot stays offline: check the token, the Message Content Intent and the Activity Log; restart the program after saving the token.
 - A file is locked: the AI is working on it. Wait for the task to finish or use Stop All Current Executions on the Actions page.
 - The preview doesn't appear: the preview component (tkinterweb) is missing; the release version already includes it.
 
 # 18. SHORTCUTS
 - [Ctrl + S]: save (and run the Auto Expander, if enabled).
+- [Ctrl + F] find in the file · [Ctrl + H] replace · [F3 / Shift + F3] next / previous.
+- [Ctrl + P]: open a file by name.
+- [Ctrl + W]: close the tab · [Ctrl + Tab / Ctrl + Shift + Tab]: next / previous tab.
+- [Ctrl + B] bold · [Ctrl + I] italic · [Ctrl + K] [[link]].
 - [F2]: rename the selected item in the file tree.
 - [Ctrl + Mouse Wheel] or [Ctrl + / Ctrl -]: zoom.
 - [Alt + Left / Right] or mouse side buttons: back / forward between documents.

@@ -81,7 +81,7 @@ Os marcadores funcionam nos dois idiomas, então projetos existentes continuam f
 2. Descompacte em qualquer pasta (ou na raiz do seu cofre do Obsidian) e execute o `SilentMultiverse.exe`.
    * Se o Windows mostrar "O Windows protegeu o computador", clique em **Mais informações → Executar assim mesmo**. Isso acontece com programas novos que ainda não têm assinatura digital.
 3. Consiga uma chave gratuita do Gemini no [Google AI Studio](https://aistudio.google.com) ("Get API key").
-4. No programa, vá em **Opções → Credenciais Seguras**, cole a chave e salve.
+4. No programa, vá em **Opções → IA (Gemini)** e cole a chave (ela é salva sozinha).
 5. Escolha o idioma em **Opções → Idioma** e abra a pasta do seu projeto pelo botão 📁 no topo da barra lateral.
 
 A página **📖 Manual & Guia** dentro do programa explica todas as funções, inclusive como configurar o bot do Discord.

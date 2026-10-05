@@ -186,5 +186,6 @@
   "conselho.insumo_conversas": "CONVERSAS RECENTES DE ROLEPLAY COM PERSONAGENS CITADOS (ainda não salvas como depoimento; use como referência da voz e da postura deles):",
   "conselho.mestre_no_roleplay": "Mestre",
   "chat.texto_resumo": "(Resumo de conversas anteriores) {texto}",
-  "chat.texto_mestre": "Mestre"
+  "chat.texto_mestre": "Mestre",
+  "marcador.secao_secreta": "[segredo]"
 }

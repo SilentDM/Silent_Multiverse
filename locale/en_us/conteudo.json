@@ -186,5 +186,6 @@
   "conselho.insumo_conversas": "RECENT ROLEPLAY CONVERSATIONS WITH CITED CHARACTERS (not yet saved as testimonies; use them as a reference for their voice and stance):",
   "conselho.mestre_no_roleplay": "GM",
   "chat.texto_resumo": "(Summary of earlier conversations) {texto}",
-  "chat.texto_mestre": "GM"
+  "chat.texto_mestre": "GM",
+  "marcador.secao_secreta": "[secret]"
 }
