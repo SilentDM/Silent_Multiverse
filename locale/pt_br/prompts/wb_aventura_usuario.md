@@ -5,3 +5,4 @@ OBJETIVO / GANCHO DO MESTRE:
 
 CONTEÚDO PRÉ-EXISTENTE NO ARQUIVO (Use como base ou complete as lacunas):
 {{conteudo}}
+{{requisicao}}{{notas}}

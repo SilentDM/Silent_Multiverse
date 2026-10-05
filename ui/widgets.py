@@ -111,6 +111,42 @@ class GradeRolavel(ttk.Frame):
             caixa.grid(row=i // colunas, column=i % colunas, sticky="nsew", padx=8, pady=8)
 
 
+class ColunaRolavel(ttk.Frame):
+    """
+    Área rolável com seções empilhadas numa coluna de largura confortável para leitura.
+    Uso: coluna = ColunaRolavel(pai); secao = coluna.nova_secao(" Título ", "explicação opcional")
+    """
+    LARGURA_MAXIMA = 820
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.canvas = tk.Canvas(self, bg=tema.FUNDO, highlightthickness=0, bd=0)
+        barra = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        self.interno = ttk.Frame(self.canvas)
+        self.interno.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        self._janela = self.canvas.create_window((0, 0), window=self.interno, anchor="nw")
+        self.canvas.configure(yscrollcommand=barra.set)
+        self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfig(
+            self._janela, width=min(e.width, self.LARGURA_MAXIMA)))
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        barra.pack(side=tk.RIGHT, fill=tk.Y)
+
+    def nova_secao(self, titulo: str, explicacao: str = "") -> ttk.LabelFrame:
+        secao = ttk.LabelFrame(self.interno, text=titulo)
+        secao.pack(fill=tk.X, padx=(4, 12), pady=(0, 14))
+        if explicacao:
+            ttk.Label(secao, text=explicacao, style="Dica.TLabel", wraplength=self.LARGURA_MAXIMA - 60,
+                      justify="left").pack(anchor=tk.W, padx=12, pady=(8, 2))
+        return secao
+
+    def limpar(self):
+        for filho in self.interno.winfo_children():
+            filho.destroy()
+
+    def rolar(self, unidades: int):
+        self.canvas.yview_scroll(unidades, "units")
+
+
 class PaginaBase(ttk.Frame):
     """Toda página recebe o 'app' (para toasts, status e navegação) e pode ser rolada pela roda do mouse."""
 

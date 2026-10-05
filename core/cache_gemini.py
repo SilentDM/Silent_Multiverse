@@ -1,8 +1,50 @@
 import engine.project_utils as pu
 import core.ai_gemini as ag
 from google.genai import types
+import hashlib
 import os, time
 from core.i18n import t
+
+# Contas gratuitas não podem criar cache explícito. Quando a API responde isso, o programa
+# guarda uma marca (com o hash da chave, nunca a chave) e para de tentar a cada reconstrução.
+# Trocar a chave zera a marca; o botão "Tentar cache de novo" nas Opções também.
+ARQUIVO_STATUS_CACHE = "Gemini_cache_status.json"
+_SINAIS_SEM_SUPORTE = ("limit: 0", "freetier", "free_tier", "free tier", "billing", "not supported",
+                       "permission_denied", "permission denied")
+
+
+def _hash_chave() -> str:
+    chave = os.getenv("GOOGLE_API_KEY", "").strip()
+    return hashlib.sha256(chave.encode("utf-8")).hexdigest()[:16] if chave else ""
+
+
+def erro_sem_suporte_a_cache(erro) -> bool:
+    """True para erros de conta sem cache (gratuita/sem faturamento); False para rede, tamanho etc."""
+    texto = str(erro).lower()
+    return any(sinal in texto for sinal in _SINAIS_SEM_SUPORTE)
+
+
+def status_cache() -> dict:
+    """{'sem_suporte': bool, 'motivo': str, 'data': str} para a chave atual."""
+    dados = pu.ler_json_seguro(pu.log_path(ARQUIVO_STATUS_CACHE), pu.LOCK_MODELS, padrao={})
+    if not dados or dados.get("chave") != _hash_chave():
+        return {"sem_suporte": False, "motivo": "", "data": ""}
+    return {"sem_suporte": bool(dados.get("sem_suporte")), "motivo": dados.get("motivo", ""), "data": dados.get("data", "")}
+
+
+def _marcar_sem_suporte(erro):
+    pu.salvar_json_seguro(pu.log_path(ARQUIVO_STATUS_CACHE),
+                          {"chave": _hash_chave(), "sem_suporte": True, "motivo": str(erro)[:300], "data": pu.currentdate()},
+                          pu.LOCK_MODELS, indent=2)
+    print(t("gemini.log_cache_desativado"))
+
+
+def reativar_cache():
+    """Esquece a marca: a próxima reconstrução volta a tentar o cache explícito."""
+    try:
+        pu.log_path(ARQUIVO_STATUS_CACHE).unlink()
+    except FileNotFoundError:
+        pass
 
 def force_rebuild_world_context():
     arquivo = pu.log_path("Gemini_cache_id.json")
@@ -46,9 +88,13 @@ def prepare_world_context(is_dm: bool = True, ttl_hours=12):
     context_player = pu.montar_contexto_mundo(is_dm=False)
 
     # 3. Attempt Explicit Context Caching (For Billing-Enabled Accounts)
-    print(t("gemini.log_tentando_cache"))
-    data = pu.ler_json_seguro(pu.log_path("models.json"), pu.LOCK_MODELS, padrao=[])
-    if not data:
+    if status_cache()["sem_suporte"]:
+        print(t("gemini.log_cache_pulado"))
+        data = []
+    else:
+        print(t("gemini.log_tentando_cache"))
+        data = pu.ler_json_seguro(pu.log_path("models.json"), pu.LOCK_MODELS, padrao=[])
+    if not data and not status_cache()["sem_suporte"]:
         print(t("gemini.log_recriando_modelos"))
         ag.findmodel()
         data = pu.ler_json_seguro(pu.log_path("models.json"), pu.LOCK_MODELS, padrao=[])
@@ -86,6 +132,9 @@ def prepare_world_context(is_dm: bool = True, ttl_hours=12):
 
         except Exception as e:
             print(t("gemini.log_cache_nao_suportado", modelo=model_name, erro=e))
+            if erro_sem_suporte_a_cache(e):
+                _marcar_sem_suporte(e)
+                break
 
 
     # ÁREA FREE COM BUNDLE TXT

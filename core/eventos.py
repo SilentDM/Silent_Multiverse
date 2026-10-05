@@ -53,8 +53,15 @@ def log(mensagem, canal: str = "geral"):
     if destinos:
         _chamar(destinos, mensagem)
     elif sys.__stdout__ is not None:
-        # Console original (não o sys.stdout, que a interface pode redirecionar para cá mesmo)
-        sys.__stdout__.write(mensagem + "\n")
+        # Console original (não o sys.stdout, que a interface pode redirecionar para cá mesmo).
+        # Um log nunca pode derrubar quem o chamou: consoles do Windows (cp1252) não têm emojis.
+        try:
+            sys.__stdout__.write(mensagem + "\n")
+        except UnicodeEncodeError:
+            codificacao = getattr(sys.__stdout__, "encoding", None) or "ascii"
+            sys.__stdout__.write(mensagem.encode(codificacao, "replace").decode(codificacao) + "\n")
+        except (OSError, ValueError):
+            pass
 
 
 def emitir(evento: str, dados=None):

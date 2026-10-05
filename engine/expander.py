@@ -3,16 +3,17 @@ Expander: encontra tags <-- TODO nos arquivos e usa a IA para preencher o trecho
 seguido de uma revisão de consistência. Prompts em locale/<idioma>/prompts/expander_*.md.
 """
 import re
-import shutil
 from pathlib import Path
 
 from pydantic import BaseModel, Field
 
 import core.ai_utils as au
 import core.eventos as ev
+import engine.notas as notas
 import engine.project_utils as pu
 from core.i18n import t
 from core.prompts import carregar_prompt
+from engine.historico import arquivar_versao_para_historico, obter_proximo_caminho_historico  # noqa: F401 (usados por outros módulos)
 
 ARQUIVOS_EM_PROCESSAMENTO = set()
 
@@ -39,51 +40,6 @@ def marcar_processamento(caminho, ativo: bool):
         ARQUIVOS_EM_PROCESSAMENTO.add(caminho_abs)
     else:
         ARQUIVOS_EM_PROCESSAMENTO.discard(caminho_abs)
-
-
-# ----------------------------------------------------------------------
-# HISTÓRICO DE VERSÕES
-# ----------------------------------------------------------------------
-def obter_proximo_caminho_historico(caminho_original):
-    """
-    Descobre o próximo nome versionado para arquivar dentro de logs/history/,
-    preservando a hierarquia de subpastas do projeto.
-    Exemplo: logs/history/Reinos/reinado_phaeton_v01.md
-    """
-    caminho_obj = Path(caminho_original).resolve()
-    pasta_historico = pu.PASTA_LOGS / "history"
-    try:
-        destino_dir = pasta_historico / caminho_obj.relative_to(pu.CAMINHO_PROJETO).parent
-    except ValueError:
-        destino_dir = pasta_historico
-    destino_dir.mkdir(parents=True, exist_ok=True)
-
-    nome_base_limpo = re.sub(r'_v\d+$', '', caminho_obj.stem)
-    extensao = caminho_obj.suffix or ".md"
-    maior_versao = 0
-    for arq in destino_dir.glob(f"{nome_base_limpo}_v*{extensao}"):
-        match = re.search(r'_v(\d+)$', arq.stem, flags=re.IGNORECASE)
-        if match:
-            maior_versao = max(maior_versao, int(match.group(1)))
-    return destino_dir / f"{nome_base_limpo}_v{maior_versao + 1:02d}{extensao}"
-
-
-def arquivar_versao_para_historico(caminho_original):
-    """
-    Copia a versão atual do arquivo para a pasta de histórico com sufixo de versão.
-    Usamos cópia (não mover) para que, se a escrita da nova versão falhar, o original fique intacto.
-    """
-    caminho_original = Path(caminho_original)
-    try:
-        if not caminho_original.exists():
-            return None
-        destino = obter_proximo_caminho_historico(caminho_original)
-        shutil.copy2(str(caminho_original), str(destino))
-        ev.log(t("expander.log_backup", nome=destino.name))
-        return destino
-    except Exception as e:
-        ev.log(t("expander.log_erro_backup", nome=caminho_original.name, erro=e))
-        return None
 
 
 # ----------------------------------------------------------------------
@@ -117,18 +73,27 @@ def obter_arquivos_relacionados(titulo):
     return "\n\n".join(conteudo for _, conteudo, _ in relacionados)
 
 
-def carregar_diretrizes_estilo():
-    """Carrega e unifica as diretrizes de estilo contidas na pasta Style."""
+def carregar_diretrizes_estilo(escolhas: dict = None):
+    """
+    Diretrizes para a IA: os arquivos da pasta Style (verdades e regras do cenário, sempre)
+    mais os quatro eixos de estilo (Gênero, Tom, Clima, Escrita) — os do projeto ou os
+    escolhidos na Requisição.
+    """
+    import engine.style_manager as estilo
     pasta_estilo = pu.CAMINHO_ESTILO
     conteudo_estilo = []
     if pasta_estilo.is_dir():
         for arquivo in sorted(pasta_estilo.glob("*.md")):
             try:
-                titulo = arquivo.stem.replace(" ", "_").replace("-", "_").lower()
                 texto = arquivo.read_text(encoding="utf-8").strip()
+                # O antigo Tom_e_Clima.md gerado pelo programa foi substituído pelos eixos
+                if arquivo.name == estilo.ARQUIVO_TOM_ANTIGO and estilo.eh_tom_e_clima_gerado(texto):
+                    continue
+                titulo = arquivo.stem.replace(" ", "_").replace("-", "_").lower()
                 conteudo_estilo.append(f"\n<{titulo}>\n{texto}\n</{titulo}>\n")
             except Exception as e:
                 ev.log(t("expander.log_erro_estilo", nome=arquivo.name, erro=e))
+    conteudo_estilo.append("\n" + estilo.bloco_estilos(escolhas) + "\n")
     return "".join(conteudo_estilo)
 
 
@@ -168,6 +133,7 @@ def processar_arquivo_unico(path):
     try:
         arquivo = Path(path)
         conteudo = arquivo.read_text(encoding="utf-8")
+        corpo, secao_notas = notas.separar(conteudo)   # as Notas do Mestre orientam, mas não são reescritas
         tag_encontrada = next((tag for tag in pu.TAG_ALVO if tag in conteudo), None)
         if not tag_encontrada:
             return
@@ -177,7 +143,7 @@ def processar_arquivo_unico(path):
         instrucoes = carregar_prompt("expander_sistema", projeto=pu.PASTA_PROJETO, estilo=carregar_diretrizes_estilo())
         prompt = carregar_prompt(
             "expander_usuario", contexto_local=_contexto_local(arquivo), relacionados=obter_arquivos_relacionados(titulo),
-            arquivo=arquivo.name, conteudo=conteudo, tag=tag_encontrada)
+            arquivo=arquivo.name, conteudo=corpo, tag=tag_encontrada, notas=notas.bloco_para_prompt(arquivo, secao_notas))
 
         try:
             with open(pu.log_path("Prompts.txt"), "w", encoding="utf-8") as f:
@@ -214,7 +180,7 @@ def processar_arquivo_unico(path):
             # --- ETAPA 3: GRAVAÇÃO (nome estável, versão anterior no histórico) ---
             if conteudo_salvar:
                 arquivar_versao_para_historico(arquivo)
-                arquivo.write_text(conteudo_salvar, encoding="utf-8")
+                arquivo.write_text(notas.reanexar(conteudo_salvar, secao_notas), encoding="utf-8")
                 ev.log(t("expander.log_atualizado", nome=arquivo.name))
         except Exception as e:
             ev.log(t("expander.log_erro", nome=arquivo.name, erro=e))

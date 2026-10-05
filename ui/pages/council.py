@@ -17,6 +17,7 @@ class PaginaConselho(PaginaBase):
         super().__init__(parent, app)
         cabecalho(self, t("cons.titulo"), t("cons.subtitulo"))
         self.arquivo = None
+        self.requisicao = None
 
         controle = ttk.LabelFrame(self, text=t("cons.controle"))
         controle.pack(fill=tk.X, padx=15, pady=(0, 10))
@@ -37,6 +38,8 @@ class PaginaConselho(PaginaBase):
         self.btn_fase2.pack(side=tk.LEFT)
         self.lbl_status = ttk.Label(linha2, text=t("cons.pronto"), font=("Segoe UI", 9, "italic"), foreground=tema.SUAVE)
         self.lbl_status.pack(side=tk.RIGHT)
+        self.lbl_fontes = ttk.Label(controle, text="", font=("Segoe UI", 9), foreground=tema.AZUL_CLARO)
+        self.lbl_fontes.pack(anchor=tk.W, padx=10, pady=(0, 6))
 
         grade = ttk.Frame(self)
         grade.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
@@ -61,11 +64,13 @@ class PaginaConselho(PaginaBase):
             texto.insert("1.0", valores.get(chave, ""))
 
     # --- chamado pelo Editor ---
-    def carregar_arquivo(self, caminho):
+    def carregar_arquivo(self, caminho, requisicao=None):
         self.arquivo = Path(caminho)
+        self.requisicao = requisicao
         self.lbl_arquivo.config(text=self.arquivo.name)
         self.diretriz.delete(0, tk.END)
-        self.diretriz.insert(0, ce.diretriz_padrao(self.arquivo.name))
+        self.diretriz.insert(0, (requisicao.objetivo if requisicao else "") or ce.diretriz_padrao(self.arquivo.name))
+        self.lbl_fontes.config(text="")
         self._preencher({})
         self.btn_fase2.config(state=tk.DISABLED)
         self._status("cons.carregado")
@@ -85,6 +90,8 @@ class PaginaConselho(PaginaBase):
         def _ok(resultados):
             self._preencher({"arquiteto": resultados["arquiteto"], "cronista": resultados["cronista"],
                              "npcs": resultados["npcs"], "tatico_caos": resultados["tatico_caos"]})
+            fontes = resultados.get("fontes")
+            self.lbl_fontes.config(text=t("cons.fontes", fontes=fontes) if fontes else t("cons.sem_fontes"))
             self.btn_fase1.config(state=tk.NORMAL)
             self.btn_fase2.config(state=tk.NORMAL)
             self._status("cons.deliberado", tema.VERDE)
@@ -95,7 +102,7 @@ class PaginaConselho(PaginaBase):
             self.btn_fase1.config(state=tk.NORMAL)
 
         tarefas.executar_em_segundo_plano(ce.executar_deliberacao_paineis, self.arquivo, diretriz,
-                                          ao_concluir=_ok, ao_falhar=_erro)
+                                          requisicao=self.requisicao, ao_concluir=_ok, ao_falhar=_erro)
 
     # --- fase 2 ---
     def _fase2(self):
@@ -127,4 +134,4 @@ class PaginaConselho(PaginaBase):
             ce.sintetizar_e_salvar_arquivo_canonica, arquivo,
             texto_arquiteto=textos["arquiteto"], texto_cronista=textos["cronista"], texto_npcs=textos["npcs"],
             texto_tatico_caos=textos["tatico_caos"], diretriz_original=self.diretriz.get().strip(),
-            ao_concluir=_ok, ao_falhar=_erro)
+            requisicao=self.requisicao, ao_concluir=_ok, ao_falhar=_erro)

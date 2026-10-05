@@ -12,3 +12,6 @@ REGRAS DE CONSTRUÇÃO DE TESTES (D&D 5e):
    - '26+': O maior mistério da entidade (caso haja algo marcado como segredo no arquivo).
 3. Use linguagem direta, pronta para ser narrada aos jogadores.
 4. CRIE WIKILINKS [[Nome]] em itens, cidades, deuses ou NPCs citados.
+
+DIRETRIZES DE ESTILO DO CENÁRIO:
+{{estilo}}

@@ -23,7 +23,11 @@ def na_interface(funcao, *args, **kwargs):
     """Executa 'funcao' na thread da interface (ou imediatamente, se não houver despachante)."""
     if _despachante is None:
         return funcao(*args, **kwargs)
-    _despachante(0, lambda: funcao(*args, **kwargs))
+    try:
+        _despachante(0, lambda: funcao(*args, **kwargs))
+    except RuntimeError:
+        # A janela já foi fechada (ou o laço da interface parou): não há mais quem receber o resultado.
+        pass
 
 
 def executar_em_segundo_plano(funcao, *args, ao_concluir=None, ao_falhar=None, **kwargs):

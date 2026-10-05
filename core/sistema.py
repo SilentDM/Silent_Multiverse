@@ -2,6 +2,7 @@
 import os
 import subprocess
 import sys
+import webbrowser
 from pathlib import Path
 from core.i18n import t
 
@@ -15,6 +16,11 @@ def abrir_no_sistema(caminho):
         subprocess.call(["open", caminho])
     else:
         subprocess.call(["xdg-open", caminho])
+
+
+def abrir_link(url: str):
+    """Abre um endereço da web no navegador padrão."""
+    webbrowser.open(url)
 
 
 def revelar_no_explorer(caminho):

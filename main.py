@@ -7,7 +7,7 @@ import engine.project_utils as pu
 
 se.carregar_todas_credenciais()
 pu.inicializar_estrutura_silent_data()
-pu.sincronizar_templates_e_estilo_iniciais()
+pu.instalar_modelos_iniciais()
 
 from ui.app import main as start_gui
 

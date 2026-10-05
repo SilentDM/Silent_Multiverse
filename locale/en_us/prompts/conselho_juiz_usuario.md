@@ -25,3 +25,4 @@ JUDGE'S INSTRUCTIONS:
 - Add the Tactician's skill tables or mechanical checks.
 - Use Obsidian syntax with Wikilinks [[Name]].
 - The 'conteudo_markdown' field must contain ONLY the final article text to be saved to disk.
+{{requisicao}}{{notas}}

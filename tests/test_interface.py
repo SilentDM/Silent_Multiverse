@@ -17,12 +17,25 @@ except Exception:
     TEM_TELA = False
 
 
+def fechar(root):
+    """Cancela os timers pendentes (toasts, autosave) antes de fechar: senão eles disparam na janela do próximo teste."""
+    try:
+        for timer in root.tk.splitlist(root.tk.call("after", "info")):
+            root.tk.call("after", "cancel", timer)
+    except Exception:
+        pass
+    import core.eventos as ev
+    ev.cancelar_inscricoes()      # as páginas fechadas não devem receber eventos do próximo teste
+    root.destroy()
+
+
 @unittest.skipUnless(TEM_TELA, "sem ambiente gráfico")
 class TesteInterface(unittest.TestCase):
     def setUp(self):
         self.raiz_projeto = novo_projeto({"Valia.md": "# Valia\ntexto"})
         self.patches = [mock.patch("bot.runner.iniciar"), mock.patch("bot.runner.parar"),
                         mock.patch("core.modelos_gemini.atualizar_se_necessario"),
+                        mock.patch("core.atualizacoes.verificar_na_inicializacao"),
                         mock.patch("ui.app.SilentApp._iniciar_bandeja")]
         for p in self.patches:
             p.start()
@@ -54,7 +67,76 @@ class TesteInterface(unittest.TestCase):
                         self.assertEqual(janela.pagina_atual, chave)
                     self.assertEqual(janela.botoes_nav["actions"].cget("text").strip().split()[-1], palavra)
                 finally:
-                    root.destroy()
+                    fechar(root)
+
+    def test_janela_de_historico_restaura(self):
+        import engine.historico as hist
+        from ui.dialogs.history import JanelaHistorico
+        root, janela = self._montar("en_us")
+        try:
+            alvo = self.raiz_projeto / "Valia.md"
+            hist.arquivar_versao_para_historico(alvo)
+            alvo.write_text("# Valia\nnova", encoding="utf-8")
+            restaurados = []
+            dialogo = JanelaHistorico(root, str(alvo), ao_restaurar=restaurados.append)
+            root.update()
+            self.assertEqual(len(dialogo.versoes), 1)
+            with mock.patch("ui.dialogs.history.messagebox.askyesno", return_value=True):
+                dialogo._restaurar()
+            self.assertEqual(alvo.read_text(encoding="utf-8"), "# Valia\ntexto")
+            self.assertEqual(restaurados, [str(alvo)])
+            self.assertEqual(len(dialogo.versoes), 2)          # a versão substituída também foi guardada
+            dialogo.destroy()
+        finally:
+            fechar(root)
+
+    def test_editor_abas_busca_autocompletar_e_painel(self):
+        (self.raiz_projeto / "Thorvald.md").write_text("# Thorvald\nstatus: segredo\nRei. <-- TODO: x", encoding="utf-8")
+        (self.raiz_projeto / "Valia.md").write_text("# Valia\n## Cidades\nGovernada por [[Thorvald]] e [[Fantasma]].",
+                                                    encoding="utf-8")
+        root, janela = self._montar("pt_br")
+        try:
+            editor = janela.paginas["editor"]
+            editor.atualizar_arvore()
+            textos = [editor.tree.item(i, "text") for i in editor._todos()]
+            self.assertTrue(any("Thorvald" in tx and "🤫" in tx and "⏳" in tx for tx in textos))   # ícones de estado
+
+            valia, thorvald = str(self.raiz_projeto / "Valia.md"), str(self.raiz_projeto / "Thorvald.md")
+            editor.ir_para(valia)
+            editor.ir_para(thorvald)
+            self.assertEqual(editor._abas, [valia, thorvald])                       # abas
+            editor.ir_para(valia)
+            root.update()
+            self.assertEqual(editor._dados_lateral["sumario"][1][1], "Cidades")      # painel lateral
+            faixas = editor.editor.tag_ranges("md_link_quebrado")
+            self.assertEqual(editor.editor.get(faixas[0], faixas[1]), "[[Fantasma]]")  # link quebrado em vermelho
+
+            editor._abrir_busca(True)
+            editor.var_procurar.set("Governada")
+            editor.var_substituir.set("Regida")
+            editor._substituir_tudo()
+            self.assertIn("Regida por", editor._texto_editor())
+            self.assertEqual(editor.lbl_estado.cget("text"), "● Não salvo")
+            editor.salvar_agora()
+            self.assertIn("Regida por", (self.raiz_projeto / "Valia.md").read_text(encoding="utf-8"))
+            self.assertEqual(editor.lbl_estado.cget("text"), "✓ Salvo")
+
+            editor.editor.mark_set("insert", tk.END)
+            editor.editor.insert(tk.END, "\nVer [[Tho")
+            editor._verificar_autocompletar()
+            self.assertIsNotNone(editor._popup)
+            editor._confirmar_autocompletar()
+            self.assertTrue(editor._texto_editor().rstrip().endswith("Ver [[Thorvald]]"))
+
+            editor._fechar_aba(valia)
+            self.assertEqual(editor._abas, [thorvald])
+            self.assertTrue(editor.sessao.eh_atual(thorvald))
+            editor._definir_modo("lado")
+            self.assertEqual(len(editor.area.panes()), 2 if editor.html is not None else 1)
+            editor._definir_modo("editar")
+            self.assertEqual(len(editor.area.panes()), 1)
+        finally:
+            fechar(root)
 
     def test_editor_preserva_alteracao_da_ia(self):
         root, janela = self._montar("pt_br")
@@ -76,7 +158,7 @@ class TesteInterface(unittest.TestCase):
             finally:
                 ex.marcar_processamento(alvo, False)
         finally:
-            root.destroy()
+            fechar(root)
 
 
 if __name__ == "__main__":

@@ -12,3 +12,6 @@ CHECK-BUILDING RULES (D&D 5e):
    - '26+': The entity's greatest mystery (if something in the file is marked as secret).
 3. Use direct language, ready to be narrated to the players.
 4. CREATE WIKILINKS [[Name]] for mentioned items, cities, gods or NPCs.
+
+SETTING STYLE GUIDELINES:
+{{estilo}}

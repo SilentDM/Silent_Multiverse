@@ -37,6 +37,12 @@ class PaginaAcoes(PaginaBase):
         caixa = self.grade.nova_caixa(t("actions.audit_title"))
         self._botao(caixa, "auditoria", t("actions.audit_btn"), self._auditoria)
         self._status(caixa, "auditoria")
+        self.var_auditoria_wb = tk.BooleanVar(value=acoes.auditoria_vai_ao_worldbuilder())
+        ttk.Checkbutton(caixa, text=t("actions.audit_para_wb"), variable=self.var_auditoria_wb,
+                        command=lambda: acoes.definir_auditoria_vai_ao_worldbuilder(self.var_auditoria_wb.get())
+                        ).pack(anchor=tk.W, padx=10)
+        ttk.Label(caixa, text=t("actions.audit_para_wb_dica"), style="Dica.TLabel", wraplength=300,
+                  justify="left").pack(anchor=tk.W, padx=10, pady=(0, 8))
 
         caixa = self.grade.nova_caixa(t("actions.export_title"))
         self._botao(caixa, "livro", t("actions.export_btn"), self._livro)
@@ -105,7 +111,11 @@ class PaginaAcoes(PaginaBase):
                 return
             self._fim("auditoria", t("actions.done"))
             self.app.toast(t("actions.toast_audit_ok"))
-            JanelaAuditoria(self.app.root, relatorio, toast=self.app.toast)
+            corrigir = self.app.pagina("worldbuilder").corrigir_auditoria
+            if self.var_auditoria_wb.get():
+                corrigir(relatorio)        # o plano é montado já; o Mestre revisa no WorldBuilder antes de executar
+            JanelaAuditoria(self.app.root, relatorio, toast=self.app.toast,
+                            ao_corrigir=None if self.var_auditoria_wb.get() else corrigir)
 
         if acoes.executar_auditoria(ao_concluir=_concluir,
                                     ao_falhar=lambda e: (self._fim("auditoria", t("actions.failed"), False),

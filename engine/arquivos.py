@@ -227,9 +227,17 @@ def mover_para(origem: str, alvo: str) -> str:
 # ----------------------------------------------------------------------
 # WIKILINKS
 # ----------------------------------------------------------------------
+def nome_do_wikilink(texto_link: str) -> str:
+    """'Pasta/Nome#Seção|Apelido' -> 'Nome' (o arquivo que o link cita, como no Obsidian)."""
+    alvo = texto_link.split("|")[0].split("#")[0].strip()
+    return alvo.replace("\\", "/").rstrip("/").split("/")[-1].strip()
+
+
 def resolver_wikilink(nome_alvo: str):
     """Caminho do .md citado por [[nome_alvo]] (ignora acentos/separadores e prefere a maior versão _vNN)."""
-    alvo_norm = pu.normalizar_nome(nome_alvo.split("#")[0])
+    alvo_norm = pu.normalizar_nome(nome_do_wikilink(nome_alvo))
+    if not alvo_norm:
+        return None
     candidatos = []
     for arq in Path(pu.CAMINHO_PROJETO).rglob("*.md"):
         if pu.arquivo_em_pasta_ignorada(arq):
@@ -248,7 +256,9 @@ def resolver_wikilink(nome_alvo: str):
 
 def criar_por_wikilink(nome_alvo: str, pasta_destino: str, nome_origem: str) -> str:
     """Cria o documento citado por um wikilink inexistente, ao lado do arquivo de origem."""
-    nome_alvo = nome_alvo.split("#")[0].strip()
+    nome_alvo = nome_do_wikilink(nome_alvo)
+    if not nome_alvo:
+        raise ErroOperacao(t("arquivos.erro_nome_vazio"))
     nome_md = nome_alvo if nome_alvo.lower().endswith(".md") else f"{nome_alvo}.md"
     caminho = os.path.join(pasta_destino, nome_md)
     if os.path.exists(caminho):

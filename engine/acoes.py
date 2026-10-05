@@ -21,6 +21,12 @@ import core.sistema as sistema
 import core.tarefas as tarefas
 import engine.compiler as comp
 import engine.expander as ex
+import engine.geradores as geradores
+import engine.historico as hist
+import engine.melhorar as melhorar
+import engine.notas as notas
+import engine.requisicao as requisicao
+import engine.style_manager as estilo
 import engine.lore_auditor as auditor
 import engine.project_utils as pu
 import engine.token_counter as tc_tokens
@@ -86,9 +92,69 @@ def objetivo_padrao_worldbuilder() -> str:
     return tc("wb.objetivo_padrao")
 
 
-def executar_worldbuilder(objetivo: str, ao_concluir=None, ao_falhar=None) -> bool:
-    objetivo = (objetivo or "").strip() or objetivo_padrao_worldbuilder()
-    return _iniciar("worldbuilder", wb.taskplanner, objetivo, ao_concluir=ao_concluir, ao_falhar=ao_falhar,
+# --- WorldBuilder (nível alto): Cânone -> Plano -> Execução ---
+def wb_sessao() -> dict:
+    return wb.carregar_sessao()
+
+
+def wb_nova_sessao() -> dict:
+    return wb.nova_sessao()
+
+
+def wb_caminho_canon():
+    caminho = wb.caminho_canon()
+    return str(caminho) if caminho else None
+
+
+def wb_atualizar_item(indice: int, **campos) -> dict:
+    return wb.atualizar_item(indice, **campos)
+
+
+def wb_opcoes() -> dict:
+    """Listas para os seletores da página (tipos, modelos, fases) e limites atuais."""
+    return {"tipos": list(wb.TIPOS), "templates": list(wb.TEMPLATES), "fases": list(wb.FASES),
+            "max_acoes": wb.max_acoes(), "generos": [("", t("wb.genero_padrao"))] + estilo.opcoes("genero")}
+
+
+def wb_definir_max_acoes(valor) -> int:
+    try:
+        valor = max(1, min(200, int(valor)))
+    except (TypeError, ValueError):
+        valor = wb.MAX_ACOES_PADRAO
+    cfg.atualizar_configuracoes({"wb_max_acoes": valor})
+    return valor
+
+
+def wb_gerar_canon(objetivo: str, ao_concluir=None, ao_falhar=None) -> bool:
+    return _iniciar("worldbuilder", wb.gerar_canon, objetivo, ao_concluir=ao_concluir, ao_falhar=ao_falhar,
+                    reiniciar_cancelamento=True)
+
+
+def wb_gerar_plano(ao_concluir=None, ao_falhar=None) -> bool:
+    return _iniciar("worldbuilder", wb.gerar_plano, ao_concluir=ao_concluir, ao_falhar=ao_falhar,
+                    reiniciar_cancelamento=True)
+
+
+def wb_gerar_plano_auditoria(relatorio: str, ao_concluir=None, ao_falhar=None) -> bool:
+    """Plano de correção no WorldBuilder a partir do relatório da Auditoria de Lore."""
+    return _iniciar("worldbuilder", wb.gerar_plano_da_auditoria, relatorio, ao_concluir=ao_concluir,
+                    ao_falhar=ao_falhar, reiniciar_cancelamento=True)
+
+
+def wb_tem_plano_pendente() -> bool:
+    return wb.tem_plano_pendente()
+
+
+def auditoria_vai_ao_worldbuilder() -> bool:
+    return bool(cfg.obter("auditoria_para_wb", False))
+
+
+def definir_auditoria_vai_ao_worldbuilder(ativo: bool):
+    cfg.atualizar_configuracoes({"auditoria_para_wb": bool(ativo)})
+
+
+def wb_executar(ao_concluir=None, ao_falhar=None) -> bool:
+    return _iniciar("worldbuilder", wb.executar_plano, ao_concluir=ao_concluir, ao_falhar=ao_falhar,
                     reiniciar_cancelamento=True)
 
 
@@ -116,6 +182,15 @@ def analisar_tamanho(ao_concluir=None, ao_falhar=None) -> bool:
 def criar_backup(ao_concluir=None, ao_falhar=None) -> bool:
     """ao_concluir recebe (caminho_zip, total_arquivos)."""
     return _iniciar("backup", pu.criar_backup_projeto, ao_concluir=ao_concluir, ao_falhar=ao_falhar)
+
+
+def status_cache_gemini() -> dict:
+    return cg.status_cache()
+
+
+def reativar_cache_gemini():
+    cg.reativar_cache()
+    ev.log(t("gemini.log_cache_reativado"))
 
 
 def reconstruir_contexto(ao_concluir=None, ao_falhar=None) -> bool:
@@ -155,7 +230,7 @@ def trocar_projeto(caminho: str) -> str:
 # ----------------------------------------------------------------------
 # AÇÕES DE IA SOBRE UM ARQUIVO
 # ----------------------------------------------------------------------
-TIPOS_ACAO_ARQUIVO = ("melhorar", "aventura", "conhecimento", "expander")
+TIPOS_ACAO_ARQUIVO = ("melhorar", "aventura", "conhecimento", "ficha", "expander")
 
 
 def texto_padrao_acao(tipo: str, caminho: str) -> str:
@@ -165,6 +240,7 @@ def texto_padrao_acao(tipo: str, caminho: str) -> str:
         "melhorar": tc("acoes.padrao_melhorar"),
         "aventura": tc("acoes.padrao_aventura", nome=nome),
         "conhecimento": tc("acoes.padrao_conhecimento"),
+        "ficha": "",
         "expander": "",
     }[tipo]
 
@@ -173,7 +249,8 @@ def arquivo_em_processamento(caminho: str) -> bool:
     return ex.esta_em_processamento(caminho)
 
 
-def executar_acao_arquivo(tipo: str, caminho: str, texto_usuario: str = "", ao_concluir=None, ao_falhar=None) -> bool:
+def executar_acao_arquivo(tipo: str, caminho: str, texto_usuario: str = "", ao_concluir=None, ao_falhar=None,
+                          requisicao=None) -> bool:
     """
     Roda uma ação de IA sobre o arquivo, travando-o (o editor não grava por cima enquanto isso).
     ao_concluir recebe True/False (sucesso da ação). Devolve False se o arquivo já estava em processamento.
@@ -189,17 +266,102 @@ def executar_acao_arquivo(tipo: str, caminho: str, texto_usuario: str = "", ao_c
     def _rodar():
         try:
             if tipo == "melhorar":
-                return wb.improvefile(caminho, reason=texto)
+                return melhorar.melhorar_arquivo(caminho, texto, requisicao=requisicao)
             if tipo == "aventura":
-                return wb.gerar_aventura_completa(caminho, reason=texto)
+                return geradores.gerar_aventura_completa(caminho, reason=texto, requisicao=requisicao)
             if tipo == "conhecimento":
-                return wb.gerar_tabelas_de_conhecimento(caminho, foco_especifico=texto)
+                return geradores.gerar_tabelas_de_conhecimento(caminho, foco_especifico=texto, requisicao=requisicao)
+            if tipo == "ficha":
+                return geradores.gerar_ficha(caminho, texto, requisicao=requisicao,
+                                             tipo=requisicao.criatura if requisicao else "npc")
             ex.processar_arquivo_unico(caminho)
             return True
         finally:
             ex.marcar_processamento(caminho, False)
 
     return _iniciar(f"arquivo:{caminho}", _rodar, ao_concluir=ao_concluir, ao_falhar=ao_falhar)
+
+
+def executar_requisicao(req, ao_concluir=None, ao_falhar=None) -> bool:
+    """Executa uma Requisição da aba Requisições (o Conselho é aberto pela própria interface)."""
+    return executar_acao_arquivo(req.tipo, req.caminho, req.objetivo, ao_concluir=ao_concluir, ao_falhar=ao_falhar,
+                                 requisicao=req)
+
+
+# ----------------------------------------------------------------------
+# REQUISIÇÕES, ESTILOS E NOTAS
+# ----------------------------------------------------------------------
+def nova_requisicao(tipo: str, caminho: str, objetivo: str = ""):
+    return requisicao.nova(tipo, caminho, objetivo)
+
+
+def opcoes_requisicao() -> dict:
+    """Listas para os seletores da aba Requisições."""
+    return {"eixos": {eixo: estilo.opcoes(eixo) for eixo in estilo.EIXOS}, "modos": list(requisicao.MODOS),
+            "profundidades": list(requisicao.PROFUNDIDADES), "publicos": list(requisicao.PUBLICOS),
+            "criatividades": list(requisicao.CRIATIVIDADES)}
+
+
+def sugerir_referencias(caminho: str) -> list:
+    return requisicao.sugerir_referencias(caminho)
+
+
+def estimar_tokens_requisicao(req) -> int:
+    return requisicao.estimar_tokens(req)
+
+
+def presets_requisicao() -> list:
+    return requisicao.listar_presets()
+
+
+def salvar_preset_requisicao(nome: str, req):
+    requisicao.salvar_preset(nome, req)
+
+
+def aplicar_preset_requisicao(nome: str, req):
+    return requisicao.aplicar_preset(nome, req)
+
+
+def excluir_preset_requisicao(nome: str):
+    requisicao.excluir_preset(nome)
+
+
+def estilos_do_projeto() -> dict:
+    """{eixo: (id_padrão, [(id, nome)])} para as Opções."""
+    return {eixo: (estilo.padrao(eixo), estilo.opcoes(eixo)) for eixo in estilo.EIXOS}
+
+
+def definir_estilo_do_projeto(eixo: str, ident: str):
+    estilo.definir_padrao(eixo, ident)
+
+
+def adicionar_nota(caminho: str, texto: str, origem: str = "mestre", autor: str = "") -> str:
+    """Guarda a nota na seção secreta 'Notas do Mestre' do arquivo. Lança notas.ErroNotas com mensagem pronta."""
+    return notas.adicionar_nota(caminho, texto, origem, autor)
+
+
+def sugerir_destinos_nota(texto: str, arquivo_atual: str = None, nomes=()) -> list:
+    return notas.sugerir_destinos(texto, arquivo_atual, nomes)
+
+
+def notas_do_arquivo(caminho: str) -> list:
+    return notas.listar_notas(caminho)
+
+
+# ----------------------------------------------------------------------
+# HISTÓRICO DE VERSÕES DE UM ARQUIVO
+# ----------------------------------------------------------------------
+def versoes_do_arquivo(caminho: str) -> list:
+    return hist.listar_versoes(caminho)
+
+
+def ler_versao(versao) -> str:
+    return hist.ler_versao(versao)
+
+
+def restaurar_versao(caminho: str, versao) -> str:
+    """Restaura a versão (a atual vai para o histórico). Lança hist.ErroHistorico com mensagem pronta."""
+    return str(hist.restaurar_versao(caminho, versao))
 
 
 def deve_auto_expandir(caminho: str) -> bool:

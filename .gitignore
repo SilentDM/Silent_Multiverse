@@ -25,9 +25,6 @@ resposta.json
 .\Phaeton\
 Phaeton\*
 Phaeton/
-.\Style\
-Style\*
-Style/
 LastResponse.json
 testing.py
 changelog.jsonl
@@ -209,7 +206,6 @@ cython_debug/
 LastResponse.json
 /logs/history
 exports/Livro_do_Cenario_Phaeton.html
-/Templates
 /logs
 testing.py
 logs/Gemini_cache_id.json
@@ -225,3 +221,7 @@ SIlentIcon.png
 icon.ico
 /.nexus_data
 /.silent_data
+Projeto/Personagens/Rei Vog-Mur.md
+Projeto/Regioes/Capital Vog-Mur.md
+Projeto/Reino de Vog'Mur.md
+/Projeto

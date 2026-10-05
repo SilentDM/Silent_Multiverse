@@ -4,7 +4,7 @@ import asyncio
 import discord
 
 import core.ai_utils as au
-import core.ao_persona as ao_persona
+import core.silent_persona as silent_persona
 import core.memory as memory
 import engine.project_utils as pu
 from core.i18n import t, tc
@@ -73,7 +73,7 @@ async def processar_mensagem_ia(prompt: str, eh_mestre: bool, user_name: str, gu
         resposta = await asyncio.to_thread(
             au.ask_ai,
             contents="\n\n".join(blocos),
-            system_instruction=ao_persona.instrucoes_discord(),
+            system_instruction=silent_persona.instrucoes_discord(),
             temperature=0.65,
             use_world_context=True,
             is_dm=eh_mestre,
@@ -99,10 +99,10 @@ def criar_embed_resposta(texto_chunk: str, eh_mestre: bool, idx: int, total_chun
     return embed
 
 
-def criar_embed_help() -> discord.Embed:
+def criar_embed_help(prefixo: str = "!silent") -> discord.Embed:
     embed = discord.Embed(title=tc("bot.ajuda_titulo"), description=tc("bot.ajuda_descricao"), color=0x10b981)
-    embed.add_field(name=tc("bot.ajuda_lore_titulo"), value=tc("bot.ajuda_lore"), inline=False)
+    embed.add_field(name=tc("bot.ajuda_lore_titulo"), value=tc("bot.ajuda_lore", prefixo=prefixo), inline=False)
     embed.add_field(name=tc("bot.ajuda_dados_titulo"), value=tc("bot.ajuda_dados"), inline=False)
-    embed.add_field(name=tc("bot.ajuda_sync_titulo"), value=tc("bot.ajuda_sync"), inline=False)
+    embed.add_field(name=tc("bot.ajuda_sync_titulo"), value=tc("bot.ajuda_sync", prefixo=prefixo), inline=False)
     embed.set_footer(text="Silent Multiverse Nexus Console")
     return embed

@@ -13,6 +13,7 @@ ALREADY REGISTERED LINKED PERSONAS:
 # STYLE GUIDELINES:
 {{estilo}}
 
+{{insumos}}{{requisicao}}
 YOUR TASK:
 Fill in the 4 schema fields rigorously:
 1. 'arquiteto': A rich proposal for evolving the document.

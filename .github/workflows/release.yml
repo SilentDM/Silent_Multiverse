@@ -1,0 +1,55 @@
+# Gera o executável no Windows a cada tag "v*" (ex.: v2.0.0) e cria uma release em RASCUNHO
+# com o .zip anexado. Revise o texto e clique em "Publish release" no GitHub para publicar.
+# Também pode ser rodado manualmente (Actions → Release → Run workflow): aí só gera o .zip
+# como artefato, sem criar release.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements-build.txt
+
+      - name: Run tests
+        run: python -m unittest discover -s tests -t .
+
+      - name: Build executable
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            python build.py --tag "$GITHUB_REF_NAME"
+          else
+            python build.py
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SilentMultiverse-windows
+          path: dist/*.zip
+
+      - name: Create draft release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          name: Silent Multiverse Nexus ${{ github.ref_name }}
+          files: dist/*.zip
+          generate_release_notes: true

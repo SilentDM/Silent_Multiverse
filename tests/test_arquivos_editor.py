@@ -36,7 +36,11 @@ class TesteArquivos(unittest.TestCase):
         self.assertTrue(arq.resolver_wikilink("valia").endswith("Valia.md"))
         self.assertTrue(arq.resolver_wikilink("Phaethon").endswith("Phaethon_v04.md"))   # ignora _vNN
         self.assertTrue(arq.resolver_wikilink("Valia#História").endswith("Valia.md"))     # ignora #seção
+        self.assertTrue(arq.resolver_wikilink("Valia|o reino").endswith("Valia.md"))       # ignora |apelido
+        self.assertTrue(arq.resolver_wikilink("Reinos/Valia").endswith("Valia.md"))       # ignora pasta
         self.assertIsNone(arq.resolver_wikilink("Inexistente"))
+        apelido = arq.criar_por_wikilink("Porto Sul|o porto", str(self.raiz), "Valia.md")
+        self.assertTrue(apelido.endswith("Porto Sul.md"))
         novo = arq.criar_por_wikilink("Torre Negra", str(self.raiz), "Valia.md")
         self.assertIn("[[Valia.md]]", Path(novo).read_text(encoding="utf-8"))
 

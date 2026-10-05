@@ -1,0 +1,3 @@
+# Ferramentas para gerar o executável (python build.py)
+-r requirements.txt
+pyinstaller==6.22.3

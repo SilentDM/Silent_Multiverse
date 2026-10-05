@@ -25,3 +25,4 @@ INSTRUÇÕES DO JUIZ:
 - Adicione as tabelas de perícia ou testes mecânicos do Tático.
 - Use sintaxe do Obsidian com Wikilinks [[Nome]].
 - O campo 'conteudo_markdown' deve conter EXCLUSIVAMENTE o texto final do artigo para ser salvo no disco.
+{{requisicao}}{{notas}}

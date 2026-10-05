@@ -9,6 +9,7 @@ import core.tarefas as tarefas
 import engine.persona_engine as pe
 import ui.theme as tema
 from core.i18n import t
+from ui.dialogs.note import JanelaNota
 from ui.widgets import PaginaBase, cabecalho, texto_rolavel, anexar_texto, substituir_texto
 
 
@@ -17,6 +18,7 @@ class PaginaRoleplay(PaginaBase):
         super().__init__(parent, app)
         cabecalho(self, t("rp.titulo"), t("rp.subtitulo"))
         self.persona_atual = None
+        self._falas = []                 # respostas do personagem; a tag "falaN" marca o texto da fala N
         self._caminho_retrato = None
         self._foto = None
 
@@ -59,11 +61,14 @@ class PaginaRoleplay(PaginaBase):
         self.chat.tag_config("usuario", foreground=tema.AZUL, font=("Segoe UI", 10, "bold"))
         self.chat.tag_config("npc", foreground=tema.AMARELO, font=("Segoe UI", 10, "bold"))
         self.chat.tag_config("sistema", foreground=tema.SUAVE, font=("Segoe UI", 9, "italic"))
+        self.chat.bind("<Button-3>", self._menu_fala)
+        self.menu_fala = tk.Menu(self, tearoff=0, bg=tema.PAINEL, fg=tema.TEXTO, activebackground=tema.VERDE_ESCURO)
         entrada = ttk.Frame(direita)
         entrada.pack(fill=tk.X, padx=10, pady=(0, 10))
         self.entrada = ttk.Entry(entrada, font=("Segoe UI", 10))
         self.entrada.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
         self.entrada.bind("<Return>", lambda e: self._falar())
+        ttk.Button(entrada, text=t("rp.btn_depoimento"), command=self._depoimento_ultima_fala).pack(side=tk.RIGHT, padx=(6, 0))
         ttk.Button(entrada, text=t("rp.falar"), command=self._falar).pack(side=tk.RIGHT)
 
         self._atualizar_lista()
@@ -87,14 +92,16 @@ class PaginaRoleplay(PaginaBase):
         dados = pe.ficha(nome)
         substituir_texto(self.ficha, dados["markdown"])
         substituir_texto(self.chat, "")
+        self._falas = []
         anexar_texto(self.chat, t("rp.narrador") + ": ", "sistema")
         anexar_texto(self.chat, t("rp.frente_a_frente", nome=nome) + "\n\n")
         for item in dados["historico"]:
             if item.get("autor") == pe.AUTOR_INTERLOCUTOR:
                 anexar_texto(self.chat, t("rp.voce") + ": ", "usuario")
+                anexar_texto(self.chat, f"{item.get('texto', '')}\n\n")
             else:
                 anexar_texto(self.chat, f"{nome}: ", "npc")
-            anexar_texto(self.chat, f"{item.get('texto', '')}\n\n")
+                self._anexar_fala(item.get("texto", ""))
         self._exibir_retrato(dados["retrato"])
 
     def _exibir_retrato(self, caminho):
@@ -150,12 +157,41 @@ class PaginaRoleplay(PaginaBase):
             self.chat.delete("end-3l", "end")
             self.chat.config(state=tk.DISABLED)
             anexar_texto(self.chat, f"{persona}: " if tag is None else t("rp.narrador") + ": ", "npc" if tag is None else "sistema")
-            anexar_texto(self.chat, f"{texto}\n\n", tag)
+            if tag is None:
+                self._anexar_fala(texto)
+            else:
+                anexar_texto(self.chat, f"{texto}\n\n", tag)
 
         tarefas.executar_em_segundo_plano(
             pe.dialogar_com_persona, persona, mensagem,
             ao_concluir=_trocar_reticencias,
             ao_falhar=lambda e: _trocar_reticencias(t("rp.sem_resposta", erro=e), "sistema"))
+
+    # --- depoimentos (Notas do Mestre) ---
+    def _anexar_fala(self, texto):
+        anexar_texto(self.chat, f"{texto}\n\n", f"fala{len(self._falas)}")
+        self._falas.append(texto)
+
+    def _menu_fala(self, evento):
+        indice = self.chat.index(f"@{evento.x},{evento.y}")
+        fala = next((self._falas[int(tag[4:])] for tag in self.chat.tag_names(indice)
+                     if tag.startswith("fala") and tag[4:].isdigit() and int(tag[4:]) < len(self._falas)), None)
+        if fala is None:
+            return
+        self.menu_fala.delete(0, tk.END)
+        self.menu_fala.add_command(label=t("rp.menu_depoimento"), command=lambda: self._salvar_depoimento(fala))
+        self.menu_fala.post(evento.x_root, evento.y_root)
+
+    def _depoimento_ultima_fala(self):
+        if not self._falas:
+            self.app.toast(t("rp.sem_fala"))
+            return
+        self._salvar_depoimento(self._falas[-1])
+
+    def _salvar_depoimento(self, texto):
+        persona = self.persona_atual or ""
+        JanelaNota(self.app, texto, "roleplay", autor=persona, nomes=[persona],
+                   arquivo_atual=self.app.pagina("editor").sessao.arquivo_atual)
 
     # --- retrato ---
     def _gerar_retrato(self):

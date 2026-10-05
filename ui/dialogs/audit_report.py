@@ -10,7 +10,7 @@ from ui.widgets import texto_rolavel, substituir_texto
 
 
 class JanelaAuditoria(tk.Toplevel):
-    def __init__(self, parent, relatorio: str, toast=None):
+    def __init__(self, parent, relatorio: str, toast=None, ao_corrigir=None):
         super().__init__(parent)
         self.relatorio = relatorio
         self.toast = toast or (lambda m: None)
@@ -22,12 +22,18 @@ class JanelaAuditoria(tk.Toplevel):
         tk.Label(self, text=t("auditoria.janela_cabecalho"), font=("Segoe UI", 12, "bold"),
                  bg=tema.FUNDO, fg=tema.VERDE).pack(anchor=tk.W, padx=15, pady=10)
         texto = texto_rolavel(self, fonte=("Consolas", 10), somente_leitura=False)
+        self.texto = texto
         texto.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
         substituir_texto(texto, relatorio, somente_leitura=False)
 
         botoes = tk.Frame(self, bg=tema.FUNDO)
         botoes.pack(fill=tk.X, padx=15, pady=10)
         ttk.Button(botoes, text=t("auditoria.btn_salvar"), command=self._salvar).pack(side=tk.LEFT)
+        if ao_corrigir:
+            # Manda o relatório (com as edições feitas aqui) para o WorldBuilder montar o plano de correção
+            ttk.Button(botoes, text=t("auditoria.btn_corrigir"),
+                       command=lambda: (ao_corrigir(self.texto.get("1.0", "end").strip()), self.destroy())
+                       ).pack(side=tk.LEFT, padx=8)
         ttk.Button(botoes, text=t("comum.fechar"), command=self.destroy).pack(side=tk.RIGHT)
 
     def _salvar(self):
