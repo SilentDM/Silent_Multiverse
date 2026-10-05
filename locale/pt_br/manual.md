@@ -7,6 +7,12 @@
 - Compile o projeto inteiro em um livro de cenário HTML com índice e links clicáveis.
 > Use a lista Conteúdo à esquerda para ir direto a qualquer seção.
 
+## A tela
+- O menu à esquerda tem quatro grupos: Escrever (Editor), Criar com IA (WorldBuilder, Conselho, Interpretação e Silent), Projeto (Ações) e, embaixo, Sistema (Opções, Log e Manual).
+- Enquanto há uma Requisição aberta, ela aparece no menu logo abaixo do Editor (↳ Requisição: nome do arquivo).
+- A barra de status mostra o projeto, as contagens do arquivo aberto e, à direita, as tarefas de IA em andamento. Cada tarefa tem o seu ✕ para parar só ela; com mais de uma rodando aparece também ⏹ Parar tudo.
+- A− e A+, no canto direito da barra de status, mudam o tamanho do texto.
+
 # 1. PRIMEIROS PASSOS
 ## 1) Consiga uma chave de API do Gemini
 - Abra o Google AI Studio (https://aistudio.google.com), entre com uma conta Google e clique em "Get API key".
@@ -20,7 +26,7 @@
 - No topo da barra lateral, clique no ícone 📁 e escolha a pasta com seus arquivos .md (uma pasta vazia começa um projeto novo). Um cofre do Obsidian funciona do jeito que está.
 - Os projetos recentes ficam na lista para trocar rápido.
 ## 5) Teste os modelos
-- Em Opções → IA (Gemini), clique em "Benchmark de Modelos". O programa testa os modelos disponíveis e os ordena por velocidade e confiabilidade.
+- Em Opções → IA (Gemini), clique em "Testar Modelos". O programa testa os modelos disponíveis e os ordena por velocidade e confiabilidade.
 > Pronto! Abra um arquivo no Editor, escreva uma tag <-- TODO: e rode o Expander para ver a IA trabalhando.
 
 # 2. PASTAS DO PROJETO E DE DADOS
@@ -37,11 +43,12 @@
 
 # 3. IDIOMA
 - Opções → Idioma: Português (Brasil) ou English (US).
-- A IA passa a usar o novo idioma na hora: Expander, WorldBuilder, Conselho, Roleplay, chat, auditoria, aventuras, testes de conhecimento e o bot do Discord.
+- A IA passa a usar o novo idioma na hora: Expander, WorldBuilder, Conselho, Interpretação, chat, auditoria, aventuras, testes de conhecimento e o bot do Discord.
 - A interface muda ao reiniciar o programa.
 - Seus arquivos de lore nunca são traduzidos. O conteúdo novo gerado pela IA segue o idioma escolhido.
 - Os templates e guias de estilo iniciais que você não editou mudam para o novo idioma; os seus e os editados são mantidos.
 - Os marcadores funcionam nos dois idiomas: status: segredo ou status: secret, [segredo] ou [secret], status: rascunho ou status: draft.
+- Glossário: Silent, Nexus, WorldBuilder e Expander são nomes do programa e ficam iguais nos dois idiomas. Em português, Roleplay aparece como Interpretação, In-Character como Em Personagem, Benchmark como Testar Modelos e Preset como Predefinição. Lore, token e Markdown ficam como estão.
 
 # 4. EDITOR
 ## Árvore de arquivos
@@ -94,7 +101,7 @@
 ## Imagens
 - ![[imagem.png]] mostra retratos e mapas de batalha na visualização e no livro de cenário.
 ## Notas do Mestre
-- A seção "🤫 Notas do Mestre" no fim de um arquivo guarda notas de Silent, depoimentos do Roleplay e anotações suas.
+- A seção "🤫 Notas do Mestre" no fim de um arquivo guarda notas de Silent, depoimentos da Interpretação e anotações suas.
 - Ela é secreta (os jogadores nunca a veem) e toda ferramenta de IA a lê para orientar as próximas criações sobre o arquivo, sem reescrevê-la.
 - Você também pode escrever nela à mão: cada nota começa com ### e um título.
 
@@ -115,12 +122,12 @@
 - Corrigir a auditoria: no relatório da Auditoria de Lore, 🌍 Corrigir com o WorldBuilder pula o Cânone e monta um plano de correção (arquivos a corrigir com o motivo apontado pelo Auditor e arquivos que faltam). Ver Relatório da Auditoria reabre o relatório; Gerar Plano refaz o plano a partir dele. Nada é alterado até você clicar em Executar Marcadas, e cada arquivo é corrigido com o relatório como referência.
 ## A aba Requisições
 - Abre com os padrões do projeto e mostra o arquivo inteiro. Tudo o que você trocar vale só para este pedido.
+- Enquanto o pedido está aberto, ele fica no menu abaixo do Editor; dá para voltar ao Editor e retomar o pedido depois.
 - Estilo em quatro eixos: Gênero, Tom, Clima e Estilo de escrita (ex.: numa aventura de Mistério, a caverna lovecraftiana pode usar Horror Cósmico).
 - Diretrizes extras, arquivos de referência (os ligados por [[links]] aparecem sugeridos), modo (reescrever tudo ou só acrescentar), profundidade, público (Mestre ou texto para jogadores), nível do grupo, número de jogadores, criatividade e a marca 🤫 de segredo.
-- Presets guardam combinações que você usa sempre; o tamanho estimado mostra quantos tokens o pedido vai usar.
+- Predefinições guardam combinações que você usa sempre; o tamanho estimado mostra quantos tokens o pedido vai usar.
 
 # 7. AÇÕES
-- Parar Qualquer Execução Atual: interrompe todas as tarefas de IA em andamento.
 - Expander: procura tags <-- TODO: em todos os arquivos e as preenche com a IA. Um revisor confere o resultado contra a sua lore antes de salvar.
 - Reconstruir Contexto do Mundo: atualiza o que a IA sabe sobre o projeto (também é reconstruído automaticamente a cada 12 horas).
 - Auditar Lore do Mundo: procura contradições, buracos na linha do tempo e inconsistências geográficas e mostra um relatório que você pode salvar ou mandar ao WorldBuilder (🌍 Corrigir com o WorldBuilder). Marque Montar o plano de correção no WorldBuilder ao terminar para isso acontecer sozinho; o plano sempre espera a sua revisão.
@@ -129,15 +136,21 @@
 - Backup: cria um .zip com o projeto e a pasta de dados na raiz do disco do programa (ou na pasta do programa, se não houver permissão).
 - Excluir Todas as Memórias: apaga o histórico do chat local e das conversas do Discord.
 - Abrir Pasta de Dados: abre a .silent_data.
+- Para parar uma tarefa, clique no ✕ dela na barra de status; ⏹ Parar tudo interrompe todas.
 
 # 8. CONVERSE COM SILENT
 - Silent é a entidade que guarda o Nexus: conhece o seu mundo inteiro (inclusive os segredos) e ajuda a fazer brainstorming, tirar dúvidas e revisar ideias.
 - A conversa é lembrada por projeto e resumida automaticamente quando fica longa.
-- Para discutir um arquivo específico, clique nele com o botão direito no Editor e escolha "Perguntar a Silent sobre este arquivo".
+- A caixa de mensagem tem várias linhas: Enter envia, Ctrl+Enter (ou Shift+Enter) quebra a linha.
+- Atalhos: botões com pedidos prontos (Resumir, Checar consistência, Nomes, Ganchos, Encontros, NPC rápido, Rumores, Descrever imagem, O que falta). O pedido vai para a caixa com o [trecho a completar] já selecionado: é só digitar por cima. O ✎ ao lado edita a lista (criar, apagar, reordenar ou restaurar os padrões).
+- 📎 Anexar: arquivos do projeto (busca pelo nome), arquivos do computador e imagens (mapas, retratos, rascunhos). Dá para anexar vários de uma vez; o ✕ de cada um remove. Imagens grandes são reduzidas antes do envio.
+- Para discutir um arquivo específico, clique nele com o botão direito no Editor e escolha "Perguntar a Silent sobre este arquivo": ele já entra como anexo.
+- As respostas aparecem formatadas (títulos, listas, negrito, citações). Clique num [[link]] da resposta para abrir o arquivo no Editor.
+- Botão direito numa mensagem: salvar como nota ou copiar de volta para a caixa de mensagem.
 - 📝 Nota (ou botão direito numa mensagem): guarda a resposta nas Notas do Mestre do arquivo escolhido. "Salvar e aplicar agora" já abre a aba Requisições para incorporar a nota ao texto.
 - 🌍 Levar ao WorldBuilder: a conversa vira a ideia do WorldBuilder.
 
-# 9. ROLEPLAY (TEATRO DA MENTE)
+# 9. INTERPRETAÇÃO (TEATRO DA MENTE)
 - Clique em ➕ Nova Persona, digite o nome do personagem e descreva o papel, a motivação ou o mistério dele. A IA monta a persona completa a partir do contexto do seu mundo.
 - Converse em personagem no lado direito. Cada persona lembra a própria conversa.
 - 📝 Depoimento (ou botão direito numa fala): guarda a fala nas Notas do Mestre, de preferência no arquivo do próprio personagem. É a versão dele: pode mentir ou estar enganado.
@@ -148,7 +161,7 @@
 - Escolha um arquivo (ou use Consolidar com o Conselho no Editor) e escreva uma diretriz.
 - Passo 1: quatro especialistas dão sua visão: o Arquiteto (expansão), o Cronista (fatos e continuidade), a Voz dos NPCs (em primeira pessoa) e Tática & Caos (mecânicas e dilemas). Você pode editar os textos deles.
 - Passo 2: o Juiz Supremo une os painéis na versão final do arquivo. A versão anterior é arquivada.
-- O Conselho usa o que as outras perspectivas já disseram sobre o arquivo: os depoimentos do Roleplay viram a voz real dos NPCs, as notas de Silent e as suas orientam o Arquiteto e o Cronista, e conversas recentes de Roleplay com personagens citados também entram. A linha "O Conselho usou" mostra as fontes.
+- O Conselho usa o que as outras perspectivas já disseram sobre o arquivo: os depoimentos da Interpretação viram a voz real dos NPCs, as notas de Silent e as suas orientam o Arquiteto e o Cronista, e conversas recentes de Roleplay com personagens citados também entram. A linha "O Conselho usou" mostra as fontes.
 
 # 11. OPÇÕES
 As Opções têm quatro abas. Tudo salva sozinho; um "✓ Salvo" no topo confirma.
@@ -159,7 +172,7 @@ As Opções têm quatro abas. Tudo salva sozinho; um "✓ Salvo" no topo confirm
 - Cache do Gemini: em contas sem faturamento o programa para de tentar o cache e usa o envio do bundle; "Tentar cache de novo" volta a tentar (trocar a chave também).
 
 # 12. MODELOS DO GEMINI (Opções → IA)
-- O Benchmark de Modelos testa todos os modelos Gemini disponíveis e os ordena por tempo de resposta e taxa de sucesso.
+- Testar Modelos testa todos os modelos Gemini disponíveis e os ordena por tempo de resposta e taxa de sucesso.
 - O modo Automático usa essa ordem; o modo Manual deixa você definir a sua.
 - Se um modelo falhar ou atingir o limite, o programa tenta o próximo automaticamente.
 
@@ -205,9 +218,9 @@ As Opções têm quatro abas. Tudo salva sozinho; um "✓ Salvo" no topo confirm
 
 # 17. SOLUÇÃO DE PROBLEMAS
 - "O Windows protegeu o computador" na primeira execução: clique em "Mais informações" → "Executar assim mesmo". Isso acontece com programas novos que ainda não têm assinatura digital.
-- A IA não responde: confira a chave em Opções → IA, rode o Benchmark de Modelos e veja o Log de Atividades. Um erro "429" ou "quota" significa que o limite da chave foi atingido; espere ou use outro modelo.
+- A IA não responde: confira a chave em Opções → IA, use Testar Modelos e veja o Log de Atividades. Um erro "429" ou "quota" significa que o limite da chave foi atingido; espere ou use outro modelo.
 - O bot fica offline: confira o token, o Message Content Intent e o Log de Atividades; reinicie o programa depois de salvar o token.
-- Um arquivo está travado: a IA está trabalhando nele. Espere a tarefa terminar ou use Parar Qualquer Execução Atual na página Ações.
+- Um arquivo está travado: a IA está trabalhando nele. Espere a tarefa terminar ou clique no ✕ dela na barra de status.
 - A visualização não aparece: falta o componente de visualização (tkinterweb); a versão publicada já o inclui.
 
 # 18. ATALHOS
@@ -217,9 +230,10 @@ As Opções têm quatro abas. Tudo salva sozinho; um "✓ Salvo" no topo confirm
 - [Ctrl + W]: fechar a aba · [Ctrl + Tab / Ctrl + Shift + Tab]: próxima / aba anterior.
 - [Ctrl + B] negrito · [Ctrl + I] itálico · [Ctrl + K] [[link]].
 - [F2]: renomear o item selecionado na árvore de arquivos.
-- [Ctrl + Roda do Mouse] ou [Ctrl + / Ctrl -]: zoom.
+- [Ctrl + Roda do Mouse] ou [Ctrl + / Ctrl -]: zoom (ou A− / A+ na barra de status).
 - [Alt + Esquerda / Direita] ou botões laterais do mouse: voltar / avançar entre documentos.
 - [Ctrl + Z]: desfazer.
+- Chat do Silent: [Enter] envia · [Ctrl + Enter] ou [Shift + Enter] quebra a linha.
 
 # 19. GUIA RÁPIDO DE MARKDOWN
 > Guia completo: https://www.markdownguide.org/basic-syntax/

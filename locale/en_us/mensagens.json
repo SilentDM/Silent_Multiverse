@@ -211,5 +211,6 @@
   "notas.erro_travado": "'{nome}' is being changed by the AI right now. Wait for it to finish to save the note.",
   "notas.log_adicionada": "📝 Note added to {nome} ({origem}).",
   "wb.erro_sem_relatorio": "The audit report is empty.",
-  "wb.log_auditoria_inicio": "🔎 Building the correction plan from the Lore Audit report..."
+  "wb.log_auditoria_inicio": "🔎 Building the correction plan from the Lore Audit report...",
+  "acoes.log_parada_tarefa": "🛑 Stop requested for: {tarefa}."
 }

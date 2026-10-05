@@ -1,0 +1,11 @@
+[
+  {"nome": "Summarize", "texto": "Summarize the attached file in short bullet points, highlighting names, places, conflicts and hooks."},
+  {"nome": "Check consistency", "texto": "Check whether the attached file contradicts anything already established in the world. For each contradiction, say what is wrong, which file holds the official version and how to fix it."},
+  {"nome": "Names", "texto": "Suggest 10 names for [what: people, places, taverns...], consistent with the cultures and the sound of the world, with a one-line explanation for each."},
+  {"nome": "Hooks", "texto": "Create 5 adventure hooks tied to [place or NPC], using conflicts that already exist in the world."},
+  {"nome": "Encounters", "texto": "Suggest 3 encounters for a level [level] party in [place], with enemies, terrain, goal and a complication."},
+  {"nome": "Quick NPC", "texto": "Create an NPC for [place or role]: name, appearance, motivation, a secret and a memorable line."},
+  {"nome": "Rumors", "texto": "Create 6 rumors about [subject] the players might hear in a tavern: 3 true, 2 partly true and 1 false (mark which is which for the GM only)."},
+  {"nome": "Describe image", "texto": "Describe the attached image as read-aloud text for the players and suggest how it could fit into the world."},
+  {"nome": "What's missing", "texto": "Point out the most important gaps in the project: concepts mentioned without a file, unanswered questions and loose ends. Order them by what helps the next session the most."}
+]

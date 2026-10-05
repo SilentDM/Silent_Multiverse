@@ -344,7 +344,8 @@ def ask_ai(
     temperature: Optional[float] = None,
     response_schema: Optional[Type[BaseModel]] = None,
     use_world_context: Optional[bool] = True,
-    is_dm: Optional[bool] = True
+    is_dm: Optional[bool] = True,
+    imagens: Optional[list] = None
 ) -> str:
     if not os.getenv("GOOGLE_API_KEY", "").strip():
         raise RuntimeError("Nenhuma chave de API da IA (GOOGLE_API_KEY) foi configurada. Acesse a aba 'Opções' para cadastrar sua chave.")
@@ -367,6 +368,11 @@ def ask_ai(
         config_args["response_schema"] = response_schema
         
     config = types.GenerateContentConfig(**config_args)
+    if imagens:
+        # Texto + imagens na mesma mensagem (os modelos Gemini atuais entendem imagens)
+        partes = list(contents) if isinstance(contents, list) else [contents]
+        partes += [types.Part.from_bytes(data=img["dados"], mime_type=img["mime"]) for img in imagens]
+        contents = partes
     contents_to_send = contents
     cache_model = None
 
@@ -378,7 +384,7 @@ def ask_ai(
                 config = config.model_copy(deep=True)
                 if world_context.get("type") == "file":
                     uploaded_file = client.files.get(name=world_context["id"])
-                    contents_to_send = [uploaded_file, contents]
+                    contents_to_send = [uploaded_file, *contents] if isinstance(contents, list) else [uploaded_file, contents]
                 elif world_context.get("type") == "cache":
                     config.cached_content = world_context["id"]
                     cache_model = world_context.get("model")

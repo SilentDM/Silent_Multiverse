@@ -156,6 +156,7 @@ class PaginaRequisicoes(PaginaBase):
         self.combo_preset.set("")
         self._habilitar(True)
         self._atualizar_tokens()
+        self.app.requisicao_aberta(arq.nome(caminho))
 
     def definir_objetivo(self, texto: str):
         """Preenche o objetivo (ex.: ao aplicar uma nota recém-salva)."""
@@ -288,3 +289,4 @@ class PaginaRequisicoes(PaginaBase):
         self._exibir_refs()
         self.lbl_tokens.config(text="")
         self._habilitar(False)
+        self.app.requisicao_aberta(None)

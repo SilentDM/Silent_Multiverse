@@ -1,0 +1,11 @@
+[
+  {"nome": "Resumir", "texto": "Resuma o arquivo anexado em tópicos curtos, destacando nomes, lugares, conflitos e ganchos."},
+  {"nome": "Checar consistência", "texto": "Verifique se o arquivo anexado contradiz algo já definido no mundo. Para cada contradição, diga o que está errado, em qual arquivo está a versão oficial e como corrigir."},
+  {"nome": "Nomes", "texto": "Sugira 10 nomes para [o quê: pessoas, lugares, tavernas...], coerentes com as culturas e a sonoridade do mundo, com uma linha de explicação para cada."},
+  {"nome": "Ganchos", "texto": "Crie 5 ganchos de aventura ligados a [lugar ou NPC], aproveitando conflitos que já existem no mundo."},
+  {"nome": "Encontros", "texto": "Sugira 3 encontros para um grupo de nível [nível] em [lugar], com inimigos, terreno, objetivo e uma complicação."},
+  {"nome": "NPC rápido", "texto": "Crie um NPC para [lugar ou função]: nome, aparência, motivação, um segredo e uma fala marcante."},
+  {"nome": "Rumores", "texto": "Crie 6 rumores sobre [assunto] que os jogadores podem ouvir numa taverna: 3 verdadeiros, 2 parciais e 1 falso (marque qual é qual só para o Mestre)."},
+  {"nome": "Descrever imagem", "texto": "Descreva a imagem anexada como um texto para ler em voz alta aos jogadores e sugira como ela pode entrar no mundo."},
+  {"nome": "O que falta", "texto": "Aponte as lacunas mais importantes do projeto: conceitos citados sem arquivo, perguntas sem resposta e pontas soltas. Ordene pelo que mais ajuda a próxima sessão."}
+]

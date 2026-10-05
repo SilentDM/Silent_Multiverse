@@ -87,17 +87,38 @@ def aplicar_tema(root):
     style.configure('Vertical.TScrollbar', background='#252526', troughcolor='#121212', bordercolor='#2d2d2d', lightcolor='#252526', darkcolor='#252526', arrowcolor='#e3e3e3')
     style.map('Vertical.TScrollbar', background=[('active', '#2d2d2d')])
 
+    # Menu lateral (fundo da barra lateral; o item ativo ganha um fundo levemente mais claro)
     style.configure('Nav.TButton',
-        background='#121212', foreground='#cccccc', borderwidth=0,
-        anchor='w', padding=(16, 12), font=('Segoe UI', 10)
+        background='#0a0a0a', foreground='#cccccc', borderwidth=0, relief='flat',
+        anchor='w', padding=(12, 8), font=('Segoe UI', 10)
     )
-    style.map('Nav.TButton', background=[('active', '#1e1e1e')])
+    style.map('Nav.TButton', background=[('active', '#1a1a1a')], foreground=[('active', '#ffffff')])
 
     style.configure('NavActive.TButton',
-        background='#1e1e1e', foreground='#10b981', borderwidth=0,
-        anchor='w', padding=(16, 12), font=('Segoe UI', 10, 'bold')
+        background='#1e1e1e', foreground='#10b981', borderwidth=0, relief='flat',
+        anchor='w', padding=(12, 8), font=('Segoe UI', 10, 'bold')
     )
     style.map('NavActive.TButton', background=[('active', '#1e1e1e')])
+
+    # Sub-item do menu (Requisição aberta, abaixo do Editor)
+    style.configure('NavSub.TButton', background='#0a0a0a', foreground='#f59e0b', borderwidth=0, relief='flat',
+                    anchor='w', padding=(10, 5), font=('Segoe UI', 9))
+    style.map('NavSub.TButton', background=[('active', '#1a1a1a')])
+    style.configure('NavSubActive.TButton', background='#1e1e1e', foreground='#f59e0b', borderwidth=0, relief='flat',
+                    anchor='w', padding=(10, 5), font=('Segoe UI', 9, 'bold'))
+    style.map('NavSubActive.TButton', background=[('active', '#1e1e1e')])
+
+    # Botão principal (Enviar) e botão de perigo
+    style.configure('Primario.TButton', background='#0f766e', foreground='#ffffff', bordercolor='#0f766e',
+                    font=('Segoe UI', 10, 'bold'))
+    style.map('Primario.TButton', background=[('active', '#10b981'), ('disabled', '#1f3b38')],
+              foreground=[('disabled', '#7a9a96')])
+    style.configure('Perigo.TButton', foreground='#ef4444')
+    style.map('Perigo.TButton', foreground=[('active', '#f87171')])
+
+    # Etiquetas de atalho e de anexo do chat
+    style.configure('Atalho.TButton', padding=(8, 2), font=('Segoe UI', 9), background='#1b1b1f')
+    style.map('Atalho.TButton', background=[('active', '#2a2a30')])
 
     # Abas verticais (Opções)
     style.configure('Aba.TButton', background='#121212', foreground='#bbbbbb', borderwidth=0,

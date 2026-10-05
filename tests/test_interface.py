@@ -61,13 +61,83 @@ class TesteInterface(unittest.TestCase):
             with self.subTest(idioma=idioma):
                 root, janela = self._montar(idioma)
                 try:
-                    for chave in app.PAGINAS_TOPO + app.PAGINAS_RODAPE:
+                    for chave in app.CLASSES_PAGINAS:
                         janela.mostrar_pagina(chave)
                         root.update()
                         self.assertEqual(janela.pagina_atual, chave)
                     self.assertEqual(janela.botoes_nav["actions"].cget("text").strip().split()[-1], palavra)
                 finally:
                     fechar(root)
+
+    def test_menu_requisicao_e_barra_de_tarefas(self):
+        import core.eventos as ev
+        root, janela = self._montar("pt_br")
+        try:
+            sub = janela.botoes_nav["requisicoes"]
+            self.assertEqual(sub.winfo_manager(), "")                         # sem pedido aberto: sem sub-item
+            janela.abrir_requisicao("melhorar", str(self.raiz_projeto / "Valia.md"))
+            root.update()
+            self.assertEqual(sub.winfo_manager(), "pack")
+            self.assertIn("Valia", sub.cget("text"))
+            self.assertEqual(sub.cget("style"), "NavSubActive.TButton")
+            janela.pagina("requisicoes")._cancelar()
+            root.update()
+            self.assertEqual(sub.winfo_manager(), "")
+            self.assertEqual(janela.pagina_atual, "editor")
+
+            ev.emitir("acao.estado", {"acao": "expander", "rodando": True})
+            ev.emitir("acao.estado", {"acao": "auditoria", "rodando": True})
+            root.update()
+            self.assertEqual(set(janela._chips), {"expander", "auditoria"})
+            self.assertEqual(janela.btn_parar_tudo.winfo_manager(), "pack")       # mais de uma tarefa: "Parar tudo"
+            with mock.patch("engine.acoes.parar") as parar:
+                janela._parar_tarefa("expander")
+            parar.assert_called_once_with("expander")
+            ev.emitir("acao.estado", {"acao": "expander", "rodando": False})
+            ev.emitir("acao.estado", {"acao": "auditoria", "rodando": False})
+            root.update()
+            self.assertEqual(janela._chips, {})
+            self.assertEqual(janela.lbl_status_tarefa.winfo_manager(), "pack")     # volta o "Pronto"
+        finally:
+            fechar(root)
+
+    def test_chat_caixa_atalhos_e_anexos(self):
+        root, janela = self._montar("pt_br")
+        try:
+            janela.mostrar_pagina("chat")
+            chat = janela.pagina("chat")
+            root.update()
+            entrada = chat.entrada
+            entrada.insert("1.0", "linha 1")
+            chat._quebrar_linha(None)                                       # Ctrl+Enter
+            entrada.insert("end-1c", "linha 2")
+            self.assertEqual(entrada.get("1.0", "end-1c"), "linha 1\nlinha 2")
+            entrada.delete("1.0", "end")
+
+            chat._usar_atalho("Sugira nomes para [o quê] no mundo.")
+            self.assertEqual(entrada.get("sel.first", "sel.last"), "[o quê]")  # o campo fica selecionado
+            self.assertTrue(chat.quadro_atalhos.winfo_children())             # atalhos padrão na tela
+
+            chat.anexar_arquivo(str(self.raiz_projeto / "Valia.md"))
+            root.update()
+            self.assertEqual([a["nome"] for a in chat._anexos], ["Valia.md"])
+            self.assertEqual(chat.quadro_anexos.winfo_manager(), "pack")
+
+            with mock.patch("engine.acoes.conversar_silent", return_value=True) as enviar:
+                chat._tecla_enter(None)                                         # Enter envia
+            mensagem, anexos = enviar.call_args.args
+            self.assertIn("[o quê]", mensagem)
+            self.assertEqual(anexos[0]["conteudo"], (self.raiz_projeto / "Valia.md").read_text(encoding="utf-8").strip())
+            self.assertEqual(entrada.get("1.0", "end-1c"), "")
+            self.assertEqual(chat._anexos, [])
+
+            chat._resposta("## Ideias\n- **Brasaforte** fica perto de [[Valia]].")
+            texto = chat.texto.get("1.0", "end")
+            self.assertIn("Ideias", texto)
+            self.assertNotIn("**", texto)
+            self.assertTrue(chat.texto.tag_ranges("link"))
+        finally:
+            fechar(root)
 
     def test_janela_de_historico_restaura(self):
         import engine.historico as hist

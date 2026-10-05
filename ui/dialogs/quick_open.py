@@ -8,11 +8,11 @@ from core.i18n import t
 
 
 class JanelaAberturaRapida(tk.Toplevel):
-    def __init__(self, app, ao_escolher):
+    def __init__(self, app, ao_escolher, titulo=None):
         super().__init__(app.root)
         self.ao_escolher = ao_escolher
         self.resultados = []
-        self.title(t("editor.rapido_titulo"))
+        self.title(titulo or t("editor.rapido_titulo"))
         self.configure(bg=tema.FUNDO)
         self.transient(app.root)
         largura, altura = 620, 400

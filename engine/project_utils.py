@@ -70,8 +70,10 @@ PASTA_PROJETO = None
 TAG_ALVO = ["<-- TO DO:", "<-- TO DO", "<-- TODO:", "<-- TODO", "<-- todo","<-- To do:", "<-- to-do:", "<-- to-do", "<-- to do:", "<-- to do","<-- To Do:", "<-- To Do", "<-- To-Do:", "<-- To-Do", "<-- To-do:", "<-- To-do", "<-- Todo:"]
 
 
-# Sinalizador global de cancelamento
+# Sinalizador global de cancelamento + cancelamento de uma tarefa só (cada ação roda na sua thread)
 _CANCEL_EVENT = threading.Event()
+_ACOES_CANCELADAS = set()
+_acao_da_thread = threading.local()
 
 STOP_WORDS = {
     "de", "da", "do", "das", "dos", "em", "no", "na", "nos", "nas", 
@@ -560,17 +562,28 @@ def montar_contexto_mundo(is_dm: bool = True) -> str:
         carregar_projeto(is_dm=is_dm)
     )
 
-def request_cancellation():
-    """Dispara a solicitação de parada para todas as threads em execução."""
-    _CANCEL_EVENT.set()
+def request_cancellation(acao: str = None):
+    """Pede a parada de todas as tarefas em execução, ou só da tarefa 'acao'."""
+    if acao:
+        _ACOES_CANCELADAS.add(acao)
+    else:
+        _CANCEL_EVENT.set()
 
 def reset_cancellation():
     """Reseta o sinalizador antes de iniciar uma nova tarefa."""
     _CANCEL_EVENT.clear()
 
+def esquecer_parada(acao: str):
+    """Apaga o pedido de parada da tarefa 'acao' (quando ela começa de novo)."""
+    _ACOES_CANCELADAS.discard(acao)
+
+def definir_acao_da_thread(acao: str = None):
+    """A thread atual passa a rodar a tarefa 'acao' (is_cancelled passa a ver a parada só dela)."""
+    _acao_da_thread.nome = acao
+
 def is_cancelled() -> bool:
-    """Verifica se o usuário pediu para interromper a execução."""
-    return _CANCEL_EVENT.is_set()
+    """Verifica se o usuário pediu para interromper a execução (de tudo ou da tarefa desta thread)."""
+    return _CANCEL_EVENT.is_set() or getattr(_acao_da_thread, "nome", None) in _ACOES_CANCELADAS
 
 def carregar_mapa_ordens():
     """Lê o arquivo central de ordenação usando a trava thread-safe."""

@@ -19,7 +19,8 @@ def _obter_implementacao():
         from core.ai_gemini import ask_ai as impl
     return impl
 
-def ask_ai(contents=None, system_instruction=None, temperature=None, response_schema=None, use_world_context=True,  is_dm=True):
+def ask_ai(contents=None, system_instruction=None, temperature=None, response_schema=None, use_world_context=True,  is_dm=True,
+           imagens=None):
     """
     Ponto único de entrada para QUALQUER parte do programa que precise
     perguntar algo para a IA (memory.py, wbuilder.py, expander.py, dbot.py, gui.py).
@@ -33,6 +34,8 @@ def ask_ai(contents=None, system_instruction=None, temperature=None, response_sc
     Também garante o IDIOMA de todas as chamadas, num lugar só:
     - acrescenta às instruções de sistema "responda sempre em <idioma ativo>";
     - troca o response_schema por uma cópia com as descrições dos campos traduzidas.
+
+    'imagens' é uma lista opcional de {"mime": "image/png", "dados": bytes} enviada junto com o texto.
     """
     import core.prompts as prompts
     instrucao_idioma = prompts.instrucao_idioma()
@@ -40,11 +43,13 @@ def ask_ai(contents=None, system_instruction=None, temperature=None, response_sc
     if response_schema is not None:
         response_schema = prompts.schema_localizado(response_schema)
 
+    extras = {"imagens": imagens} if imagens else {}      # só o Gemini recebe imagens
     return _obter_implementacao()(
         contents=contents,
         system_instruction=system_instruction,
         temperature=temperature,
         response_schema=response_schema,
         use_world_context=use_world_context,
-        is_dm=is_dm
+        is_dm=is_dm,
+        **extras
     )

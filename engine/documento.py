@@ -5,6 +5,7 @@ Informações sobre os documentos do projeto para o Editor (sem Tk):
   - links_quebrados(texto)  [[links]] que ainda não têm arquivo (o editor os pinta de vermelho)
   - sugerir_links(prefixo)  nomes de arquivo para o autocompletar de [[
   - citado_por(caminho)     arquivos que linkam este
+  - resolver_link(texto)    arquivo de um [[link]] (o chat do Silent abre links clicados)
   - estado(caminho)         segredo / rascunho / TODO pendente / tem Notas do Mestre (ícones da árvore)
   - assinatura_projeto()    muda quando algo muda na pasta do projeto (atualização automática da árvore)
 
@@ -145,6 +146,12 @@ def sugerir_links(prefixo: str, limite: int = 8) -> list:
         elif alvo in normal:
             contem.append(nome)
     return (sorted(set(comeca), key=str.lower) + sorted(set(contem), key=str.lower))[:limite]
+
+
+def resolver_link(texto_link: str):
+    """Caminho do arquivo de um [[link]] (aceita 'Nome|apelido' e 'Nome#seção'), ou None se não existe."""
+    alvo = _alvo(texto_link or "")
+    return _indice_atual().get(_normalizar(alvo)) if alvo else None
 
 
 def citado_por(caminho) -> list:
