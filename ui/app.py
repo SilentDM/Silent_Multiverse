@@ -28,19 +28,18 @@ from ui.pages.council import PaginaConselho
 from ui.pages.editor import PaginaEditor
 from ui.pages.log import PaginaLog
 from ui.pages.manual import PaginaManual
-from ui.pages.models import PaginaModelos
 from ui.pages.options import PaginaOpcoes
 from ui.pages.requests import PaginaRequisicoes
 from ui.pages.roleplay import PaginaRoleplay
 from ui.pages.worldbuilder import PaginaWorldBuilder
 from ui.widgets import mostrar_toast
 
-PAGINAS_TOPO = ["editor", "requisicoes", "worldbuilder", "actions", "chat", "roleplay", "council", "options", "models"]
+PAGINAS_TOPO = ["editor", "requisicoes", "worldbuilder", "actions", "chat", "roleplay", "council", "options"]
 PAGINAS_RODAPE = ["log", "manual"]
 CLASSES_PAGINAS = {
     "editor": PaginaEditor, "requisicoes": PaginaRequisicoes, "worldbuilder": PaginaWorldBuilder, "actions": PaginaAcoes,
     "chat": PaginaChat, "roleplay": PaginaRoleplay, "council": PaginaConselho,
-    "options": PaginaOpcoes, "models": PaginaModelos, "log": PaginaLog, "manual": PaginaManual,
+    "options": PaginaOpcoes, "log": PaginaLog, "manual": PaginaManual,
 }
 QUADROS_SPINNER = ["◐", "◓", "◑", "◒"]
 

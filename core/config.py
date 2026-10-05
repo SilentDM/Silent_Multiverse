@@ -46,29 +46,73 @@ PROVEDORES_IA = {
 }
 
 
+# Configurações que pertencem ao projeto (cenário), não ao programa: ficam em
+# <projeto>/.silent_projeto.json e acompanham a pasta do projeto (backup, git, sync).
+# Um projeto sem esse arquivo usa os valores globais, que viram dele no primeiro salvamento.
+ARQUIVO_PROJETO = ".silent_projeto.json"
+CHAVES_DO_PROJETO = ("estilo_genero", "estilo_tom", "estilo_clima", "estilo_escrita", "tom_clima_perfil",
+                     "rpg_sistema_ativo", "termos_secretos", "auto_expander")
+
+
+def _arquivo_do_projeto():
+    """Caminho do arquivo do projeto ativo, ou None se não houver projeto (ou a pasta não existir mais)."""
+    from pathlib import Path
+    if not pu.CAMINHO_PROJETO or not Path(pu.CAMINHO_PROJETO).is_dir():
+        return None
+    return Path(pu.CAMINHO_PROJETO) / ARQUIVO_PROJETO
+
+
+def _ler_json(caminho) -> dict:
+    if caminho and caminho.exists():
+        try:
+            with open(caminho, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+            return dados if isinstance(dados, dict) else {}
+        except Exception as e:
+            print(f"Erro ao carregar configurações: {e}")
+    return {}
+
+
+def _gravar_json(caminho, dados: dict):
+    """Grava de forma atômica (arquivo temporário + replace) para nunca deixar um JSON pela metade."""
+    try:
+        caminho.parent.mkdir(parents=True, exist_ok=True)
+        tmp = caminho.with_suffix(".tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(dados, f, ensure_ascii=False, indent=2)
+        tmp.replace(caminho)
+    except Exception as e:
+        print(f"Erro ao salvar configurações: {e}")
+
+
 def carregar_configuracoes() -> dict:
+    """Padrões + settings.json do programa + as configurações do projeto ativo por cima."""
     config = DEFAULT_SETTINGS.copy()
     with _LOCK:
-        if SETTINGS_FILE.exists():
-            try:
-                with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-                    config.update(json.load(f))
-            except Exception as e:
-                print(f"Erro ao carregar configurações: {e}")
+        config.update(_ler_json(SETTINGS_FILE))
+        projeto = _ler_json(_arquivo_do_projeto())
+    config.update({k: v for k, v in projeto.items() if k in CHAVES_DO_PROJETO})
     return config
 
 
 def salvar_configuracoes(config: dict):
-    """Grava de forma atômica (arquivo temporário + replace) para nunca deixar um JSON pela metade."""
+    """Grava as configurações do programa no settings.json e as do projeto no arquivo do projeto ativo."""
     with _LOCK:
-        try:
-            SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
-            tmp = SETTINGS_FILE.with_suffix(".tmp")
-            with open(tmp, "w", encoding="utf-8") as f:
-                json.dump(config, f, ensure_ascii=False, indent=2)
-            tmp.replace(SETTINGS_FILE)
-        except Exception as e:
-            print(f"Erro ao salvar configurações: {e}")
+        arquivo_projeto = _arquivo_do_projeto()
+        global_atual = _ler_json(SETTINGS_FILE)
+        dados_globais = dict(config)
+        if arquivo_projeto is not None:
+            # Com um projeto aberto, os valores globais dessas chaves ficam como estavam (padrão para outros projetos)
+            dados_projeto = _ler_json(arquivo_projeto)
+            for chave in CHAVES_DO_PROJETO:
+                if chave in config:
+                    dados_projeto[chave] = config[chave]
+                if chave in global_atual:
+                    dados_globais[chave] = global_atual[chave]
+                else:
+                    dados_globais.pop(chave, None)
+            _gravar_json(arquivo_projeto, dados_projeto)
+        _gravar_json(SETTINGS_FILE, dados_globais)
 
 
 def atualizar_configuracoes(novos_valores: dict) -> dict:
