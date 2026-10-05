@@ -135,6 +135,24 @@ def wb_gerar_plano(ao_concluir=None, ao_falhar=None) -> bool:
                     reiniciar_cancelamento=True)
 
 
+def wb_gerar_plano_auditoria(relatorio: str, ao_concluir=None, ao_falhar=None) -> bool:
+    """Plano de correção no WorldBuilder a partir do relatório da Auditoria de Lore."""
+    return _iniciar("worldbuilder", wb.gerar_plano_da_auditoria, relatorio, ao_concluir=ao_concluir,
+                    ao_falhar=ao_falhar, reiniciar_cancelamento=True)
+
+
+def wb_tem_plano_pendente() -> bool:
+    return wb.tem_plano_pendente()
+
+
+def auditoria_vai_ao_worldbuilder() -> bool:
+    return bool(cfg.obter("auditoria_para_wb", False))
+
+
+def definir_auditoria_vai_ao_worldbuilder(ativo: bool):
+    cfg.atualizar_configuracoes({"auditoria_para_wb": bool(ativo)})
+
+
 def wb_executar(ao_concluir=None, ao_falhar=None) -> bool:
     return _iniciar("worldbuilder", wb.executar_plano, ao_concluir=ao_concluir, ao_falhar=ao_falhar,
                     reiniciar_cancelamento=True)

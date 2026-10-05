@@ -33,7 +33,7 @@ Disponível em **português do Brasil** e **inglês**: a interface e tudo o que 
 * **Três níveis de pedidos à IA**: uma tag `<-- TODO:` para uma mudança pequena dentro do arquivo, **Melhorar com IA** para reescrever um arquivo inteiro e o **WorldBuilder** para montar uma campanha inteira.
 * **WorldBuilder**: escreva a sua ideia em poucos parágrafos e ele trabalha em três etapas, com a sua revisão entre elas: uma ficha de **Cânone** só do Mestre com os nomes, fatos e segredos oficiais (você edita), uma **lista do plano** (você marca, desmarca e edita os itens) e a **execução por fases** (mundo, lugares, pessoas, monstros, aventuras). Arquivos secretos ficam escondidos dos jogadores, e uma execução interrompida continua de onde parou.
 * **Conselho**: quatro agentes especialistas (Arquiteto, Cronista, a Voz dos NPCs, Tática & Caos) discutem um arquivo; você edita as visões deles e um Juiz Supremo escreve a versão final.
-* **Auditoria de Lore**: encontra contradições, buracos na linha do tempo e inconsistências geográficas.
+* **Auditoria de Lore**: encontra contradições, buracos na linha do tempo e inconsistências geográficas, e pode mandar o relatório ao WorldBuilder para montar um plano de correção revisável.
 * **Melhorar com IA**, **aventuras 5-Room Dungeon** (com ficha do oponente e mapa de batalha da sala final) e **Testes de Conhecimento** (tabelas com faixas de CD), tudo com o botão direito em um arquivo.
 * **Converse com Silent**: converse com o guardião do Nexus, que conhece o seu mundo inteiro, para brainstorming e dúvidas.
 * **Roleplay (Teatro da Mente)**: crie personas para os seus NPCs a partir do contexto do mundo e converse com eles em personagem, com retratos gerados.

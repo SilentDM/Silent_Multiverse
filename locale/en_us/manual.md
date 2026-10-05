@@ -112,6 +112,7 @@
 - Besides creating files, the WorldBuilder can Create NPC and Create Monster (text + combat statblock), and generate Adventures and Lore Checks.
 - Each plan item has a genre: the secret laboratory can be Cosmic Horror while the capital is Political Intrigue. The genre picks the template (e.g. Templates/misterio/local.md) and the writing style.
 - In Silent's chat, 🌍 Send to WorldBuilder turns the conversation into the WorldBuilder idea.
+- Fixing the audit: in the Lore Audit report, 🌍 Fix with the WorldBuilder skips the Canon and builds a correction plan (files to fix with the reason the Auditor gave, and missing files). View Audit Report reopens the report; Generate Plan rebuilds the plan from it. Nothing changes until you click Execute Checked, and each file is fixed with the report as reference.
 ## The Requests tab
 - Opens with the project defaults and shows the whole file. Anything you change applies to this request only.
 - Style in four axes: Genre, Tone, Mood and Writing style (e.g. in a Mystery adventure, the Lovecraftian cave can use Cosmic Horror).
@@ -122,7 +123,7 @@
 - Stop All Current Executions: interrupts every AI task that is running.
 - Expander: looks for <-- TODO: tags in every file and fills them with the AI. A reviewer checks the result against your lore before it is saved.
 - Rebuild World Context: refreshes what the AI knows about the project (it is also rebuilt automatically every 12 hours).
-- Audit World Lore: looks for contradictions, timeline gaps and geographic inconsistencies and shows a report you can save.
+- Audit World Lore: looks for contradictions, timeline gaps and geographic inconsistencies and shows a report you can save or send to the WorldBuilder (🌍 Fix with the WorldBuilder). Check Build the correction plan in the WorldBuilder when done to make it automatic; the plan always waits for your review.
 - Sourcebook: compiles every file into an HTML with a table of contents and links, and opens it in the browser (print it as PDF if you like).
 - Analyze Project Size: shows, per folder and file, how many tokens the project takes in the AI context (GM and players) and how much of the provider's limit that is.
 - Backup: creates a .zip with the project and the data folder at the root of the program's drive (or in the program folder if that isn't allowed).

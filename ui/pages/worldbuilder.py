@@ -157,10 +157,16 @@ class PaginaWorldBuilder(PaginaBase):
             self.txt_objetivo.delete("1.0", tk.END)
             self.txt_objetivo.insert("1.0", objetivo)
         canon = self._sessao.get("canon")
-        if canon:
+        if self._da_auditoria():
+            self.lbl_canon.config(text=t("wb.origem_auditoria", data=self._sessao.get("auditoria_data") or ""),
+                                  foreground=tema.AZUL_CLARO)
+            self.btn_abrir_canon.config(text=t("wb.btn_ver_relatorio"))
+        elif canon:
             self.lbl_canon.config(text=t("wb.canon_pronto", caminho=canon), foreground=tema.VERDE)
+            self.btn_abrir_canon.config(text=t("wb.btn_abrir_canon"))
         else:
             self.lbl_canon.config(text=t("wb.canon_ausente"), foreground=tema.SUAVE)
+            self.btn_abrir_canon.config(text=t("wb.btn_abrir_canon"))
         self._exibir_plano(self._sessao.get("plano") or [])
         self._exibir_resumo(self._sessao.get("resumo"))
         self._atualizar_botoes()
@@ -204,7 +210,7 @@ class PaginaWorldBuilder(PaginaBase):
 
     def _atualizar_botoes(self):
         rodando = self._rodando()
-        tem_canon = bool(self._sessao.get("canon"))
+        tem_canon = bool(self._sessao.get("canon")) or self._da_auditoria()
         tem_plano = any(item.get("ativo") and item.get("estado") != "concluida" for item in self._sessao.get("plano") or [])
         self.btn_canon.config(state=tk.DISABLED if rodando else tk.NORMAL)
         self.btn_abrir_canon.config(state=tk.NORMAL if tem_canon else tk.DISABLED)
@@ -240,7 +246,28 @@ class PaginaWorldBuilder(PaginaBase):
         self.app.pagina("editor").atualizar_arvore()
         self._abrir_canon()
 
+    def _da_auditoria(self):
+        return self._sessao.get("origem") == "auditoria" and bool(self._sessao.get("auditoria"))
+
+    def corrigir_auditoria(self, relatorio):
+        """Chamado pela Auditoria de Lore: monta o plano de correção (o Mestre revisa antes de executar)."""
+        if self._rodando():
+            self.app.toast(t("wb.ja_rodando"))
+            return
+        if acoes.wb_tem_plano_pendente() and not messagebox.askyesno(t("wb.auditoria_substituir_titulo"),
+                                                                     t("wb.auditoria_substituir")):
+            return
+        self.app.mostrar_pagina("worldbuilder")
+        self._iniciar(acoes.wb_gerar_plano_auditoria(
+            relatorio, ao_concluir=lambda _: (self._concluido(None), self.app.toast(t("wb.toast_plano_auditoria"))),
+            ao_falhar=self._falhou))
+
     def _abrir_canon(self):
+        if self._da_auditoria():
+            from ui.dialogs.audit_report import JanelaAuditoria
+            JanelaAuditoria(self.app.root, self._sessao.get("auditoria"), toast=self.app.toast,
+                            ao_corrigir=self.corrigir_auditoria)
+            return
         caminho = acoes.wb_caminho_canon()
         if not caminho:
             self.app.toast(t("wb.canon_ausente"))

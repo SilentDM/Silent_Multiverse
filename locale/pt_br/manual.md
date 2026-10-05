@@ -112,6 +112,7 @@
 - Além de criar arquivos, o WorldBuilder pode Criar NPC e Criar Monstro (texto + ficha de combate), gerar Aventuras e Testes de Conhecimento.
 - Cada item do plano tem um gênero: o laboratório secreto pode ser Horror Cósmico enquanto a capital é Intriga Política. O gênero escolhe o template (ex.: Templates/misterio/local.md) e o estilo do texto.
 - No chat do Silent, 🌍 Levar ao WorldBuilder transforma a conversa na ideia do WorldBuilder.
+- Corrigir a auditoria: no relatório da Auditoria de Lore, 🌍 Corrigir com o WorldBuilder pula o Cânone e monta um plano de correção (arquivos a corrigir com o motivo apontado pelo Auditor e arquivos que faltam). Ver Relatório da Auditoria reabre o relatório; Gerar Plano refaz o plano a partir dele. Nada é alterado até você clicar em Executar Marcadas, e cada arquivo é corrigido com o relatório como referência.
 ## A aba Requisições
 - Abre com os padrões do projeto e mostra o arquivo inteiro. Tudo o que você trocar vale só para este pedido.
 - Estilo em quatro eixos: Gênero, Tom, Clima e Estilo de escrita (ex.: numa aventura de Mistério, a caverna lovecraftiana pode usar Horror Cósmico).
@@ -122,7 +123,7 @@
 - Parar Qualquer Execução Atual: interrompe todas as tarefas de IA em andamento.
 - Expander: procura tags <-- TODO: em todos os arquivos e as preenche com a IA. Um revisor confere o resultado contra a sua lore antes de salvar.
 - Reconstruir Contexto do Mundo: atualiza o que a IA sabe sobre o projeto (também é reconstruído automaticamente a cada 12 horas).
-- Auditar Lore do Mundo: procura contradições, buracos na linha do tempo e inconsistências geográficas e mostra um relatório que você pode salvar.
+- Auditar Lore do Mundo: procura contradições, buracos na linha do tempo e inconsistências geográficas e mostra um relatório que você pode salvar ou mandar ao WorldBuilder (🌍 Corrigir com o WorldBuilder). Marque Montar o plano de correção no WorldBuilder ao terminar para isso acontecer sozinho; o plano sempre espera a sua revisão.
 - Livro do Cenário: compila todos os arquivos em um HTML com índice e links e o abre no navegador (imprima como PDF se quiser).
 - Analisar Tamanho do Projeto: mostra, por pasta e arquivo, quantos tokens o projeto ocupa no contexto da IA (Mestre e jogadores) e quanto isso representa do limite do provedor.
 - Backup: cria um .zip com o projeto e a pasta de dados na raiz do disco do programa (ou na pasta do programa, se não houver permissão).

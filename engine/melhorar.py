@@ -18,7 +18,7 @@ from core.i18n import t, tc
 from core.prompts import carregar_prompt
 
 
-def melhorar_arquivo(caminho, objetivo: str = None, canon: str = None, requisicao=None) -> bool:
+def melhorar_arquivo(caminho, objetivo: str = None, canon: str = None, requisicao=None, auditoria: str = None) -> bool:
     """Reescreve o arquivo com a IA (ou só acrescenta, no modo 'acrescentar'). Devolve True se gravou."""
     arquivo = Path(caminho)
     objetivo = objetivo or (requisicao.objetivo if requisicao else "") or tc("acoes.padrao_melhorar")
@@ -30,7 +30,13 @@ def melhorar_arquivo(caminho, objetivo: str = None, canon: str = None, requisica
     ex.marcar_processamento(arquivo, True)
     try:
         corpo, secao_notas = notas.separar(arquivo.read_text(encoding="utf-8", errors="ignore"))
-        bloco_canon = carregar_prompt("melhorar_canon", canon=canon) if canon else ""
+        # Referência do WorldBuilder: o Cânone da campanha ou o relatório da Auditoria de Lore
+        if canon:
+            bloco_canon = carregar_prompt("melhorar_canon", canon=canon)
+        elif auditoria:
+            bloco_canon = carregar_prompt("melhorar_auditoria", relatorio=auditoria)
+        else:
+            bloco_canon = ""
         escolhas = requisicao.escolhas_estilo() if requisicao else None
         texto = au.ask_ai(
             contents=carregar_prompt("melhorar_usuario", objetivo=objetivo, conteudo=corpo, canon=bloco_canon,

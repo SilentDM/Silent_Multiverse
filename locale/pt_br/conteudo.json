@@ -187,5 +187,6 @@
   "conselho.mestre_no_roleplay": "Mestre",
   "chat.texto_resumo": "(Resumo de conversas anteriores) {texto}",
   "chat.texto_mestre": "Mestre",
-  "marcador.secao_secreta": "[segredo]"
+  "marcador.secao_secreta": "[segredo]",
+  "wb.objetivo_auditoria": "Corrigir as inconsistências apontadas pela Auditoria de Lore."
 }

@@ -57,6 +57,7 @@ MAX_ACOES_PADRAO = 25
 PASTA_CANON = "Canon"
 
 ETAPA_INICIO, ETAPA_CANON, ETAPA_PLANO, ETAPA_CONCLUIDA = "inicio", "canon", "plano", "concluida"
+ORIGEM_IDEIA, ORIGEM_AUDITORIA = "ideia", "auditoria"     # de onde veio o plano: Cânone ou relatório da Auditoria
 _lock_sessao = threading.Lock()
 
 
@@ -173,7 +174,8 @@ def _arquivo_sessao() -> Path:
 
 
 def _sessao_vazia() -> dict:
-    return {"objetivo": "", "etapa": ETAPA_INICIO, "canon": None, "plano": [], "resumo": None}
+    return {"objetivo": "", "etapa": ETAPA_INICIO, "canon": None, "plano": [], "resumo": None,
+            "origem": ORIGEM_IDEIA, "auditoria": None, "auditoria_data": None}
 
 
 def carregar_sessao() -> dict:
@@ -207,6 +209,13 @@ def caminho_canon(sessao: dict = None):
         return None
     caminho = resolver_caminho(sessao["canon"])
     return caminho if caminho.is_file() else None
+
+
+def _referencia(sessao: dict) -> dict:
+    """O texto que guia cada arquivo na execução: o Cânone (ideia) ou o relatório (auditoria)."""
+    if sessao.get("origem") == ORIGEM_AUDITORIA:
+        return {"auditoria": sessao.get("auditoria") or ""}
+    return {"canon": _ler_canon(sessao)}
 
 
 def _ler_canon(sessao: dict) -> str:
@@ -358,23 +367,19 @@ def validar_plano(acoes: list) -> list:
     return itens
 
 
-def gerar_plano() -> list:
-    """Etapa 2. A IA propõe as ações a partir do cânone (lido do disco, com as edições do Mestre)."""
-    sessao = carregar_sessao()
-    texto_canon = _ler_canon(sessao)
+def _planejar(sessao: dict, prompt_sistema: str, pedido: str) -> list:
+    """Pede o plano à IA, valida (sem IA) e grava na sessão. Comum ao Cânone e à Auditoria."""
     ferramentas = [tipo for tipo in TIPOS if tipo_permitido(tipo)]
     if not ferramentas:
         raise ErroWorldBuilder(t("wb.log_sem_ferramentas"))
     ev.log(t("wb.log_inicio"))
     generos = "\n".join(f'- "{ident}": {nome}' for ident, nome in estilo.opcoes("genero"))
     instrucao = carregar_prompt(
-        "wb_planner_sistema", ferramentas="\n".join(f"- {f}" for f in ferramentas), projeto=pu.PASTA_PROJETO,
+        prompt_sistema, ferramentas="\n".join(f"- {f}" for f in ferramentas), projeto=pu.PASTA_PROJETO,
         max_acoes=max_acoes(), generos=generos, genero_padrao=estilo.padrao("genero"),
         restricao_pastas="" if tipo_permitido("CreateFolder") else carregar_prompt("wb_planner_restricao_pastas"))
-    resposta = au.ask_ai(
-        contents=carregar_prompt("wb_planner_usuario", objetivo=sessao.get("objetivo") or tc("wb.objetivo_padrao"),
-                                 canon=texto_canon, max_acoes=max_acoes()),
-        system_instruction=instrucao, temperature=0.3, response_schema=ActionPlan, use_world_context=True)
+    resposta = au.ask_ai(contents=pedido, system_instruction=instrucao, temperature=0.3,
+                         response_schema=ActionPlan, use_world_context=True)
     if not resposta:
         raise ErroWorldBuilder(t("wb.erro_resposta_vazia"))
     plano = ActionPlan.model_validate_json(ex.remover_markdown_fences(str(resposta)))
@@ -385,6 +390,39 @@ def gerar_plano() -> list:
     ev.log(t("wb.log_plano_ok", total=len(itens), ativos=sum(1 for i in itens if i["ativo"])))
     ev.emitir("wb.sessao", sessao)
     return itens
+
+
+def gerar_plano() -> list:
+    """Etapa 2. A IA propõe as ações a partir do cânone (lido do disco, com as edições do Mestre)."""
+    sessao = carregar_sessao()
+    if sessao.get("origem") == ORIGEM_AUDITORIA:
+        return gerar_plano_da_auditoria(sessao.get("auditoria") or "")
+    pedido = carregar_prompt("wb_planner_usuario", objetivo=sessao.get("objetivo") or tc("wb.objetivo_padrao"),
+                             canon=_ler_canon(sessao), max_acoes=max_acoes())
+    return _planejar(sessao, "wb_planner_sistema", pedido)
+
+
+def gerar_plano_da_auditoria(relatorio: str) -> list:
+    """
+    Plano de correção a partir do relatório da Auditoria de Lore (sem etapa de Cânone):
+    cada inconsistência vira ações sobre os arquivos envolvidos, com a explicação e a
+    solução do Auditor no objetivo. Substitui a sessão atual do WorldBuilder.
+    """
+    relatorio = (relatorio or "").strip()
+    if not relatorio:
+        raise ErroWorldBuilder(t("wb.erro_sem_relatorio"))
+    sessao = _sessao_vazia()
+    sessao.update(origem=ORIGEM_AUDITORIA, auditoria=relatorio, auditoria_data=pu.currentdate(),
+                  objetivo=tc("wb.objetivo_auditoria"))
+    salvar_sessao(sessao)
+    ev.log(t("wb.log_auditoria_inicio"))
+    pedido = carregar_prompt("wb_planner_auditoria_usuario", relatorio=relatorio, max_acoes=max_acoes())
+    return _planejar(sessao, "wb_planner_auditoria_sistema", pedido)
+
+
+def tem_plano_pendente() -> bool:
+    """True se a sessão atual tem itens marcados que ainda não foram executados."""
+    return any(i.get("ativo") and i.get("estado") != "concluida" for i in carregar_sessao().get("plano") or [])
 
 
 def atualizar_item(indice: int, **campos) -> dict:
@@ -424,7 +462,7 @@ def _criar_esboco(arquivo: Path, item: dict, com_template: bool):
     ev.log(t("wb.log_arquivo_criado", caminho=caminho_relativo(arquivo)))
 
 
-def _executar_item(item: dict, texto_canon: str) -> bool:
+def _executar_item(item: dict, referencia: dict) -> bool:
     tipo = item["type"]
     destino = resolver_caminho(item["path"])
     ev.log(t("wb.log_acao", tipo=t(f"wb.tipo.{tipo}"), caminho=item["path"]))
@@ -439,12 +477,12 @@ def _executar_item(item: dict, texto_canon: str) -> bool:
     if tipo in ("CreateFile", "CreateNPC", "CreateMonster"):
         if not arquivo.exists():
             _criar_esboco(arquivo, item, com_template=True)
-        ok = melhorar.melhorar_arquivo(arquivo, item["objective"], canon=texto_canon, requisicao=req)
+        ok = melhorar.melhorar_arquivo(arquivo, item["objective"], requisicao=req, **referencia)
         if ok and tipo in ("CreateNPC", "CreateMonster"):
             ok = geradores.gerar_ficha(arquivo, item["objective"], requisicao=req,
                                        tipo="monstro" if tipo == "CreateMonster" else "npc")
     elif tipo == "ImproveFile":
-        ok = melhorar.melhorar_arquivo(arquivo, item["objective"], canon=texto_canon, requisicao=req)
+        ok = melhorar.melhorar_arquivo(arquivo, item["objective"], requisicao=req, **referencia)
     elif tipo == "GenerateAdventure":
         if not arquivo.exists():
             _criar_esboco(arquivo, item, com_template=False)
@@ -483,7 +521,7 @@ def links_sem_arquivo(caminhos) -> list:
 def executar_plano() -> dict:
     """Etapa 3. Executa os itens marcados, fase por fase. Itens já concluídos são pulados (retomada)."""
     sessao = carregar_sessao()
-    texto_canon = _ler_canon(sessao)
+    referencia = _referencia(sessao)
     plano = sessao.get("plano", [])
     ordem = [i for i in sorted(range(len(plano)), key=lambda i: (plano[i]["fase"], -plano[i]["priority"]))
              if plano[i]["ativo"] and plano[i]["estado"] != "concluida"]
@@ -507,7 +545,7 @@ def executar_plano() -> dict:
         item["estado"] = "executando"
         ev.emitir("wb.acao", {"indice": indice, "estado": "executando"})
         try:
-            ok = _executar_item(item, texto_canon)
+            ok = _executar_item(item, referencia)
         except Exception as e:
             ev.log(t("wb.log_erro_acao", caminho=item["path"], erro=e))
             ok = False

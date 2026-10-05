@@ -187,5 +187,6 @@
   "conselho.mestre_no_roleplay": "GM",
   "chat.texto_resumo": "(Summary of earlier conversations) {texto}",
   "chat.texto_mestre": "GM",
-  "marcador.secao_secreta": "[secret]"
+  "marcador.secao_secreta": "[secret]",
+  "wb.objetivo_auditoria": "Fix the inconsistencies pointed out by the Lore Audit."
 }

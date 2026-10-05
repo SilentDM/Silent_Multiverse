@@ -592,5 +592,13 @@
   "editor.lateral.vazio_notas": "No notes.",
   "editor.lateral.carregando": "Searching...",
   "editor.rapido_titulo": "Open file",
-  "editor.rapido_dica": "Type part of the name · ↑ ↓ to choose · Enter opens · Esc closes"
+  "editor.rapido_dica": "Type part of the name · ↑ ↓ to choose · Enter opens · Esc closes",
+  "wb.origem_auditoria": "🔎 Correction plan from the Lore Audit ({data}) — review each item before running.",
+  "wb.btn_ver_relatorio": "🔎 View Audit Report",
+  "wb.auditoria_substituir_titulo": "Replace plan?",
+  "wb.auditoria_substituir": "There is a WorldBuilder plan not yet run. Building the audit correction plan will replace it. Continue?",
+  "wb.toast_plano_auditoria": "🔎 Correction plan ready in the WorldBuilder! Review it before running.",
+  "auditoria.btn_corrigir": "🌍 Fix with the WorldBuilder",
+  "actions.audit_para_wb": "Build the correction plan in the WorldBuilder when done",
+  "actions.audit_para_wb_dica": "The report becomes a reviewable plan (files to fix, with the reason the Auditor gave). Nothing changes until you run it."
 }

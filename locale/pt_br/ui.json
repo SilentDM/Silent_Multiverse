@@ -592,5 +592,13 @@
   "editor.lateral.vazio_notas": "Sem notas.",
   "editor.lateral.carregando": "Procurando...",
   "editor.rapido_titulo": "Abrir arquivo",
-  "editor.rapido_dica": "Digite parte do nome · ↑ ↓ para escolher · Enter abre · Esc fecha"
+  "editor.rapido_dica": "Digite parte do nome · ↑ ↓ para escolher · Enter abre · Esc fecha",
+  "wb.origem_auditoria": "🔎 Plano de correção da Auditoria de Lore ({data}) — revise cada item antes de executar.",
+  "wb.btn_ver_relatorio": "🔎 Ver Relatório da Auditoria",
+  "wb.auditoria_substituir_titulo": "Substituir plano?",
+  "wb.auditoria_substituir": "Há um plano do WorldBuilder ainda não executado. Montar o plano de correção da auditoria vai substituí-lo. Continuar?",
+  "wb.toast_plano_auditoria": "🔎 Plano de correção pronto no WorldBuilder! Revise antes de executar.",
+  "auditoria.btn_corrigir": "🌍 Corrigir com o WorldBuilder",
+  "actions.audit_para_wb": "Montar o plano de correção no WorldBuilder ao terminar",
+  "actions.audit_para_wb_dica": "O relatório vira um plano revisável (arquivos a corrigir, com o motivo apontado pelo Auditor). Nada é alterado sem você executar."
 }
