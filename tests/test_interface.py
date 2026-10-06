@@ -239,6 +239,21 @@ class TesteInterface(unittest.TestCase):
         finally:
             fechar(root)
 
+    def test_menu_ia_completo(self):
+        from core.i18n import t
+        root, janela = self._montar("pt_br")
+        try:
+            editor = janela.paginas["editor"]
+            editor.ir_para(str(self.raiz_projeto / "Valia.md"))
+            editor._preparar_menu_ia()                     # antes parava no separador (TypeError)
+            menu = editor.menu_ia
+            self.assertEqual(menu.index("end"), 7)          # 7 ações + 1 separador
+            self.assertEqual(menu.type(5), "separator")
+            self.assertEqual(menu.entrycget(6, "label"), t("editor.menu_perguntar_silent"))
+            self.assertEqual(menu.entrycget(7, "label"), t("editor.menu_historico"))
+        finally:
+            fechar(root)
+
     def test_editor_abas_busca_autocompletar_e_painel(self):
         (self.raiz_projeto / "Thorvald.md").write_text("# Thorvald\nstatus: segredo\nRei. <-- TODO: x", encoding="utf-8")
         (self.raiz_projeto / "Valia.md").write_text("# Valia\n## Cidades\nGovernada por [[Thorvald]] e [[Fantasma]].",

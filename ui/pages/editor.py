@@ -1108,16 +1108,19 @@ class PaginaEditor(PaginaBase):
         m.delete(0, tk.END)
         caminho = self.sessao.arquivo_atual
         estado = tk.NORMAL if caminho and arq.eh_markdown(caminho) else tk.DISABLED
-        for rotulo, comando in (("editor.menu_melhorar", lambda: self._acao_ia("melhorar", caminho)),
-                                ("editor.menu_aventura", lambda: self._acao_ia("aventura", caminho)),
-                                ("editor.menu_conhecimento", lambda: self._acao_ia("conhecimento", caminho)),
-                                ("editor.menu_ficha", lambda: self._acao_ia("ficha", caminho)),
-                                ("editor.menu_conselho", lambda: self._enviar_conselho(caminho)), None,
-                                ("editor.menu_perguntar_silent", lambda: self._perguntar_silent(caminho)),
-                                ("editor.menu_historico", lambda: self._historico(caminho))):
-            if rotulo is None:
+        itens = (("editor.menu_melhorar", lambda: self._acao_ia("melhorar", caminho)),
+                 ("editor.menu_aventura", lambda: self._acao_ia("aventura", caminho)),
+                 ("editor.menu_conhecimento", lambda: self._acao_ia("conhecimento", caminho)),
+                 ("editor.menu_ficha", lambda: self._acao_ia("ficha", caminho)),
+                 ("editor.menu_conselho", lambda: self._enviar_conselho(caminho)),
+                 None,                                          # separador
+                 ("editor.menu_perguntar_silent", lambda: self._perguntar_silent(caminho)),
+                 ("editor.menu_historico", lambda: self._historico(caminho)))
+        for item in itens:
+            if item is None:
                 m.add_separator()
             else:
+                rotulo, comando = item
                 m.add_command(label=t(rotulo), command=comando, state=estado)
 
     def _menu_editor(self, evento):
