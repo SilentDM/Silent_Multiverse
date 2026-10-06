@@ -38,7 +38,8 @@ def _gravar(arquivo: Path, texto: str, secao_notas: str, requisicao):
     original = arquivo.read_text(encoding="utf-8", errors="ignore") if arquivo.exists() else None
     hist.arquivar_versao_para_historico(arquivo)
     pu.gravar_markdown(arquivo, notas.reanexar(texto, secao_notas), original=original,
-                       segredo=True if requisicao and requisicao.segredo else None)
+                       segredo=True if requisicao and requisicao.segredo else None,
+                       rascunho=requisicao.status_rascunho() if requisicao else None)
 
 
 def gerar_aventura_completa(path, reason=None, requisicao=None):

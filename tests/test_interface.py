@@ -71,6 +71,22 @@ class TesteInterface(unittest.TestCase):
                 finally:
                     fechar(root)
 
+    def test_opcao_de_tirar_rascunho_so_para_rascunhos(self):
+        (self.raiz_projeto / "Rascunho.md").write_text("---\nstatus: rascunho\n---\n# R", encoding="utf-8")
+        root, janela = self._montar("pt_br")
+        try:
+            pagina = janela.pagina("requisicoes")
+            janela.abrir_requisicao("melhorar", str(self.raiz_projeto / "Valia.md"))
+            root.update()
+            self.assertEqual(pagina.frame_rascunho.winfo_manager(), "")       # arquivo normal: não aparece
+            janela.abrir_requisicao("melhorar", str(self.raiz_projeto / "Rascunho.md"))
+            root.update()
+            self.assertEqual(pagina.frame_rascunho.winfo_manager(), "grid")
+            self.assertTrue(pagina.var_tirar_rascunho.get())                   # já vem marcada
+            self.assertTrue(pagina._ler_campos().tirar_rascunho)
+        finally:
+            fechar(root)
+
     def test_marcar_todas_as_referencias(self):
         root, janela = self._montar("pt_br")
         try:

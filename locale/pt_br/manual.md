@@ -149,6 +149,7 @@ aliases: [O Rei das Cinzas]
 - Estilo em quatro eixos: Gênero, Tom, Clima e Estilo de escrita (ex.: numa aventura de Mistério, a caverna lovecraftiana pode usar Horror Cósmico).
 - Diretrizes extras, arquivos de referência (os ligados por [[links]] aparecem sugeridos), modo (reescrever tudo ou só acrescentar), profundidade, público (Mestre ou texto para jogadores), nível do grupo, número de jogadores, criatividade e a marca 🤫 de segredo.
 - Predefinições guardam combinações que você usa sempre; o tamanho estimado mostra quantos tokens o pedido vai usar.
+- Se o arquivo está como rascunho (status: rascunho), aparece ✎ Tirar do rascunho ao terminar, já marcada: quando a IA termina, o arquivo deixa de ser rascunho e entra no contexto da IA. Desmarque para manter como rascunho.
 
 # 7. AÇÕES
 As ferramentas estão em quatro grupos: Gerar (escrevem ou montam algo novo), Analisar (só leem o projeto e mostram um relatório), Manutenção (deixam o projeto em ordem sem mudar a lore) e Zona de perigo (apagam o que não volta, sempre com confirmação).

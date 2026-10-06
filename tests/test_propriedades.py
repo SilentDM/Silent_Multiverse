@@ -178,6 +178,23 @@ class TesteEsquemaDosTemplates(unittest.TestCase):
         self.assertEqual(p["faction"], "")
         self.assertNotIn("cor", p)
 
+    def test_tirar_do_rascunho_ao_terminar(self):
+        import engine.requisicao as requisicao
+        alvo = self.raiz / "Capital Zephyrus.md"
+        req = requisicao.nova("melhorar", alvo, "reescrever")
+        self.assertTrue(req.eh_rascunho and req.tirar_rascunho)          # arquivo em rascunho: vem marcada
+        req.tirar_rascunho = False
+        with ia_falsa("# Capital Zephyrus\nTexto."):
+            melhorar.melhorar_arquivo(alvo, requisicao=req)
+        self.assertTrue(props.eh_rascunho(alvo.read_text(encoding="utf-8")))   # desmarcada: continua rascunho
+        req.tirar_rascunho = True
+        with ia_falsa("# Capital Zephyrus\nTexto."):
+            melhorar.melhorar_arquivo(alvo, requisicao=req)
+        texto = alvo.read_text(encoding="utf-8")
+        self.assertFalse(props.eh_rascunho(texto))
+        self.assertEqual(props.ler(texto)["tipo"], "cidade")             # o resto do bloco fica
+        self.assertFalse(requisicao.nova("melhorar", self.raiz / "Sem Tipo.md").eh_rascunho)
+
     def test_sem_nada_para_preencher_nao_cria_bloco(self):
         alvo = self.raiz / "Sem Tipo.md"
         with ia_falsa("# Mercador Osmund\nVende peles raras."):

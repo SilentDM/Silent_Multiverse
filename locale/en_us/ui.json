@@ -734,5 +734,7 @@
   "wizard.voltar": "← Back",
   "wizard.proximo": "Next →",
   "wizard.comecar": "Start",
-  "wizard.pular": "Skip the assistant"
+  "wizard.pular": "Skip the assistant",
+  "req.tirar_rascunho": "✎ Remove the draft status when done",
+  "ajuda.req.tirar_rascunho": "This file is a draft (status: draft), so it is left out of the AI context: no tool sees what is in it. When checked, the draft status is removed once the AI finishes, and the file becomes part of the world."
 }

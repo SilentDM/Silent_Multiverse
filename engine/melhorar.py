@@ -59,7 +59,8 @@ def melhorar_arquivo(caminho, objetivo: str = None, canon: str = None, requisica
         hist.arquivar_versao_para_historico(arquivo)
         # Propriedades (YAML do Obsidian): as do arquivo ficam; a IA só completa as chaves vazias do esquema
         novo = esquemas.aplicar(original, notas.reanexar(resultado, secao_notas), saida_ia=bruto)
-        pu.gravar_markdown(arquivo, novo, segredo=True if requisicao and requisicao.segredo else None)
+        pu.gravar_markdown(arquivo, novo, segredo=True if requisicao and requisicao.segredo else None,
+                           rascunho=requisicao.status_rascunho() if requisicao else None)
         ev.log(t("wb.log_melhorado", nome=arquivo.name))
         return True
     except Exception as e:

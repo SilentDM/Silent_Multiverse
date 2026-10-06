@@ -149,6 +149,7 @@ aliases: [The Ash King]
 - Style in four axes: Genre, Tone, Mood and Writing style (e.g. in a Mystery adventure, the Lovecraftian cave can use Cosmic Horror).
 - Extra guidelines, reference files (files linked by [[links]] are suggested), mode (rewrite everything or only add), depth, audience (GM or player-facing text), party level, number of players, creativity and the 🤫 secret mark.
 - Presets keep combinations you use often; the size estimate shows how many tokens the request will use.
+- If the file is a draft (status: draft), ✎ Remove the draft status when done appears, already checked: when the AI finishes, the file stops being a draft and joins the AI context. Uncheck it to keep the draft.
 
 # 7. ACTIONS
 The tools are in four groups: Generate (write or build something new), Analyze (only read the project and show a report), Maintenance (keep the project in order without changing the lore) and Danger zone (erase what can't be recovered, always with a confirmation).

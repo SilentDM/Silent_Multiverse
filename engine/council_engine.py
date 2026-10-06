@@ -153,7 +153,8 @@ def sintetizar_e_salvar_arquivo_canonica(caminho_arquivo: Path, texto_arquiteto:
     original = caminho.read_text(encoding="utf-8", errors="ignore")
     hist.arquivar_versao_para_historico(caminho)
     pu.gravar_markdown(caminho, esquemas.aplicar(original, notas.reanexar(decisao.conteudo_markdown.strip(), secao_notas)),
-                       segredo=True if requisicao and requisicao.segredo else None)
+                       segredo=True if requisicao and requisicao.segredo else None,
+                       rascunho=requisicao.status_rascunho() if requisicao else None)
     ev.log(t("conselho.log_consolidado", nome=caminho.name))
     ev.log(t("conselho.log_nota_juiz", nota=decisao.resumo_decisao_juiz))
     return True

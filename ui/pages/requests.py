@@ -101,6 +101,14 @@ class PaginaRequisicoes(PaginaBase):
                             variable=self.var_criatura).pack(side=tk.LEFT, padx=(0, 8))
         ajuda(self.frame_criatura, t("ajuda.req.segredo")).pack(side=tk.LEFT)
         linha += 1
+        # Só aparece quando o arquivo está como rascunho (e já vem marcada)
+        self.var_tirar_rascunho = tk.BooleanVar()
+        self.frame_rascunho = ttk.Frame(opcoes)
+        self.frame_rascunho.grid(row=linha, column=0, columnspan=4, sticky="w", padx=6, pady=(0, 3))
+        ttk.Checkbutton(self.frame_rascunho, text=t("req.tirar_rascunho"), variable=self.var_tirar_rascunho).pack(side=tk.LEFT)
+        ajuda(self.frame_rascunho, t("ajuda.req.tirar_rascunho")).pack(side=tk.LEFT, padx=(3, 0))
+        self.frame_rascunho.grid_remove()
+        linha += 1
 
         cab_refs = ttk.Frame(opcoes)
         cab_refs.grid(row=linha, column=0, columnspan=4, sticky="ew", padx=6, pady=(6, 0))
@@ -194,6 +202,11 @@ class PaginaRequisicoes(PaginaBase):
         self.var_nivel.set(str(req.nivel_grupo))
         self.var_jogadores.set(str(req.jogadores))
         self.var_segredo.set(bool(req.segredo))
+        self.var_tirar_rascunho.set(bool(req.tirar_rascunho))
+        if req.eh_rascunho:
+            self.frame_rascunho.grid()
+        else:
+            self.frame_rascunho.grid_remove()
         self.var_criatura.set(req.criatura)
         for filho in self.frame_criatura.winfo_children():
             filho.config(state=tk.NORMAL if req.tipo == "ficha" else tk.DISABLED)
@@ -215,6 +228,7 @@ class PaginaRequisicoes(PaginaBase):
         req.nivel_grupo = int(self.var_nivel.get()) if self.var_nivel.get().isdigit() else 0
         req.jogadores = int(self.var_jogadores.get()) if self.var_jogadores.get().isdigit() else 0
         req.segredo = bool(self.var_segredo.get())
+        req.tirar_rascunho = bool(self.var_tirar_rascunho.get()) and req.eh_rascunho
         req.criatura = self.var_criatura.get()
         req.referencias = [c for c, _, marcado in self._refs if marcado]
         return req

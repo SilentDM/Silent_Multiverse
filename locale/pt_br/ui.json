@@ -734,5 +734,7 @@
   "wizard.voltar": "← Voltar",
   "wizard.proximo": "Próximo →",
   "wizard.comecar": "Começar",
-  "wizard.pular": "Pular o assistente"
+  "wizard.pular": "Pular o assistente",
+  "req.tirar_rascunho": "✎ Tirar do rascunho ao terminar",
+  "ajuda.req.tirar_rascunho": "Este arquivo está como rascunho (status: rascunho), por isso fica fora do contexto da IA: nenhuma ferramenta enxerga o que está nele. Marcado, o status de rascunho sai quando a IA terminar, e o arquivo passa a fazer parte do mundo."
 }

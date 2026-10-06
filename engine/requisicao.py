@@ -46,6 +46,12 @@ class Requisicao:
     segredo: bool = False
     criatividade: str = "equilibrado"
     criatura: str = "npc"          # só para Ficha de Combate: "npc" ou "monstro"
+    eh_rascunho: bool = False      # o arquivo tem status: rascunho (informativo, lido ao abrir)
+    tirar_rascunho: bool = False   # ao terminar, tira o status de rascunho (o arquivo entra no contexto da IA)
+
+    def status_rascunho(self):
+        """Valor para gravar_markdown(rascunho=...): False tira o rascunho; None deixa como está."""
+        return False if self.tirar_rascunho else None
 
     # --- leitura pelas ferramentas ---
     def escolhas_estilo(self) -> dict:
@@ -98,6 +104,11 @@ def nova(tipo: str, caminho: str, objetivo: str = "", **campos) -> Requisicao:
     """Requisição com os padrões do projeto nos eixos de estilo."""
     req = Requisicao(tipo=tipo if tipo in TIPOS else "melhorar", caminho=str(caminho), objetivo=objetivo or "",
                      **estilo.padroes())
+    try:
+        req.eh_rascunho = pu.eh_rascunho(Path(caminho).read_text(encoding="utf-8", errors="ignore")[:4000])
+    except OSError:
+        req.eh_rascunho = False
+    req.tirar_rascunho = req.eh_rascunho          # arquivo em rascunho: a opção já vem marcada
     validos = {f.name for f in fields(Requisicao)}
     for chave, valor in campos.items():
         if chave in validos and valor is not None:
