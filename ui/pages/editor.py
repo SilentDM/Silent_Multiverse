@@ -8,6 +8,7 @@ Toda a lógica vive em engine.arquivos (operações de arquivo), engine.editor_s
 (ações de IA). Aqui ficam só widgets, menus, atalhos, arrastar-e-soltar e timers.
 """
 import tkinter as tk
+from datetime import datetime
 from pathlib import Path
 from tkinter import ttk, messagebox, simpledialog, scrolledtext
 
@@ -232,6 +233,23 @@ class PaginaEditor(PaginaBase):
             tamanho_tag = tamanho + (rel - 12)
             fonte = ("Consolas", tamanho_tag) + tuple(estilo.split())
             self.editor.tag_configure(tag, font=fonte, foreground=cor)
+        # Visão geral da pasta selecionada
+        self.editor.tag_configure("pasta_titulo", font=("Segoe UI", tamanho + 6, "bold"), foreground=tema.VERDE,
+                                  spacing3=2)
+        self.editor.tag_configure("pasta_info", font=("Segoe UI", tamanho - 1), foreground=tema.SUAVE)
+        self.editor.tag_configure("pasta_secao", font=("Segoe UI", tamanho + 1, "bold"), foreground=tema.VERDE,
+                                  spacing1=14, spacing3=4)
+        self.editor.tag_configure("pasta_numero", font=("Segoe UI", tamanho, "bold"), foreground=tema.TEXTO)
+        self.editor.tag_configure("pasta_rotulo", font=("Segoe UI", tamanho - 1), foreground=tema.SUAVE)
+        self.editor.tag_configure("pasta_galho", font=("Consolas", tamanho), foreground="#4a4a4a")
+        self.editor.tag_configure("pasta_pasta", font=("Segoe UI", tamanho, "bold"), foreground=tema.AZUL)
+        self.editor.tag_configure("pasta_arquivo", font=("Segoe UI", tamanho), foreground=tema.TEXTO)
+        self.editor.tag_configure("pasta_rascunho", foreground=tema.SUAVE)
+        self.editor.tag_configure("pasta_marca", font=("Segoe UI", tamanho - 1), foreground=tema.AMARELO)
+        self.editor.tag_configure("pasta_vazia", font=("Segoe UI", tamanho - 1, "italic"), foreground=tema.SUAVE)
+        self.editor.tag_configure("pasta_link", font=("Segoe UI", tamanho), foreground=tema.VERMELHO)
+        self.editor.tag_configure("pasta_clicavel", underline=False)
+        self.editor.tag_raise("pasta_rascunho")
         self.editor.tag_configure("md_todo", background="#2a1205")
         self.editor.tag_configure("busca", background="#5b4a12")
         self.editor.tag_configure("busca_atual", background=tema.AMARELO, foreground="#000000")
@@ -368,6 +386,113 @@ class PaginaEditor(PaginaBase):
         self._atualizar_barra()
         self._atualizar_lateral()
 
+    # ------------------------------------------------------------------
+    # VISÃO GERAL DA PASTA SELECIONADA (gerada na hora, sem IA)
+    # ------------------------------------------------------------------
+    def _mostrar_pasta(self, caminho):
+        resumo = documento.resumo_pasta(caminho)
+        self._mostrar_aviso(t("editor.diretorio", nome=arq.nome(caminho)), "")
+        self._caminhos_pasta = []
+        ed = self.editor
+        ed.config(state=tk.NORMAL)
+
+        def escrever(texto, *tags):
+            ed.insert(tk.END, texto, tags)
+
+        def clicavel(texto, caminho_alvo, *tags):
+            self._caminhos_pasta.append(caminho_alvo)
+            escrever(texto, *tags, "pasta_clicavel", f"pasta_abrir_{len(self._caminhos_pasta) - 1}")
+
+        escrever(f"📁 {resumo['nome']}\n", "pasta_titulo")
+        escrever(f"{resumo['relativo'] or t('editor.pasta.raiz')}\n", "pasta_info")
+
+        totais, estados = resumo["totais"], resumo["estados"]
+        escrever(t("editor.pasta.numeros") + "\n", "pasta_secao")
+        numeros = [(totais["arquivos"], "arquivos"), (totais["subpastas"], "subpastas"),
+                   (self._milhar(totais["palavras"]), "palavras"), ("~" + self._milhar(totais["tokens"]), "tokens")]
+        if totais["imagens"]:
+            numeros.append((totais["imagens"], "imagens"))
+        for i, (valor, rotulo) in enumerate(numeros):
+            escrever(("    " if i else "") + str(valor), "pasta_numero")
+            escrever(f" {t('editor.pasta.' + rotulo)}", "pasta_rotulo")
+        escrever("\n")
+        marcas = [(estados["segredo"], "🤫", "segredo"), (estados["rascunho"], "✎", "rascunho"),
+                  (estados["todo"], "⏳", "todo"), (estados["notas"], "🗒", "notas")]
+        marcas = [(n, icone, chave) for n, icone, chave in marcas if n]
+        for i, (n, icone, chave) in enumerate(marcas):
+            escrever(("    " if i else "") + f"{icone} {n}", "pasta_numero")
+            escrever(f" {t('editor.pasta.estado.' + chave)}", "pasta_rotulo")
+        if marcas:
+            escrever("\n")
+
+        escrever(t("editor.pasta.conteudo") + "\n", "pasta_secao")
+        itens = resumo["itens"]
+        if not itens:
+            escrever(t("editor.pasta.vazia") + "\n", "pasta_vazia")
+        ultimos = []                              # para cada nível aberto: o item atual é o último dos irmãos?
+        for i, (nivel, tipo, nome, caminho_item, estado, palavras) in enumerate(itens):
+            if tipo == "mais":
+                escrever(t("editor.pasta.mais") + "\n", "pasta_vazia")
+                continue
+            ultimo = not any(n == nivel for n, *_ in itens[i + 1:self._fim_do_grupo(itens, i)])
+            del ultimos[nivel:]
+            galho = "".join("   " if fim else "│  " for fim in ultimos) + ("└─ " if ultimo else "├─ ")
+            ultimos.append(ultimo)
+            escrever(galho, "pasta_galho")
+            if tipo == "pasta":
+                clicavel(f"{nome}/", caminho_item, "pasta_pasta")
+            elif tipo == "vazia":
+                escrever(t("editor.pasta.subpasta_vazia"), "pasta_vazia")
+            else:
+                tags = ("pasta_arquivo", "pasta_rascunho") if estado["rascunho"] else ("pasta_arquivo",)
+                clicavel(nome, caminho_item, *tags)
+                sinais = "".join(s for chave, s in (("segredo", " 🤫"), ("rascunho", " ✎"), ("todo", " ⏳"),
+                                                    ("notas", " 🗒")) if estado[chave])
+                if sinais:
+                    escrever(sinais, "pasta_marca")
+                escrever(f"   {t('editor.pasta.n_palavras', n=self._milhar(palavras))}", "pasta_rotulo")
+            escrever("\n")
+
+        if resumo["recentes"]:
+            escrever(t("editor.pasta.recentes") + "\n", "pasta_secao")
+            for caminho_item, nome, quando in resumo["recentes"]:
+                escrever("•  ", "pasta_galho")
+                clicavel(nome, caminho_item, "pasta_arquivo")
+                escrever(f"   {datetime.fromtimestamp(quando).strftime(t('editor.pasta.formato_data'))}\n", "pasta_rotulo")
+
+        if resumo["sem_arquivo"]:
+            escrever(t("editor.pasta.sem_arquivo") + "\n", "pasta_secao")
+            escrever(t("editor.pasta.sem_arquivo_dica") + "\n", "pasta_rotulo")
+            escrever("   ".join(f"[[{nome}]]" for nome in resumo["sem_arquivo"][:40]) + "\n", "pasta_link")
+
+        escrever("\n" + t("editor.pasta.dica") + "\n", "pasta_info")
+        ed.tag_bind("pasta_clicavel", "<Button-1>", self._clique_pasta)
+        ed.tag_bind("pasta_clicavel", "<Enter>", lambda e: ed.config(cursor="hand2"))
+        ed.tag_bind("pasta_clicavel", "<Leave>", lambda e: ed.config(cursor="xterm"))
+        ed.config(state=tk.DISABLED)
+
+    @staticmethod
+    def _milhar(numero):
+        return f"{numero:,}".replace(",", t("editor.pasta.sep_milhar"))
+
+    @staticmethod
+    def _fim_do_grupo(itens, i):
+        """Índice onde termina o grupo de irmãos do item i (o próximo item de nível menor)."""
+        nivel = itens[i][0]
+        for j in range(i + 1, len(itens)):
+            if itens[j][0] < nivel:
+                return j
+        return len(itens)
+
+    def _clique_pasta(self, evento):
+        indice = self.editor.index(f"@{evento.x},{evento.y}")
+        for tag in self.editor.tag_names(indice):
+            if tag.startswith("pasta_abrir_"):
+                caminho = self._caminhos_pasta[int(tag[len("pasta_abrir_"):])]
+                self.selecionar_caminho(caminho)
+                self.ir_para(caminho)
+                return "break"
+
     def _exibir_texto(self, texto):
         self.editor.config(state=tk.NORMAL)
         self.editor.delete("1.0", tk.END)
@@ -439,8 +564,7 @@ class PaginaEditor(PaginaBase):
             self.selecionar_caminho(caminho)
         else:
             self.sessao.fechar()
-            self._mostrar_aviso(t("editor.diretorio", nome=arq.nome(caminho)),
-                                t("editor.diretorio_texto", nome=arq.nome(caminho)))
+            self._mostrar_pasta(caminho)
         # Expander automático do arquivo que acabou de ser editado e deixado
         if anterior and salvo and editado and acoes.deve_auto_expandir(anterior):
             self._executar_ia("expander", anterior, "")

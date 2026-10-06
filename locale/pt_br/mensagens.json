@@ -116,7 +116,7 @@
   "md.persona.ambicoes": "> [!warning] Ambições & Fraquezas",
   "md.persona.motivacao": "Motivação",
   "md.persona.fraqueza": "Vulnerabilidade Oculta",
-  "md.persona.diretrizes": "## 🎭 Diretrizes de Atuação (Roleplay)",
+  "md.persona.diretrizes": "## 🎭 Diretrizes de Atuação (Interpretação)",
   "preview.propriedades": "Propriedades",
   "preview.imagem_nao_encontrada": "Imagem não encontrada: {nome}",
   "livro.log_ok": "Livro do Cenário compilado com sucesso em: {caminho}",
@@ -158,7 +158,7 @@
   "gemini.log_modelos_ok": "Lista de modelos disponíveis OK!",
   "gemini.log_atualizando_modelos": "Testando e ranqueando os modelos da API...",
   "gemini.log_erro_listar": "Erro ao listar modelos da API: {erro}",
-  "gemini.log_nenhum_modelo": "Nenhum modelo compatível respondeu ao benchmark.",
+  "gemini.log_nenhum_modelo": "Nenhum modelo compatível respondeu ao teste.",
   "gemini.log_ranking_ok": "{total} modelos válidos ranqueados para Worldbuilding!",
   "gemini.log_rate_limit": "Limite de uso atingido no modelo {modelo}. Tentando o próximo...",
   "gemini.log_timeout": "⏱️ Tempo esgotado no modelo {modelo} após {segundos}s. Tentando o próximo...",
@@ -211,5 +211,6 @@
   "notas.erro_travado": "'{nome}' está sendo alterado pela IA agora. Espere terminar para salvar a nota.",
   "notas.log_adicionada": "📝 Nota adicionada a {nome} ({origem}).",
   "wb.erro_sem_relatorio": "O relatório da auditoria está vazio.",
-  "wb.log_auditoria_inicio": "🔎 Montando o plano de correção a partir do relatório da Auditoria de Lore..."
+  "wb.log_auditoria_inicio": "🔎 Montando o plano de correção a partir do relatório da Auditoria de Lore...",
+  "acoes.log_parada_tarefa": "🛑 Pedido de parada enviado para: {tarefa}."
 }

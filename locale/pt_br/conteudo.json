@@ -188,5 +188,7 @@
   "chat.texto_resumo": "(Resumo de conversas anteriores) {texto}",
   "chat.texto_mestre": "Mestre",
   "marcador.secao_secreta": "[segredo]",
-  "wb.objetivo_auditoria": "Corrigir as inconsistências apontadas pela Auditoria de Lore."
+  "wb.objetivo_auditoria": "Corrigir as inconsistências apontadas pela Auditoria de Lore.",
+  "chat.bloco_imagem": "--- IMAGEM ANEXADA PELO USUÁRIO ({nome}): veja a imagem enviada junto desta mensagem ---",
+  "chat.registro_anexos": "(anexos: {nomes})"
 }

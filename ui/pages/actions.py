@@ -26,9 +26,6 @@ class PaginaAcoes(PaginaBase):
         self.botoes = {}
         self.status = {}
 
-        caixa = self.grade.nova_caixa(t("actions.stop_title"))
-        ttk.Button(caixa, text=t("actions.stop_all"), command=self._parar).pack(fill=tk.X, padx=10, pady=10)
-
         caixa = self.grade.nova_caixa(t("actions.expander_title"))
         self._botao(caixa, "expander", t("actions.expander_btn"), self._expander)
         self._status(caixa, "expander")
@@ -63,7 +60,7 @@ class PaginaAcoes(PaginaBase):
         self.botoes[chave] = botao
 
     def _status(self, caixa, chave):
-        rotulo = ttk.Label(caixa, text=t("actions.status_idle"))
+        rotulo = ttk.Label(caixa, text="", style="Dica.TLabel")       # vazio até a tarefa rodar
         rotulo.pack(anchor=tk.W, padx=10, pady=(0, 8))
         self.status[chave] = rotulo
 
@@ -84,10 +81,6 @@ class PaginaAcoes(PaginaBase):
                                       foreground="#e3e3e3" if ok else "#ef4444")
 
     # --- ações ---
-    def _parar(self):
-        acoes.parar_tudo()
-        self.app.toast(t("actions.toast_stopping"))
-
     def _expander(self):
         self.app.salvar_editor()
         if acoes.executar_expander(

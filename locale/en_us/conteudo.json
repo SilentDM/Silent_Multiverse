@@ -188,5 +188,7 @@
   "chat.texto_resumo": "(Summary of earlier conversations) {texto}",
   "chat.texto_mestre": "GM",
   "marcador.secao_secreta": "[secret]",
-  "wb.objetivo_auditoria": "Fix the inconsistencies pointed out by the Lore Audit."
+  "wb.objetivo_auditoria": "Fix the inconsistencies pointed out by the Lore Audit.",
+  "chat.bloco_imagem": "--- IMAGE ATTACHED BY THE USER ({nome}): see the image sent with this message ---",
+  "chat.registro_anexos": "(attachments: {nomes})"
 }

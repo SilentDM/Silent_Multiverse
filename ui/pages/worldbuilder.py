@@ -301,7 +301,7 @@ class PaginaWorldBuilder(PaginaBase):
             substituir_texto(self.log, "")
 
     def _parar(self):
-        acoes.parar_tudo()
+        acoes.parar("worldbuilder")
         self.app.toast(t("actions.toast_stopping"))
 
     def _concluido(self, _resultado):

@@ -4,6 +4,7 @@ Silent — a entidade guardiã do Nexus, persona do programa (chat local e bot d
 Antes, o texto das instruções e a montagem do prompt viviam dentro do gui.py.
 Agora a interface só chama conversar() e historico_chat().
 """
+import io
 import os
 import re
 
@@ -30,10 +31,38 @@ def instrucoes_discord() -> str:
     return carregar_prompt("discord_silent_sistema")
 
 
+EXTENSOES_IMAGEM = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp",
+                    ".gif": "image/gif", ".bmp": "image/bmp"}
+LADO_MAXIMO_IMAGEM = 2048          # imagens maiores são reduzidas antes do envio
+BYTES_MAXIMOS_IMAGEM = 4 * 1024 * 1024
+
+
+def eh_imagem(caminho: str) -> bool:
+    return os.path.splitext(str(caminho))[1].lower() in EXTENSOES_IMAGEM
+
+
+def _preparar_imagem(caminho: str) -> dict:
+    from PIL import Image
+    with open(caminho, "rb") as f:
+        dados = f.read()
+    mime = EXTENSOES_IMAGEM[os.path.splitext(str(caminho))[1].lower()]
+    with Image.open(io.BytesIO(dados)) as imagem:
+        tamanho = imagem.size
+        if mime == "image/bmp" or max(tamanho) > LADO_MAXIMO_IMAGEM or len(dados) > BYTES_MAXIMOS_IMAGEM:
+            copia = imagem.convert("RGB")
+            copia.thumbnail((LADO_MAXIMO_IMAGEM, LADO_MAXIMO_IMAGEM))
+            saida = io.BytesIO()
+            copia.save(saida, format="JPEG", quality=88)
+            dados, mime, tamanho = saida.getvalue(), "image/jpeg", copia.size
+    return {"nome": os.path.basename(caminho), "tipo": "imagem", "mime": mime, "dados": dados, "tamanho": tamanho}
+
+
 def preparar_anexo(caminho: str) -> dict:
-    """Lê um arquivo para anexar à próxima mensagem do chat."""
+    """Lê um arquivo (texto ou imagem) para anexar à próxima mensagem do chat."""
+    if eh_imagem(caminho):
+        return _preparar_imagem(caminho)
     with open(caminho, "r", encoding="utf-8") as f:
-        return {"nome": os.path.basename(caminho), "conteudo": f.read().strip()}
+        return {"nome": os.path.basename(caminho), "tipo": "texto", "conteudo": f.read().strip()}
 
 
 def historico_chat() -> list:
@@ -54,14 +83,23 @@ def historico_chat() -> list:
     return mensagens
 
 
-def conversar(mensagem: str, anexo: dict = None) -> str:
-    """Envia a mensagem a Silent (com o mundo como contexto), salva na memória e devolve a resposta."""
+def conversar(mensagem: str, anexos=None) -> str:
+    """
+    Envia a mensagem a Silent (com o mundo como contexto), salva na memória e devolve a resposta.
+    'anexos' é uma lista de preparar_anexo(): textos viram blocos; imagens vão junto da mensagem.
+    """
+    if isinstance(anexos, dict):
+        anexos = [anexos]
+    anexos = anexos or []
     guild_id, guild_name, userid, user_name = _identificadores_chat_local()
     memorias = me.carregar_memorias(guild_id, guild_name, userid, user_name)
 
     blocos = []
-    if anexo:
-        blocos.append(tc("chat.bloco_anexo", nome=anexo["nome"], conteudo=anexo["conteudo"]))
+    for anexo in anexos:
+        if anexo.get("tipo") == "imagem":
+            blocos.append(tc("chat.bloco_imagem", nome=anexo["nome"]))
+        else:
+            blocos.append(tc("chat.bloco_anexo", nome=anexo["nome"], conteudo=anexo["conteudo"]))
     if memorias:
         blocos.append(tc("chat.bloco_historico", historico=memorias))
     blocos.append(tc("chat.bloco_mensagem", mensagem=mensagem))
@@ -71,10 +109,14 @@ def conversar(mensagem: str, anexo: dict = None) -> str:
         system_instruction=instrucoes_chat(),
         temperature=0.6,
         use_world_context=True,
+        imagens=[{"mime": a["mime"], "dados": a["dados"]} for a in anexos if a.get("tipo") == "imagem"] or None,
     )
     resposta = me.trim_incomplete_sentences(resposta or "")
     if resposta:
-        me.salvar_memoria(guild_id, guild_name, userid, user_name, mensagem, resposta)
+        registro = mensagem
+        if anexos:
+            registro += "\n" + tc("chat.registro_anexos", nomes=", ".join(a["nome"] for a in anexos))
+        me.salvar_memoria(guild_id, guild_name, userid, user_name, registro, resposta)
     return resposta
 
 

@@ -36,6 +36,82 @@ def mostrar_toast(root, mensagem: str, duracao: int = 3500):
     root.after(0, _criar)
 
 
+class Dica:
+    """Dica flutuante (tooltip) que aparece ao parar o mouse sobre um widget."""
+
+    def __init__(self, widget, texto: str, atraso: int = 500):
+        self.widget, self.texto, self.atraso = widget, texto, atraso
+        self._agendado = self._janela = None
+        widget.bind("<Enter>", self._agendar, add="+")
+        widget.bind("<Leave>", self._esconder, add="+")
+        widget.bind("<ButtonPress>", self._esconder, add="+")
+
+    def _agendar(self, _evento=None):
+        self._esconder()
+        self._agendado = self.widget.after(self.atraso, self._mostrar)
+
+    def _mostrar(self):
+        self._agendado = None
+        try:
+            self._janela = tk.Toplevel(self.widget)
+            self._janela.overrideredirect(True)
+            self._janela.attributes("-topmost", True)
+            tk.Label(self._janela, text=self.texto, bg=tema.PAINEL, fg=tema.TEXTO, font=("Segoe UI", 9),
+                     padx=8, pady=4, justify="left", wraplength=320, highlightthickness=1,
+                     highlightbackground="#3a3a3a").pack()
+            self._janela.update_idletasks()
+            x = self.widget.winfo_rootx()
+            y = self.widget.winfo_rooty() - self._janela.winfo_height() - 4
+            if y < 0:
+                y = self.widget.winfo_rooty() + self.widget.winfo_height() + 4
+            self._janela.geometry(f"+{x}+{y}")
+        except tk.TclError:
+            self._janela = None
+
+    def _esconder(self, _evento=None):
+        if self._agendado:
+            try:
+                self.widget.after_cancel(self._agendado)
+            except tk.TclError:
+                pass
+            self._agendado = None
+        if self._janela is not None:
+            try:
+                self._janela.destroy()
+            except tk.TclError:
+                pass
+            self._janela = None
+
+
+class LinhaFluida(tk.Frame):
+    """Organiza os filhos da esquerda para a direita, quebrando a linha quando falta largura."""
+
+    def __init__(self, parent, espaco=4, **kwargs):
+        kwargs.setdefault("bg", tema.FUNDO)
+        super().__init__(parent, **kwargs)
+        self.espaco = espaco
+        self._largura = 0
+        self.bind("<Configure>", self._ao_redimensionar)
+
+    def _ao_redimensionar(self, evento):
+        if evento.width != self._largura:
+            self._largura = evento.width
+            self.organizar()
+
+    def organizar(self):
+        largura = self._largura or self.winfo_width() or 800
+        x = y = altura_linha = 0
+        for filho in self.winfo_children():
+            filho.update_idletasks()
+            w, h = filho.winfo_reqwidth(), filho.winfo_reqheight()
+            if x and x + w > largura:
+                x, y, altura_linha = 0, y + altura_linha + self.espaco, 0
+            filho.place(x=x, y=y)
+            x += w + self.espaco
+            altura_linha = max(altura_linha, h)
+        self.configure(height=max(1, y + altura_linha))
+
+
 def texto_rolavel(parent, fonte=("Segoe UI", 10), somente_leitura=True, **kwargs):
     widget = scrolledtext.ScrolledText(
         parent, wrap=tk.WORD, font=fonte, bg=tema.PAINEL, fg=tema.TEXTO, insertbackground="white",

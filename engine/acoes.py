@@ -17,6 +17,7 @@ import core.cache_gemini as cg
 import core.config as cfg
 import core.eventos as ev
 import core.memory as me
+import core.silent_persona as silent
 import core.sistema as sistema
 import core.tarefas as tarefas
 import engine.compiler as comp
@@ -51,6 +52,7 @@ def _iniciar(nome: str, funcao, *args, ao_concluir=None, ao_falhar=None, reinici
         if nome in _em_execucao:
             return False
         _em_execucao.add(nome)
+    pu.esquecer_parada(nome)              # um pedido de parada antigo desta tarefa não vale para a nova
     if reiniciar_cancelamento:
         pu.reset_cancellation()
     ev.emitir("acao.estado", {"acao": nome, "rodando": True})
@@ -70,14 +72,45 @@ def _iniciar(nome: str, funcao, *args, ao_concluir=None, ao_falhar=None, reinici
         if ao_falhar:
             ao_falhar(erro)
 
-    tarefas.executar_em_segundo_plano(funcao, *args, ao_concluir=_ok, ao_falhar=_erro, **kwargs)
+    def _rodar(*a, **k):
+        pu.definir_acao_da_thread(nome)
+        try:
+            return funcao(*a, **k)
+        finally:
+            pu.definir_acao_da_thread(None)
+
+    tarefas.executar_em_segundo_plano(_rodar, *args, ao_concluir=_ok, ao_falhar=_erro, **kwargs)
     return True
+
+
+def conversar_silent(mensagem: str, anexos: list, ao_concluir=None, ao_falhar=None) -> bool:
+    """Envia a mensagem do chat a Silent em segundo plano (aparece na barra de tarefas)."""
+    return _iniciar("chat", silent.conversar, mensagem, anexos, ao_concluir=ao_concluir, ao_falhar=ao_falhar)
+
+
+def em_andamento() -> list:
+    """Nomes das tarefas rodando agora (para a barra de tarefas)."""
+    with _lock:
+        return sorted(_em_execucao)
 
 
 def parar_tudo():
     """Pede a interrupção de Expander/WorldBuilder/Auditoria em andamento."""
     pu.request_cancellation()
     ev.log(t("acoes.log_parada_solicitada"))
+
+
+def parar(nome: str):
+    """Pede a interrupção de uma tarefa só (as outras continuam)."""
+    pu.request_cancellation(nome)
+    ev.log(t("acoes.log_parada_tarefa", tarefa=nome_tarefa(nome)))
+
+
+def nome_tarefa(nome: str) -> str:
+    """Rótulo de uma tarefa para a interface e o log."""
+    if nome.startswith("arquivo:"):
+        return t("status.acao.arquivo_nome", nome=os.path.basename(nome[len("arquivo:"):]))
+    return t(f"status.acao.{nome}")
 
 
 # ----------------------------------------------------------------------

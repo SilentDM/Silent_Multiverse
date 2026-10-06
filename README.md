@@ -35,7 +35,7 @@ Available in **English** and **Brazilian Portuguese**: the interface and everyth
 * **Council**: four specialist agents (Architect, Chronicler, the Voice of the NPCs, Tactics & Chaos) discuss a file; you edit their views, and a Supreme Judge writes the final version.
 * **Lore Audit**: finds contradictions, timeline gaps and geographic inconsistencies, and can hand the report to the WorldBuilder to build a reviewable correction plan.
 * **Improve with AI**, **5-Room Dungeon adventures** (with a statblock and a battlemap of the final room) and **Lore Checks** (knowledge tables with DC ranges), all from a right-click on a file.
-* **Talk to Silent**: chat with the keeper of the Nexus, who knows your whole world, for brainstorming and questions.
+* **Talk to Silent**: chat with the keeper of the Nexus, who knows your whole world, for brainstorming and questions. Attach project files and images, use ready-made request shortcuts and click [[links]] in the formatted answers.
 * **Roleplay (Theater of the Mind)**: forge personas for your NPCs from the world context and talk to them in character, with generated portraits.
 * Every file the AI changes is archived first (`_v01`, `_v02`...). Right-click → **Version History** shows every version and restores one with a click.
 * **Requests tab**: before any whole-file request, fine-tune it: style in four axes (**Genre, Tone, Mood, Writing style**), extra guidelines, reference files, rewrite or append, depth, player-facing text, party level, creativity, presets. It opens with the project defaults.

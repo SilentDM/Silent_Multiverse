@@ -19,6 +19,7 @@ import core.sistema as sistema
 import core.tarefas as tarefas
 import engine.acoes as acoes
 import ui.gui_logger as gl
+import ui.icones as icones
 import ui.theme as tema
 from core.i18n import t
 from core.versao import VERSAO
@@ -32,15 +33,21 @@ from ui.pages.options import PaginaOpcoes
 from ui.pages.requests import PaginaRequisicoes
 from ui.pages.roleplay import PaginaRoleplay
 from ui.pages.worldbuilder import PaginaWorldBuilder
-from ui.widgets import mostrar_toast
+from ui.widgets import mostrar_toast, Dica
 
-PAGINAS_TOPO = ["editor", "requisicoes", "worldbuilder", "actions", "chat", "roleplay", "council", "options"]
-PAGINAS_RODAPE = ["log", "manual"]
+# Menu lateral em grupos; "sistema" fica no rodapé. Requisições não tem botão próprio:
+# aparece como sub-item do Editor enquanto há um pedido aberto.
+GRUPOS_NAV = [("escrever", ["editor"]), ("criar", ["worldbuilder", "council", "roleplay", "chat"]),
+              ("projeto", ["actions"])]
+GRUPO_RODAPE = ("sistema", ["options", "log", "manual"])
+ICONES_NAV = {"editor": "✎", "worldbuilder": "◈", "council": "⚖", "roleplay": "♟", "chat": "◎",
+              "actions": "⚒", "options": "⚙", "log": "≡", "manual": "§"}
 CLASSES_PAGINAS = {
     "editor": PaginaEditor, "requisicoes": PaginaRequisicoes, "worldbuilder": PaginaWorldBuilder, "actions": PaginaAcoes,
     "chat": PaginaChat, "roleplay": PaginaRoleplay, "council": PaginaConselho,
     "options": PaginaOpcoes, "log": PaginaLog, "manual": PaginaManual,
 }
+COR_ICONE = "#9a9a9a"
 QUADROS_SPINNER = ["◐", "◓", "◑", "◒"]
 
 
@@ -100,34 +107,53 @@ class SilentApp:
                  font=("Segoe UI", 13, "bold")).pack(anchor=tk.W, padx=16, pady=(22, 26))
         self._montar_seletor_projeto(lateral)
 
-        for chave in PAGINAS_TOPO:
-            self._botao_nav(lateral, chave)
-        tk.Frame(lateral, bg=tema.FUNDO_SIDEBAR).pack(fill=tk.BOTH, expand=True)
-        for chave in PAGINAS_RODAPE:
-            self._botao_nav(lateral, chave)
+        for grupo, chaves in GRUPOS_NAV:
+            self._titulo_grupo(lateral, grupo)
+            for chave in chaves:
+                self._botao_nav(lateral, chave)
+                if chave == "editor":
+                    # Sub-item que só aparece enquanto há uma Requisição aberta
+                    self.btn_requisicao = ttk.Button(lateral, style="NavSub.TButton",
+                                                     command=lambda: self.mostrar_pagina("requisicoes"))
+                    self.botoes_nav["requisicoes"] = self.btn_requisicao
 
-        zoom = tk.Frame(lateral, bg=tema.FUNDO_SIDEBAR)
-        zoom.pack(side=tk.BOTTOM, fill=tk.X, padx=12, pady=(0, 6))
-        tk.Label(zoom, text=t("app.zoom"), bg=tema.FUNDO_SIDEBAR, fg=tema.SUAVE, font=("Segoe UI", 8)).pack(side=tk.LEFT)
-        ttk.Button(zoom, text="A-", width=3, command=lambda: self.alterar_fonte(-1)).pack(side=tk.LEFT, padx=2)
-        ttk.Button(zoom, text="A+", width=3, command=lambda: self.alterar_fonte(1)).pack(side=tk.LEFT, padx=2)
-        ttk.Separator(lateral, orient="horizontal").pack(side=tk.BOTTOM, fill=tk.X, padx=12, pady=8)
         self.lbl_discord = tk.Label(lateral, text=t("discord.estado.conectando"), bg=tema.FUNDO_SIDEBAR, fg=tema.TEXTO,
                                     font=("Segoe UI", 8, "bold"), anchor="w", justify="left", wraplength=175)
-        self.lbl_discord.pack(side=tk.BOTTOM, fill=tk.X, padx=16, pady=(0, 4))
+        self.lbl_discord.pack(side=tk.BOTTOM, fill=tk.X, padx=16, pady=(4, 10))
+        ttk.Separator(lateral, orient="horizontal").pack(side=tk.BOTTOM, fill=tk.X, padx=12, pady=(6, 0))
+        for chave in reversed(GRUPO_RODAPE[1]):
+            self._botao_nav(lateral, chave, lado=tk.BOTTOM)
+        self._titulo_grupo(lateral, GRUPO_RODAPE[0], lado=tk.BOTTOM)
 
         area = ttk.Frame(container)
         area.grid(row=0, column=1, sticky="nsew")
         # A página de Log é criada primeiro para já receber as mensagens das outras
-        for chave in ["log"] + [c for c in PAGINAS_TOPO + PAGINAS_RODAPE if c != "log"]:
+        for chave in ["log"] + [c for c in CLASSES_PAGINAS if c != "log"]:
             pagina = CLASSES_PAGINAS[chave](area, self)
             pagina.place(relx=0, rely=0, relwidth=1, relheight=1)
             self.paginas[chave] = pagina
 
-    def _botao_nav(self, parent, chave):
-        botao = ttk.Button(parent, text=t(f"nav.{chave}"), style="Nav.TButton", command=lambda: self.mostrar_pagina(chave))
-        botao.pack(fill=tk.X, padx=8, pady=2)
+    @staticmethod
+    def _titulo_grupo(parent, grupo, lado=tk.TOP):
+        tk.Label(parent, text=t(f"nav.grupo.{grupo}").upper(), bg=tema.FUNDO_SIDEBAR, fg=tema.SUAVE,
+                 font=("Segoe UI", 7, "bold"), anchor="w").pack(side=lado, fill=tk.X, padx=18, pady=(10, 2))
+
+    def _botao_nav(self, parent, chave, lado=tk.TOP):
+        botao = ttk.Button(parent, text=f"  {t(f'nav.{chave}')}", style="Nav.TButton", compound="left",
+                           image=icones.icone(self.root, ICONES_NAV[chave], COR_ICONE), command=lambda: self.mostrar_pagina(chave))
+        botao.pack(side=lado, fill=tk.X, padx=8, pady=1)
         self.botoes_nav[chave] = botao
+
+    def requisicao_aberta(self, nome: str = None):
+        """Mostra (com o nome do arquivo) ou esconde o sub-item Requisição do menu."""
+        if nome:
+            nome = nome[:-3] if nome.lower().endswith(".md") else nome
+            if len(nome) > 18:
+                nome = nome[:17] + "…"
+            self.btn_requisicao.config(text=t("nav.requisicao_aberta", nome=nome))
+            self.btn_requisicao.pack(fill=tk.X, padx=(22, 8), pady=1, after=self.botoes_nav["editor"])
+        else:
+            self.btn_requisicao.pack_forget()
 
     def _montar_seletor_projeto(self, parent):
         quadro = tk.Frame(parent, bg=tema.FUNDO_SIDEBAR)
@@ -184,9 +210,32 @@ class SilentApp:
         self.lbl_status_estatisticas = tk.Label(barra, text=t("app.nenhum_arquivo"), bg=tema.FUNDO_SIDEBAR,
                                                 fg=tema.SUAVE, font=("Segoe UI", 9))
         self.lbl_status_estatisticas.pack(side=tk.LEFT, padx=12)
+        # Zoom do texto: A− tamanho A+
+        zoom = tk.Frame(barra, bg=tema.FUNDO_SIDEBAR)
+        zoom.pack(side=tk.RIGHT, padx=(4, 10))
+        for texto, delta in (("A−", -1), (None, 0), ("A+", 1)):
+            if texto is None:
+                self.lbl_zoom = tk.Label(zoom, text=str(self.tamanho_fonte), bg=tema.FUNDO_SIDEBAR, fg=tema.SUAVE,
+                                         font=("Segoe UI", 8), width=3)
+                self.lbl_zoom.pack(side=tk.LEFT)
+                continue
+            rotulo = tk.Label(zoom, text=texto, bg=tema.FUNDO_SIDEBAR, fg=tema.TEXTO, font=("Segoe UI", 9, "bold"),
+                              cursor="hand2", padx=4)
+            rotulo.pack(side=tk.LEFT)
+            rotulo.bind("<Button-1>", lambda e, d=delta: self.alterar_fonte(d))
+            Dica(rotulo, t("app.zoom_dica"))
+        ttk.Separator(barra, orient="vertical").pack(side=tk.RIGHT, fill=tk.Y, pady=4)
+
+        # Barra de tarefas: uma etiqueta por tarefa em andamento, cada uma com o seu ✕ (parar só ela)
         self.lbl_status_tarefa = tk.Label(barra, text=t("app.pronto"), bg=tema.FUNDO_SIDEBAR, fg=tema.VERDE,
                                           font=("Segoe UI", 9, "bold"))
         self.lbl_status_tarefa.pack(side=tk.RIGHT, padx=12)
+        self.btn_parar_tudo = tk.Label(barra, text=t("app.parar_tudo"), bg=tema.FUNDO_SIDEBAR, fg=tema.VERMELHO,
+                                       font=("Segoe UI", 9, "bold"), cursor="hand2", padx=8)
+        self.btn_parar_tudo.bind("<Button-1>", lambda e: self.parar_tudo())
+        self.quadro_tarefas = tk.Frame(barra, bg=tema.FUNDO_SIDEBAR)
+        self.quadro_tarefas.pack(side=tk.RIGHT)
+        self._chips = {}
         # Aparece só quando há uma versão nova no GitHub
         self.lbl_atualizacao = tk.Label(barra, text="", bg=tema.FUNDO_SIDEBAR, fg=tema.AMARELO,
                                         font=("Segoe UI", 9, "bold", "underline"), cursor="hand2")
@@ -204,26 +253,66 @@ class SilentApp:
     def _estado_acao(self, dados):
         nome = dados["acao"]
         if dados["rodando"]:
-            self._acoes_rodando.append(nome)
+            if nome not in self._acoes_rodando:
+                self._acoes_rodando.append(nome)
+                self._criar_chip(nome)
             if not self._spinner_ativo:
                 self._spinner_ativo = True
                 self._animar_spinner()
         else:
             if nome in self._acoes_rodando:
                 self._acoes_rodando.remove(nome)
-            if not self._acoes_rodando:
-                self._spinner_ativo = False
-                self.lbl_status_tarefa.config(text=t("app.pronto"), fg=tema.VERDE)
+            chip = self._chips.pop(nome, None)
+            if chip is not None:
+                chip[0].destroy()
+        self._atualizar_barra_tarefas()
+
+    def _criar_chip(self, nome):
+        chip = tk.Frame(self.quadro_tarefas, bg=tema.PAINEL, highlightthickness=1, highlightbackground="#2d2d2d")
+        chip.pack(side=tk.LEFT, padx=3, pady=3)
+        rotulo = tk.Label(chip, text=acoes.nome_tarefa(nome), bg=tema.PAINEL, fg=tema.AZUL, font=("Segoe UI", 8, "bold"),
+                          padx=6)
+        rotulo.pack(side=tk.LEFT)
+        fechar = tk.Label(chip, text="✕", bg=tema.PAINEL, fg=tema.SUAVE, font=("Segoe UI", 8, "bold"), cursor="hand2",
+                          padx=4)
+        fechar.pack(side=tk.LEFT)
+        fechar.bind("<Button-1>", lambda e: self._parar_tarefa(nome))
+        fechar.bind("<Enter>", lambda e: fechar.config(fg=tema.VERMELHO))
+        fechar.bind("<Leave>", lambda e: fechar.config(fg=tema.SUAVE))
+        Dica(fechar, t("app.parar_tarefa_dica"))
+        self._chips[nome] = (chip, rotulo)
+
+    def _atualizar_barra_tarefas(self):
+        if self._acoes_rodando:
+            self.lbl_status_tarefa.pack_forget()
+            if len(self._acoes_rodando) > 1:
+                self.btn_parar_tudo.pack(side=tk.RIGHT, before=self.quadro_tarefas)
+            else:
+                self.btn_parar_tudo.pack_forget()
+        else:
+            self._spinner_ativo = False
+            self.btn_parar_tudo.pack_forget()
+            self.lbl_status_tarefa.pack(side=tk.RIGHT, padx=12, before=self.quadro_tarefas)
+
+    def _parar_tarefa(self, nome):
+        acoes.parar(nome)
+        chip = self._chips.get(nome)
+        if chip is not None:
+            chip[1].config(fg=tema.AMARELO)
+        self.toast(t("app.toast_parando_tarefa", tarefa=acoes.nome_tarefa(nome)))
+
+    def parar_tudo(self):
+        acoes.parar_tudo()
+        self.toast(t("actions.toast_stopping"))
 
     def _animar_spinner(self):
         if not self._spinner_ativo or not self._acoes_rodando:
             return
-        nome = self._acoes_rodando[-1]
-        rotulo = t("status.acao.arquivo") if nome.startswith("arquivo:") else t(f"status.acao.{nome}")
         quadro = QUADROS_SPINNER[self._quadro_spinner % len(QUADROS_SPINNER)]
         self._quadro_spinner += 1
-        self.lbl_status_tarefa.config(text=f"{quadro} {rotulo.upper()}", fg=tema.AZUL)
-        self.root.after(90, self._animar_spinner)
+        for nome, (_chip, rotulo) in self._chips.items():
+            rotulo.config(text=f"{quadro} {acoes.nome_tarefa(nome)}")
+        self.root.after(120, self._animar_spinner)
 
     # ------------------------------------------------------------------
     # EVENTOS, LOG E ATALHOS
@@ -280,6 +369,7 @@ class SilentApp:
 
     def alterar_fonte(self, delta: int):
         self.tamanho_fonte = max(8, min(24, self.tamanho_fonte + delta))
+        self.lbl_zoom.config(text=str(self.tamanho_fonte))
         for pagina in self.paginas.values():
             if hasattr(pagina, "ajustar_fonte"):
                 pagina.ajustar_fonte(self.tamanho_fonte)
@@ -295,7 +385,12 @@ class SilentApp:
         pagina.ao_exibir()
         pagina.tkraise()
         for nome, botao in self.botoes_nav.items():
-            botao.configure(style="NavActive.TButton" if nome == chave else "Nav.TButton")
+            ativo = nome == chave
+            if nome == "requisicoes":
+                botao.configure(style="NavSubActive.TButton" if ativo else "NavSub.TButton")
+            else:
+                botao.configure(style="NavActive.TButton" if ativo else "Nav.TButton",
+                                image=icones.icone(self.root, ICONES_NAV[nome], tema.VERDE if ativo else COR_ICONE))
 
     def abrir_requisicao(self, tipo: str, caminho: str):
         """Abre a aba Requisições para um pedido de nível médio sobre o arquivo."""
