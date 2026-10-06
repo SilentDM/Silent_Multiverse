@@ -7,7 +7,7 @@ import core.tarefas as tarefas
 import engine.council_engine as ce
 import ui.theme as tema
 from core.i18n import t
-from ui.widgets import PaginaBase, cabecalho
+from ui.widgets import PaginaBase, cabecalho, ajuda, caixa_com_ajuda
 
 PAINEIS = [("arquiteto", tema.TEXTO), ("cronista", tema.TEXTO), ("npcs", tema.AMARELO), ("tatico_caos", tema.AZUL_CLARO)]
 
@@ -19,14 +19,15 @@ class PaginaConselho(PaginaBase):
         self.arquivo = None
         self.requisicao = None
 
-        controle = ttk.LabelFrame(self, text=t("cons.controle"))
+        controle = caixa_com_ajuda(self, t("cons.controle"), t("ajuda.cons.controle"))
         controle.pack(fill=tk.X, padx=15, pady=(0, 10))
         linha1 = ttk.Frame(controle)
         linha1.pack(fill=tk.X, padx=10, pady=6)
         ttk.Label(linha1, text=t("cons.arquivo_alvo"), font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT, padx=(0, 4))
         self.lbl_arquivo = ttk.Label(linha1, text=t("cons.nenhum_arquivo"), font=("Segoe UI", 9, "bold"), foreground=tema.VERDE)
         self.lbl_arquivo.pack(side=tk.LEFT, padx=(0, 15))
-        ttk.Label(linha1, text=t("cons.diretriz")).pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Label(linha1, text=t("cons.diretriz")).pack(side=tk.LEFT, padx=(0, 2))
+        ajuda(linha1, t("ajuda.cons.diretriz")).pack(side=tk.LEFT, padx=(0, 6))
         self.diretriz = ttk.Entry(linha1, font=("Segoe UI", 10))
         self.diretriz.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
 
@@ -38,6 +39,7 @@ class PaginaConselho(PaginaBase):
         self.btn_fase2.pack(side=tk.LEFT)
         self.lbl_status = ttk.Label(linha2, text=t("cons.pronto"), font=("Segoe UI", 9, "italic"), foreground=tema.SUAVE)
         self.lbl_status.pack(side=tk.RIGHT)
+        ajuda(linha2, t("ajuda.cons.fontes")).pack(side=tk.LEFT, padx=(10, 0))
         self.lbl_fontes = ttk.Label(controle, text="", font=("Segoe UI", 9), foreground=tema.AZUL_CLARO)
         self.lbl_fontes.pack(anchor=tk.W, padx=10, pady=(0, 6))
 

@@ -8,7 +8,7 @@ import engine.acoes as acoes
 from core.i18n import t
 from ui.dialogs.audit_report import JanelaAuditoria
 from ui.dialogs.token_report import JanelaTamanhoProjeto
-from ui.widgets import PaginaBase, GradeRolavel, cabecalho
+from ui.widgets import PaginaBase, GradeRolavel, cabecalho, ajuda
 
 # Ação (engine.acoes) -> chave do botão que fica desabilitado enquanto ela roda
 BOTOES_POR_ACAO = {
@@ -55,8 +55,11 @@ class PaginaAcoes(PaginaBase):
 
     # --- montagem ---
     def _botao(self, caixa, chave, texto, comando):
-        botao = ttk.Button(caixa, text=texto, command=comando)
-        botao.pack(fill=tk.X, padx=10, pady=(8, 4))
+        linha = ttk.Frame(caixa)
+        linha.pack(fill=tk.X, padx=10, pady=(8, 4))
+        botao = ttk.Button(linha, text=texto, command=comando)
+        botao.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ajuda(linha, t(f"ajuda.acoes.{chave}")).pack(side=tk.LEFT, padx=(6, 0))
         self.botoes[chave] = botao
 
     def _status(self, caixa, chave):

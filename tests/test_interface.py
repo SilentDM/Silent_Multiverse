@@ -160,6 +160,29 @@ class TesteInterface(unittest.TestCase):
         finally:
             fechar(root)
 
+    def test_icones_de_ajuda(self):
+        import ui.widgets as widgets
+        root, janela = self._montar("pt_br")
+        try:
+            vivos = widgets.icones_ajuda_abertos()
+            self.assertGreater(len(vivos), 30)                         # espalhados pelas telas
+            rotulo = vivos[0]
+            ligado = rotulo.cget("image")
+            rotulo.event_generate("<Button-1>")
+            root.update()
+            dicas = [w for w in rotulo.winfo_children() if isinstance(w, tk.Toplevel)]
+            self.assertEqual(len(dicas), 1)                             # clicar mostra a explicação na hora
+            self.assertTrue(dicas[0].winfo_children()[0].cget("text"))
+
+            widgets.definir_ajuda_visivel(False)
+            self.assertNotEqual(rotulo.cget("image"), ligado)            # some sem mudar o layout
+            self.assertFalse(widgets.ajuda_visivel())
+            widgets.definir_ajuda_visivel(True)
+            self.assertEqual(rotulo.cget("image"), ligado)
+        finally:
+            widgets.definir_ajuda_visivel(True)
+            fechar(root)
+
     def test_visao_geral_da_pasta(self):
         pasta = self.raiz_projeto / "NPCs"
         pasta.mkdir()

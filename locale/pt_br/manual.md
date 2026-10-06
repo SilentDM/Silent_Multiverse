@@ -12,6 +12,7 @@
 - Enquanto há uma Requisição aberta, ela aparece no menu logo abaixo do Editor (↳ Requisição: nome do arquivo).
 - A barra de status mostra o projeto, as contagens do arquivo aberto e, à direita, as tarefas de IA em andamento. Cada tarefa tem o seu ✕ para parar só ela; com mais de uma rodando aparece também ⏹ Parar tudo.
 - A− e A+, no canto direito da barra de status, mudam o tamanho do texto.
+- Ícones de ajuda: o círculo com ? ao lado de uma opção explica o que ela faz. Passe o mouse por cima (ou clique). Para escondê-los, desmarque Opções → Geral → Mostrar os ícones de ajuda.
 
 # 1. PRIMEIROS PASSOS
 ## 1) Consiga uma chave de API do Gemini

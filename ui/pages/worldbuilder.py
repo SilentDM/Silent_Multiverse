@@ -11,7 +11,7 @@ import core.tarefas as tarefas
 import engine.acoes as acoes
 import ui.theme as tema
 from core.i18n import t
-from ui.widgets import PaginaBase, cabecalho, texto_rolavel, anexar_texto, substituir_texto
+from ui.widgets import PaginaBase, cabecalho, texto_rolavel, anexar_texto, substituir_texto, caixa_com_ajuda, rotulo_com_ajuda
 
 PERMISSOES = [("wb_allow_create_folder", "wb.perm_folder"),
               ("wb_allow_create_file", "wb.perm_file"),
@@ -34,7 +34,7 @@ class PaginaWorldBuilder(PaginaBase):
         topo.columnconfigure(1, weight=2)
 
         # --- 1. Ideia e Cânone ---
-        caixa_ideia = ttk.LabelFrame(topo, text=t("wb.passo1_titulo"))
+        caixa_ideia = caixa_com_ajuda(topo, t("wb.passo1_titulo"), t("ajuda.wb.passo1"))
         caixa_ideia.grid(row=0, column=0, sticky="nsew", padx=(0, 8), pady=(0, 8))
         ttk.Label(caixa_ideia, text=t("wb.passo1_texto"), foreground=tema.SUAVE, wraplength=640,
                   justify="left").pack(anchor=tk.W, padx=10, pady=(8, 4))
@@ -52,7 +52,7 @@ class PaginaWorldBuilder(PaginaBase):
         self.lbl_canon.pack(anchor=tk.W, padx=10, pady=(0, 8))
 
         # --- Permissões e limite ---
-        caixa_perm = ttk.LabelFrame(topo, text=t("wb.permissions_title"))
+        caixa_perm = caixa_com_ajuda(topo, t("wb.permissions_title"), t("ajuda.wb.permissoes"))
         caixa_perm.grid(row=0, column=1, sticky="nsew", pady=(0, 8))
         self._vars_perm = {}
         for chave, rotulo in PERMISSOES:
@@ -73,7 +73,7 @@ class PaginaWorldBuilder(PaginaBase):
         corpo = ttk.PanedWindow(self, orient=tk.HORIZONTAL)
         corpo.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 6))
 
-        caixa_plano = ttk.LabelFrame(corpo, text=t("wb.passo2_titulo"))
+        caixa_plano = caixa_com_ajuda(corpo, t("wb.passo2_titulo"), t("ajuda.wb.passo2"))
         corpo.add(caixa_plano, weight=3)
         botoes = ttk.Frame(caixa_plano)
         botoes.pack(fill=tk.X, padx=6, pady=(6, 2))
@@ -101,7 +101,7 @@ class PaginaWorldBuilder(PaginaBase):
         editor = ttk.Frame(caixa_plano)
         editor.pack(fill=tk.X, padx=6, pady=(0, 6))
         editor.columnconfigure(1, weight=1)
-        ttk.Label(editor, text=t("wb.campo_caminho")).grid(row=0, column=0, sticky="w")
+        rotulo_com_ajuda(editor, t("wb.campo_caminho"), t("ajuda.wb.item")).grid(row=0, column=0, sticky="w")
         self.var_caminho = tk.StringVar()
         ttk.Entry(editor, textvariable=self.var_caminho).grid(row=0, column=1, columnspan=3, sticky="ew", pady=2)
         ttk.Label(editor, text=t("wb.campo_objetivo")).grid(row=1, column=0, sticky="nw")
@@ -124,7 +124,7 @@ class PaginaWorldBuilder(PaginaBase):
         self.lbl_aviso = ttk.Label(editor, text=t("wb.plan_empty"), foreground=tema.SUAVE, wraplength=640, justify="left")
         self.lbl_aviso.grid(row=4, column=0, columnspan=4, sticky="w", pady=(4, 0))
 
-        caixa_log = ttk.LabelFrame(corpo, text=t("wb.log_title"))
+        caixa_log = caixa_com_ajuda(corpo, t("wb.log_title"), t("ajuda.wb.log"))
         corpo.add(caixa_log, weight=2)
         self.log = texto_rolavel(caixa_log, fonte=("Consolas", 9), width=48)
         self.log.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)

@@ -12,6 +12,7 @@
 - While a Request is open, it shows in the menu right below the Editor (↳ Request: file name).
 - The status bar shows the project, the counts for the open file and, on the right, the AI tasks that are running. Each task has its own ✕ to stop just that one; with more than one running, ⏹ Stop all shows up too.
 - A− and A+, at the right end of the status bar, change the text size.
+- Help icons: the circle with a ? next to an option explains what it does. Hover over it (or click it). To hide them, uncheck Options → General → Show the help icons.
 
 # 1. FIRST STEPS
 ## 1) Get a Gemini API key

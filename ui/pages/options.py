@@ -23,7 +23,7 @@ import ui.theme as tema
 from core.i18n import t
 from core.versao import VERSAO, URL_PROJETO
 from ui.pages.models import PaginaModelos
-from ui.widgets import PaginaBase, ColunaRolavel, cabecalho
+from ui.widgets import PaginaBase, ColunaRolavel, cabecalho, ajuda, ajuda_visivel, definir_ajuda_visivel
 
 ABAS = ("geral", "ia", "projeto", "discord")
 CAMPOS_DISCORD = [
@@ -163,6 +163,13 @@ class PaginaOpcoes(PaginaBase):
                         command=lambda: (cfg.atualizar_configuracoes({"abrir_requisicoes": bool(self.var_requisicoes.get())}),
                                          self._salvo())).pack(anchor=tk.W, padx=12, pady=(10, 2))
         self._dica(secao, t("options.abrir_requisicoes_dica"))
+        self.var_ajuda = tk.BooleanVar(value=ajuda_visivel())
+        linha = ttk.Frame(secao)
+        linha.pack(anchor=tk.W, padx=12, pady=(10, 2))
+        ttk.Checkbutton(linha, text=t("options.mostrar_ajuda"), variable=self.var_ajuda,
+                        command=lambda: (definir_ajuda_visivel(self.var_ajuda.get()), self._salvo())).pack(side=tk.LEFT)
+        ajuda(linha, t("options.mostrar_ajuda_dica")).pack(side=tk.LEFT, padx=(4, 0))
+        self._dica(secao, t("options.mostrar_ajuda_dica"))
 
         secao = coluna.nova_secao(t("options.sobre_titulo"))
         ttk.Label(secao, text=t("options.sobre_versao", versao=VERSAO), font=("Segoe UI", 10, "bold"),
