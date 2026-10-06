@@ -55,6 +55,7 @@
 - Busca: digite na caixa acima da árvore para filtrar os arquivos pelo nome ou conteúdo.
 - A árvore se atualiza sozinha quando algo muda na pasta (outro programa, a IA, o Obsidian). O botão ⟳ força a atualização.
 - Ícones ao lado do nome: 🤫 segredo · ✎ rascunho · ⏳ TODO pendente · 🗒 tem Notas do Mestre · ⚙ a IA está trabalhando no arquivo.
+- Ao selecionar uma pasta, o Editor mostra uma visão geral dela: números (arquivos, subpastas, palavras e tokens), quantos arquivos são secretos, rascunhos, têm TODO ou Notas do Mestre, a árvore do conteúdo com as marcas de cada arquivo, os editados por último e os [[links]] citados ali que ainda não têm arquivo. Clique num nome para abrir.
 - Arraste e solte arquivos e pastas para movê-los.
 - Clique com o botão direito em um arquivo ou pasta: Novo Arquivo, Nova Pasta, Renomear (F2), Copiar, Recortar, Colar, Duplicar, Excluir e Mostrar no Windows Explorer.
 - Novo Arquivo permite escolher um dos Templates.

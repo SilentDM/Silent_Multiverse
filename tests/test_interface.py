@@ -160,6 +160,31 @@ class TesteInterface(unittest.TestCase):
         finally:
             fechar(root)
 
+    def test_visao_geral_da_pasta(self):
+        pasta = self.raiz_projeto / "NPCs"
+        pasta.mkdir()
+        (pasta / "Thorvald.md").write_text("# Thorvald\nstatus: segredo\nRei de [[Valia]] e [[Fantasma]].", encoding="utf-8")
+        root, janela = self._montar("pt_br")
+        try:
+            editor = janela.paginas["editor"]
+            editor.atualizar_arvore()
+            editor.ir_para(str(pasta))
+            root.update()
+            texto = editor._texto_editor()
+            self.assertIn("📁 NPCs", texto)
+            self.assertIn("└─ Thorvald 🤫", texto)
+            self.assertIn("[[Fantasma]]", texto)                       # citado e ainda sem arquivo
+            self.assertNotIn("[[Valia]]", texto)
+            self.assertEqual(str(editor.editor.cget("state")), "disabled")
+
+            inicio = editor.editor.search("Thorvald", "1.0")             # clicar no nome abre o arquivo
+            caixa = editor.editor.bbox(inicio)
+            evento = type("Evento", (), {"x": caixa[0] + 2, "y": caixa[1] + 2})()
+            editor._clique_pasta(evento)
+            self.assertEqual(editor.sessao.arquivo_atual, str(pasta / "Thorvald.md"))
+        finally:
+            fechar(root)
+
     def test_editor_abas_busca_autocompletar_e_painel(self):
         (self.raiz_projeto / "Thorvald.md").write_text("# Thorvald\nstatus: segredo\nRei. <-- TODO: x", encoding="utf-8")
         (self.raiz_projeto / "Valia.md").write_text("# Valia\n## Cidades\nGovernada por [[Thorvald]] e [[Fantasma]].",

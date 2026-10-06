@@ -57,6 +57,27 @@ class TesteDocumento(unittest.TestCase):
         self.assertEqual(documento.buscar_arquivos("npcs/ra")[0][0], "Rascunho")   # também procura no caminho
         self.assertEqual(len(documento.buscar_arquivos("")), 4)
 
+    def test_resumo_da_pasta(self):
+        (self.raiz / "NPCs" / "Vazia").mkdir()
+        (self.raiz / "NPCs" / "retrato.png").write_bytes(b"x")
+        resumo = documento.resumo_pasta(self.raiz / "NPCs")
+        self.assertEqual(resumo["nome"], "NPCs")
+        self.assertEqual(resumo["relativo"], "NPCs")
+        self.assertEqual([(n, tipo, nome) for n, tipo, nome, *_ in resumo["itens"]],
+                         [(0, "pasta", "Vazia"), (1, "vazia", ""), (0, "arquivo", "Rascunho"), (0, "arquivo", "Rei Thorvald")])
+        self.assertEqual((resumo["totais"]["arquivos"], resumo["totais"]["subpastas"], resumo["totais"]["imagens"]), (2, 1, 1))
+        self.assertGreater(resumo["totais"]["palavras"], 5)
+        self.assertEqual(resumo["estados"], {"segredo": 1, "rascunho": 1, "todo": 1, "notas": 1})
+        self.assertEqual(len(resumo["recentes"]), 2)
+        self.assertEqual(resumo["sem_arquivo"], [])                          # [[Vog'Mur|o reino]] existe
+
+        raiz = documento.resumo_pasta(self.raiz)
+        self.assertEqual(raiz["relativo"], "")
+        self.assertEqual(raiz["sem_arquivo"], ["Fantasma"])                  # imagens não contam
+        self.assertEqual(raiz["totais"]["arquivos"], 4)
+        limitado = documento.resumo_pasta(self.raiz, max_itens=2)
+        self.assertEqual(limitado["itens"][-1][1], "mais")
+
 
 if __name__ == "__main__":
     unittest.main()

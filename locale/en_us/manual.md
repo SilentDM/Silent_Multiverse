@@ -55,6 +55,7 @@
 - Search: type in the box above the tree to filter files by name or content.
 - The tree updates by itself when something changes in the folder (another program, the AI, Obsidian). The ⟳ button forces a refresh.
 - Icons next to the name: 🤫 secret · ✎ draft · ⏳ pending TODO · 🗒 has GM Notes · ⚙ the AI is working on the file.
+- When you select a folder, the Editor shows an overview of it: counts (files, subfolders, words and tokens), how many files are secret, drafts, have a TODO or GM Notes, the content tree with each file's marks, the last edited files and the [[links]] mentioned there that still have no file. Click a name to open it.
 - Drag and drop files and folders to move them.
 - Right-click a file or folder: New File, New Folder, Rename (F2), Copy, Cut, Paste, Duplicate, Delete and Show in File Explorer.
 - New File lets you pick one of the Templates.
