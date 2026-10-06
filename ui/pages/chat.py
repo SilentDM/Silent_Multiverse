@@ -18,7 +18,7 @@ from core.i18n import t
 from ui.dialogs.note import JanelaNota
 from ui.dialogs.quick_open import JanelaAberturaRapida
 from ui.dialogs.shortcuts import JanelaAtalhos
-from ui.widgets import PaginaBase, cabecalho, texto_rolavel, anexar_texto, substituir_texto, Dica, LinhaFluida
+from ui.widgets import PaginaBase, cabecalho, texto_rolavel, anexar_texto, substituir_texto, Dica, LinhaFluida, ajuda
 
 TIPOS_IMAGEM = "*.png *.jpg *.jpeg *.webp *.gif *.bmp"
 MAX_ANEXOS = 10
@@ -57,6 +57,7 @@ class PaginaChat(PaginaBase):
         ttk.Label(linha_atalhos, text=t("chat.atalhos"), style="Dica.TLabel").pack(side=tk.LEFT, anchor=tk.N, pady=3)
         editar = ttk.Button(linha_atalhos, text="✎", width=3, style="Atalho.TButton", command=self._editar_atalhos)
         editar.pack(side=tk.RIGHT, anchor=tk.N)
+        ajuda(linha_atalhos, t("ajuda.chat.atalhos")).pack(side=tk.RIGHT, anchor=tk.N, padx=(0, 6), pady=4)
         Dica(editar, t("chat.atalhos_editar"))
         self.quadro_atalhos = LinhaFluida(linha_atalhos)
         self.quadro_atalhos.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=6)
@@ -89,6 +90,7 @@ class PaginaChat(PaginaBase):
 
         rodape = ttk.Frame(base)
         rodape.pack(fill=tk.X, pady=(4, 0))
+        ajuda(rodape, t("ajuda.chat.caixa")).pack(side=tk.LEFT, padx=(0, 4))
         ttk.Label(rodape, text=t("chat.dica_teclas"), style="Dica.TLabel").pack(side=tk.LEFT)
         ttk.Button(rodape, text=t("chat.btn_wb"), style="Ferramenta.TButton",
                    command=self._levar_ao_worldbuilder).pack(side=tk.RIGHT, padx=(5, 0))

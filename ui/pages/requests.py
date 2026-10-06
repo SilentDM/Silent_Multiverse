@@ -13,9 +13,11 @@ import engine.acoes as acoes
 import engine.arquivos as arq
 import ui.theme as tema
 from core.i18n import t
-from ui.widgets import PaginaBase, cabecalho, texto_rolavel, substituir_texto
+from ui.widgets import PaginaBase, cabecalho, texto_rolavel, substituir_texto, ajuda, rotulo_com_ajuda
 
 EIXOS = ("genero", "tom", "clima", "escrita")
+AJUDA_COMBOS = {"req.profundidade": "ajuda.req.profundidade", "req.publico": "ajuda.req.publico",
+                "req.criatividade": "ajuda.req.criatividade", "req.modo": "ajuda.req.modo"}
 
 
 class PaginaRequisicoes(PaginaBase):
@@ -35,6 +37,7 @@ class PaginaRequisicoes(PaginaBase):
         self.combo_preset = ttk.Combobox(topo, state="readonly", width=24)
         self.combo_preset.pack(side=tk.RIGHT)
         self.combo_preset.bind("<<ComboboxSelected>>", lambda e: self._aplicar_preset())
+        ajuda(topo, t("ajuda.req.predefinicao")).pack(side=tk.RIGHT, padx=(0, 6))
         ttk.Label(topo, text=t("req.preset")).pack(side=tk.RIGHT, padx=(0, 4))
 
         corpo = ttk.PanedWindow(self, orient=tk.HORIZONTAL)
@@ -50,7 +53,7 @@ class PaginaRequisicoes(PaginaBase):
         opcoes.columnconfigure(3, weight=1)
         linha = 0
 
-        ttk.Label(opcoes, text=t("req.objetivo")).grid(row=linha, column=0, columnspan=4, sticky="w", padx=6, pady=(6, 0))
+        rotulo_com_ajuda(opcoes, t("req.objetivo"), t("ajuda.req.objetivo")).grid(row=linha, column=0, columnspan=4, sticky="w", padx=6, pady=(6, 0))
         linha += 1
         self.txt_objetivo = self._texto(opcoes, 3)
         self.txt_objetivo.grid(row=linha, column=0, columnspan=4, sticky="ew", padx=6)
@@ -59,13 +62,17 @@ class PaginaRequisicoes(PaginaBase):
         self.combos = {}
         for i, eixo in enumerate(EIXOS):
             r, c = linha + i // 2, (i % 2) * 2
-            ttk.Label(opcoes, text=t(f"req.eixo.{eixo}")).grid(row=r, column=c, sticky="w", padx=6, pady=3)
+            if i == 0:                    # um "?" só, explicando os quatro eixos
+                rotulo = rotulo_com_ajuda(opcoes, t(f"req.eixo.{eixo}"), t("ajuda.req.eixos"))
+            else:
+                rotulo = ttk.Label(opcoes, text=t(f"req.eixo.{eixo}"))
+            rotulo.grid(row=r, column=c, sticky="w", padx=6, pady=3)
             combo = ttk.Combobox(opcoes, state="readonly", values=[n for _, n in self._opcoes["eixos"][eixo]])
             combo.grid(row=r, column=c + 1, sticky="ew", padx=(0, 6), pady=3)
             self.combos[eixo] = combo
         linha += 2
 
-        ttk.Label(opcoes, text=t("req.extras")).grid(row=linha, column=0, columnspan=4, sticky="w", padx=6, pady=(6, 0))
+        rotulo_com_ajuda(opcoes, t("req.extras"), t("ajuda.req.extras")).grid(row=linha, column=0, columnspan=4, sticky="w", padx=6, pady=(6, 0))
         linha += 1
         self.txt_extras = self._texto(opcoes, 3)
         self.txt_extras.grid(row=linha, column=0, columnspan=4, sticky="ew", padx=6)
@@ -77,7 +84,7 @@ class PaginaRequisicoes(PaginaBase):
         self.combo_criatividade = self._combo_lista(opcoes, linha, 0, "req.criatividade", self._opcoes["criatividades"], "req.cri")
         self.combo_modo = self._combo_lista(opcoes, linha, 2, "req.modo", self._opcoes["modos"], "req.mod")
         linha += 1
-        ttk.Label(opcoes, text=t("req.nivel")).grid(row=linha, column=0, sticky="w", padx=6, pady=3)
+        rotulo_com_ajuda(opcoes, t("req.nivel"), t("ajuda.req.mesa")).grid(row=linha, column=0, sticky="w", padx=6, pady=3)
         self.var_nivel = tk.StringVar(value="0")
         ttk.Spinbox(opcoes, from_=0, to=20, width=5, textvariable=self.var_nivel).grid(row=linha, column=1, sticky="w")
         ttk.Label(opcoes, text=t("req.jogadores")).grid(row=linha, column=2, sticky="w", padx=6)
@@ -92,11 +99,13 @@ class PaginaRequisicoes(PaginaBase):
         for valor in ("npc", "monstro"):
             ttk.Radiobutton(self.frame_criatura, text=t(f"req.criatura.{valor}"), value=valor,
                             variable=self.var_criatura).pack(side=tk.LEFT, padx=(0, 8))
+        ajuda(self.frame_criatura, t("ajuda.req.segredo")).pack(side=tk.LEFT)
         linha += 1
 
         cab_refs = ttk.Frame(opcoes)
         cab_refs.grid(row=linha, column=0, columnspan=4, sticky="ew", padx=6, pady=(6, 0))
         ttk.Label(cab_refs, text=t("req.referencias")).pack(side=tk.LEFT)
+        ajuda(cab_refs, t("ajuda.req.referencias")).pack(side=tk.LEFT, padx=(3, 0))
         ttk.Button(cab_refs, text=t("req.ref_adicionar"), command=self._adicionar_referencia).pack(side=tk.RIGHT)
         linha += 1
         self.tree_refs = ttk.Treeview(opcoes, columns=("ativo", "arquivo", "motivo"), show="headings", height=5)
@@ -112,6 +121,7 @@ class PaginaRequisicoes(PaginaBase):
         linha_tokens.grid(row=linha, column=0, columnspan=4, sticky="ew", padx=6, pady=(6, 0))
         self.lbl_tokens = ttk.Label(linha_tokens, text="", foreground=tema.SUAVE)
         self.lbl_tokens.pack(side=tk.LEFT)
+        ajuda(linha_tokens, t("ajuda.req.tokens")).pack(side=tk.LEFT, padx=(3, 0))
         linha += 1
         rodape = ttk.Frame(opcoes)
         rodape.grid(row=linha, column=0, columnspan=4, sticky="ew", padx=6, pady=8)
@@ -130,7 +140,7 @@ class PaginaRequisicoes(PaginaBase):
 
     @staticmethod
     def _combo_lista(parent, linha, coluna, rotulo, valores, prefixo):
-        ttk.Label(parent, text=t(rotulo)).grid(row=linha, column=coluna, sticky="w", padx=6, pady=3)
+        rotulo_com_ajuda(parent, t(rotulo), t(AJUDA_COMBOS[rotulo])).grid(row=linha, column=coluna, sticky="w", padx=6, pady=3)
         combo = ttk.Combobox(parent, state="readonly", values=[t(f"{prefixo}.{v}") for v in valores])
         combo.grid(row=linha, column=coluna + 1, sticky="ew", padx=(0, 6), pady=3)
         combo.valores = list(valores)

@@ -26,7 +26,7 @@ from core.i18n import t, tc
 from ui.dialogs.history import JanelaHistorico
 from ui.dialogs.new_file import DialogoNovoArquivo
 from ui.dialogs.quick_open import JanelaAberturaRapida
-from ui.widgets import PaginaBase, cabecalho
+from ui.widgets import PaginaBase, cabecalho, ajuda, caixa_com_ajuda
 
 try:
     from tkinterweb import HtmlFrame
@@ -103,8 +103,11 @@ class PaginaEditor(PaginaBase):
         self.tree.column("#0", width=225)
         self.tree.tag_configure("rascunho", foreground=tema.SUAVE)
         self.tree.tag_configure("processando", foreground=tema.AMARELO)
-        ttk.Label(quadro, text=t("editor.legenda_arvore"), style="Dica.TLabel", wraplength=240,
-                  justify="left").pack(fill=tk.X, padx=6, pady=(2, 6))
+        legenda = ttk.Frame(quadro)
+        legenda.pack(fill=tk.X, padx=6, pady=(2, 6))
+        ajuda(legenda, t("ajuda.editor.arvore")).pack(side=tk.LEFT, anchor=tk.N, padx=(0, 4))
+        ttk.Label(legenda, text=t("editor.legenda_arvore"), style="Dica.TLabel", wraplength=220,
+                  justify="left").pack(side=tk.LEFT, fill=tk.X)
 
         self.tree.bind("<<TreeviewSelect>>", self._selecionado)
         self.tree.bind("<Double-1>", self._duplo_clique)
@@ -125,6 +128,7 @@ class PaginaEditor(PaginaBase):
         ttk.Button(topo, text="▶", width=3, style="Ferramenta.TButton", command=self._avancar).pack(side=tk.LEFT, padx=(2, 8))
 
         ttk.Button(topo, text="☰", width=3, style="Ferramenta.TButton", command=self._alternar_lateral).pack(side=tk.RIGHT)
+        ajuda(topo, t("ajuda.editor.modos")).pack(side=tk.RIGHT, padx=2)
         ttk.Button(topo, text="🌐", width=3, style="Ferramenta.TButton", command=self._abrir_no_navegador).pack(side=tk.RIGHT, padx=2)
         self.botoes_modo = {}
         for modo in reversed(MODOS):
@@ -134,7 +138,8 @@ class PaginaEditor(PaginaBase):
             self.botoes_modo[modo] = botao
         self.menu_ia = tk.Menu(self, tearoff=0, bg=tema.PAINEL, fg=tema.TEXTO, activebackground=tema.VERDE_ESCURO,
                                activeforeground="white", postcommand=self._preparar_menu_ia)
-        ttk.Menubutton(topo, text=t("editor.btn_ia"), menu=self.menu_ia).pack(side=tk.RIGHT, padx=(0, 8))
+        ajuda(topo, t("ajuda.editor.ia")).pack(side=tk.RIGHT, padx=(2, 8))
+        ttk.Menubutton(topo, text=t("editor.btn_ia"), menu=self.menu_ia).pack(side=tk.RIGHT)
         ttk.Button(topo, text="🔎", width=4, style="Ferramenta.TButton",
                    command=lambda: self._abrir_busca(False)).pack(side=tk.RIGHT, padx=(0, 4))
         # O título vem por último: se faltar espaço, é ele que encolhe (e não os botões)
@@ -163,6 +168,7 @@ class PaginaEditor(PaginaBase):
             texto, comando = item
             ttk.Button(formato, text=texto, style="Ferramenta.TButton", width=max(4, len(texto) + 2),
                        command=comando).pack(side=tk.LEFT, padx=1)
+        ajuda(formato, t("ajuda.editor.formatacao")).pack(side=tk.LEFT, padx=(4, 0))
 
         # --- buscar e substituir (aparece com Ctrl+F / Ctrl+H) ---
         self.barra_busca = ttk.Frame(quadro)
@@ -220,7 +226,7 @@ class PaginaEditor(PaginaBase):
                             activestyle="none", selectbackground=tema.VERDE_ESCURO)
         self.listas = {}
         for chave, altura in (("sumario", 12), ("citado", 7), ("notas", 6)):
-            caixa = ttk.LabelFrame(self.lateral, text=t(f"editor.lateral.{chave}"))
+            caixa = caixa_com_ajuda(self.lateral, t(f"editor.lateral.{chave}"), t(f"ajuda.editor.{chave}"))
             caixa.pack(fill=tk.BOTH, expand=chave == "sumario", padx=(4, 0), pady=(0, 8))
             lista = tk.Listbox(caixa, height=altura, width=24, **estilo_lista)
             lista.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)

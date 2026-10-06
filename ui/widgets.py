@@ -39,8 +39,9 @@ def mostrar_toast(root, mensagem: str, duracao: int = 3500):
 class Dica:
     """Dica flutuante (tooltip) que aparece ao parar o mouse sobre um widget."""
 
-    def __init__(self, widget, texto: str, atraso: int = 500):
+    def __init__(self, widget, texto: str, atraso: int = 500, condicao=None, largura: int = 320, destaque=False):
         self.widget, self.texto, self.atraso = widget, texto, atraso
+        self.condicao, self.largura, self.destaque = condicao, largura, destaque
         self._agendado = self._janela = None
         widget.bind("<Enter>", self._agendar, add="+")
         widget.bind("<Leave>", self._esconder, add="+")
@@ -48,7 +49,13 @@ class Dica:
 
     def _agendar(self, _evento=None):
         self._esconder()
-        self._agendado = self.widget.after(self.atraso, self._mostrar)
+        if self.condicao is None or self.condicao():
+            self._agendado = self.widget.after(self.atraso, self._mostrar)
+
+    def mostrar_agora(self, _evento=None):
+        self._esconder()
+        if self.condicao is None or self.condicao():
+            self._mostrar()
 
     def _mostrar(self):
         self._agendado = None
@@ -56,11 +63,12 @@ class Dica:
             self._janela = tk.Toplevel(self.widget)
             self._janela.overrideredirect(True)
             self._janela.attributes("-topmost", True)
+            borda = tema.VERDE_ESCURO if self.destaque else "#3a3a3a"
             tk.Label(self._janela, text=self.texto, bg=tema.PAINEL, fg=tema.TEXTO, font=("Segoe UI", 9),
-                     padx=8, pady=4, justify="left", wraplength=320, highlightthickness=1,
-                     highlightbackground="#3a3a3a").pack()
+                     padx=10 if self.destaque else 8, pady=6 if self.destaque else 4, justify="left",
+                     wraplength=self.largura, highlightthickness=1, highlightbackground=borda).pack()
             self._janela.update_idletasks()
-            x = self.widget.winfo_rootx()
+            x = min(self.widget.winfo_rootx(), self.widget.winfo_screenwidth() - self._janela.winfo_width() - 8)
             y = self.widget.winfo_rooty() - self._janela.winfo_height() - 4
             if y < 0:
                 y = self.widget.winfo_rooty() + self.widget.winfo_height() + 4
@@ -81,6 +89,91 @@ class Dica:
             except tk.TclError:
                 pass
             self._janela = None
+
+
+# ----------------------------------------------------------------------
+# AJUDA CONTEXTUAL: o círculo com "?" ao lado de uma opção. Passar o mouse
+# (ou clicar) mostra o que a opção faz. Opções → Geral liga/desliga todos.
+# ----------------------------------------------------------------------
+COR_AJUDA, COR_AJUDA_ATIVA = "#6b7280", tema.VERDE
+_icones_ajuda = []                       # rótulos criados (para esconder/mostrar sem reiniciar)
+_preferencia_ajuda = {"visivel": None}   # lida da configuração uma vez só
+
+
+def ajuda_visivel() -> bool:
+    if _preferencia_ajuda["visivel"] is None:
+        import core.config as cfg
+        _preferencia_ajuda["visivel"] = bool(cfg.obter("mostrar_ajuda", True))
+    return _preferencia_ajuda["visivel"]
+
+
+def definir_ajuda_visivel(visivel: bool):
+    """Salva a preferência e mostra/esconde na hora todos os ícones de ajuda abertos."""
+    import core.config as cfg
+    cfg.atualizar_configuracoes({"mostrar_ajuda": bool(visivel)})
+    _preferencia_ajuda["visivel"] = bool(visivel)
+    atualizar_ajudas()
+
+
+def ajuda(parent, texto: str, bg=None):
+    """Ícone "?" com a explicação 'texto' (as chaves ajuda.* do locale). Devolve o rótulo (o chamador posiciona)."""
+    import ui.icones as icones
+    janela = parent.winfo_toplevel()
+    rotulo = tk.Label(parent, bg=bg or tema.FUNDO, bd=0, padx=2, cursor="question_arrow")
+    rotulo.janela_icones = janela
+    dica = rotulo.dica = Dica(rotulo, texto, atraso=150, condicao=ajuda_visivel, largura=360, destaque=True)
+    rotulo.bind("<Button-1>", dica.mostrar_agora, add="+")
+    rotulo.bind("<Enter>", lambda e: _pintar_ajuda(rotulo, COR_AJUDA_ATIVA), add="+")
+    rotulo.bind("<Leave>", lambda e: _pintar_ajuda(rotulo, COR_AJUDA), add="+")
+    _pintar_ajuda(rotulo, COR_AJUDA)
+    _icones_ajuda.append(rotulo)
+    return rotulo
+
+
+def _pintar_ajuda(rotulo, cor):
+    import ui.icones as icones
+    try:
+        if ajuda_visivel():
+            rotulo.config(image=icones.ajuda(rotulo.janela_icones, cor))
+        else:
+            rotulo.config(image=icones.vazio(rotulo.janela_icones))
+    except tk.TclError:
+        pass
+
+
+def icones_ajuda_abertos() -> list:
+    """Os ícones de ajuda que ainda existem (esquece os de janelas já fechadas)."""
+    vivos = []
+    for rotulo in _icones_ajuda:
+        try:
+            if rotulo.winfo_exists():
+                vivos.append(rotulo)
+        except tk.TclError:
+            pass
+    _icones_ajuda[:] = vivos
+    return vivos
+
+
+def atualizar_ajudas():
+    """Reaplica a preferência mostrar/esconder em todos os ícones de ajuda abertos."""
+    for rotulo in icones_ajuda_abertos():
+        _pintar_ajuda(rotulo, COR_AJUDA)
+
+
+def rotulo_com_ajuda(parent, texto: str, ajuda_texto: str, **opcoes_rotulo):
+    """Frame com um rótulo e o "?" logo depois (para usar no lugar de um ttk.Label em grids e linhas)."""
+    quadro = ttk.Frame(parent)
+    ttk.Label(quadro, text=texto, **opcoes_rotulo).pack(side=tk.LEFT)
+    ajuda(quadro, ajuda_texto).pack(side=tk.LEFT, padx=(3, 0))
+    return quadro
+
+
+def caixa_com_ajuda(parent, titulo: str, ajuda_texto: str):
+    """ttk.LabelFrame cujo título tem o "?" ao lado."""
+    cabeca = ttk.Frame(parent)
+    ttk.Label(cabeca, text=titulo.strip(), style="TLabelframe.Label").pack(side=tk.LEFT)
+    ajuda(cabeca, ajuda_texto).pack(side=tk.LEFT, padx=(4, 0))
+    return ttk.LabelFrame(parent, labelwidget=cabeca)
 
 
 class LinhaFluida(tk.Frame):

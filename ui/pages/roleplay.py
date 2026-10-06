@@ -10,7 +10,7 @@ import engine.persona_engine as pe
 import ui.theme as tema
 from core.i18n import t
 from ui.dialogs.note import JanelaNota
-from ui.widgets import PaginaBase, cabecalho, texto_rolavel, anexar_texto, substituir_texto
+from ui.widgets import PaginaBase, cabecalho, texto_rolavel, anexar_texto, substituir_texto, ajuda, caixa_com_ajuda
 
 
 class PaginaRoleplay(PaginaBase):
@@ -26,7 +26,7 @@ class PaginaRoleplay(PaginaBase):
         painel.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
 
         # --- Ficha (esquerda) ---
-        esquerda = ttk.LabelFrame(painel, text=t("rp.persona_ativa"))
+        esquerda = caixa_com_ajuda(painel, t("rp.persona_ativa"), t("ajuda.rp.persona"))
         painel.add(esquerda, weight=1)
         topo = ttk.Frame(esquerda)
         topo.pack(fill=tk.X, padx=10, pady=8)
@@ -46,15 +46,18 @@ class PaginaRoleplay(PaginaBase):
         self.menu_retrato.add_separator()
         self.menu_retrato.add_command(label=t("rp.menu_revelar"), command=self._revelar_retrato)
 
-        self.btn_retrato = ttk.Button(esquerda, text=t("rp.gerar_retrato"), command=self._gerar_retrato)
-        self.btn_retrato.pack(fill=tk.X, padx=10, pady=(2, 6))
+        linha_retrato = ttk.Frame(esquerda)
+        linha_retrato.pack(fill=tk.X, padx=10, pady=(2, 6))
+        self.btn_retrato = ttk.Button(linha_retrato, text=t("rp.gerar_retrato"), command=self._gerar_retrato)
+        self.btn_retrato.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ajuda(linha_retrato, t("ajuda.rp.retrato")).pack(side=tk.LEFT, padx=(6, 0))
         ttk.Label(esquerda, text=t("rp.caracteristicas"), font=("Segoe UI", 8, "bold"),
                   foreground=tema.SUAVE).pack(anchor=tk.W, padx=10, pady=(4, 2))
         self.ficha = texto_rolavel(esquerda, fonte=("Consolas", 10))
         self.ficha.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 8))
 
         # --- Diálogo (direita) ---
-        direita = ttk.LabelFrame(painel, text=t("rp.dialogo"))
+        direita = caixa_com_ajuda(painel, t("rp.dialogo"), t("ajuda.rp.dialogo"))
         painel.add(direita, weight=2)
         self.chat = texto_rolavel(direita)
         self.chat.pack(fill=tk.BOTH, expand=True, padx=10, pady=8)
