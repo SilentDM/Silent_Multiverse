@@ -212,5 +212,6 @@
   "notas.log_adicionada": "📝 Nota adicionada a {nome} ({origem}).",
   "wb.erro_sem_relatorio": "O relatório da auditoria está vazio.",
   "wb.log_auditoria_inicio": "🔎 Montando o plano de correção a partir do relatório da Auditoria de Lore...",
-  "acoes.log_parada_tarefa": "🛑 Pedido de parada enviado para: {tarefa}."
+  "acoes.log_parada_tarefa": "🛑 Pedido de parada enviado para: {tarefa}.",
+  "md.persona.retrato": "## 🎨 Retrato (pedido em inglês para o gerador de imagem)"
 }

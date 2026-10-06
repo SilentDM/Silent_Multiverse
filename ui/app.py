@@ -72,6 +72,7 @@ class SilentApp:
         self._configurar_atalhos()
 
         self.mostrar_pagina("editor")
+        self.root.after(700, self._talvez_assistente)
         discord_runner.iniciar(ao_descobrir_servidores=self._servidores_descobertos)
         tarefas.executar_em_segundo_plano(modelos.atualizar_se_necessario)
         tarefas.executar_em_segundo_plano(atualizacoes.verificar_na_inicializacao)
@@ -391,6 +392,21 @@ class SilentApp:
             else:
                 botao.configure(style="NavActive.TButton" if ativo else "Nav.TButton",
                                 image=icones.icone(self.root, ICONES_NAV[nome], tema.VERDE if ativo else COR_ICONE))
+
+    def _talvez_assistente(self):
+        if acoes.precisa_assistente():
+            self.abrir_assistente()
+
+    def abrir_assistente(self):
+        """Assistente de primeira execução (idioma, chave do Gemini, pasta do projeto)."""
+        from ui.dialogs.first_run import AssistenteInicial
+        AssistenteInicial(self)
+
+    def reiniciar(self):
+        """Fecha e abre o programa de novo (ex.: para trocar o idioma da interface)."""
+        self.salvar_editor()
+        sistema.abrir_nova_instancia()
+        self.encerrar()
 
     def abrir_requisicao(self, tipo: str, caminho: str):
         """Abre a aba Requisições para um pedido de nível médio sobre o arquivo."""

@@ -170,6 +170,8 @@ class PaginaOpcoes(PaginaBase):
                         command=lambda: (definir_ajuda_visivel(self.var_ajuda.get()), self._salvo())).pack(side=tk.LEFT)
         ajuda(linha, t("options.mostrar_ajuda_dica")).pack(side=tk.LEFT, padx=(4, 0))
         self._dica(secao, t("options.mostrar_ajuda_dica"))
+        ttk.Button(secao, text=t("options.assistente_btn"), command=self.app.abrir_assistente).pack(anchor=tk.W, padx=12, pady=(10, 2))
+        self._dica(secao, t("options.assistente_dica"))
 
         secao = coluna.nova_secao(t("options.sobre_titulo"))
         ttk.Label(secao, text=t("options.sobre_versao", versao=VERSAO), font=("Segoe UI", 10, "bold"),

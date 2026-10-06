@@ -33,6 +33,8 @@ def fechar(root):
 class TesteInterface(unittest.TestCase):
     def setUp(self):
         self.raiz_projeto = novo_projeto({"Valia.md": "# Valia\ntexto"})
+        import core.config as cfg
+        cfg.atualizar_configuracoes({"assistente_concluido": True})      # o assistente tem o seu próprio teste
         self.patches = [mock.patch("bot.runner.iniciar"), mock.patch("bot.runner.parar"),
                         mock.patch("core.modelos_gemini.atualizar_se_necessario"),
                         mock.patch("core.atualizacoes.verificar_na_inicializacao"),

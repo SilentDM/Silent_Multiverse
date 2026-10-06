@@ -15,6 +15,7 @@
 - Ícones de ajuda: o círculo com ? ao lado de uma opção explica o que ela faz. Passe o mouse por cima (ou clique). Para escondê-los, desmarque Opções → Geral → Mostrar os ícones de ajuda.
 
 # 1. PRIMEIROS PASSOS
+> Na primeira vez que o programa abre, um assistente guia estes passos: idioma, chave do Gemini e pasta do projeto. Para repeti-lo, use Opções → Geral → Abrir o assistente de início.
 ## 1) Consiga uma chave de API do Gemini
 - Abra o Google AI Studio (https://aistudio.google.com), entre com uma conta Google e clique em "Get API key".
 - Existe um nível gratuito. Os limites mudam com o tempo e aparecem no próprio AI Studio.
@@ -130,6 +131,7 @@
 - Predefinições guardam combinações que você usa sempre; o tamanho estimado mostra quantos tokens o pedido vai usar.
 
 # 7. AÇÕES
+As ferramentas estão em quatro grupos: Gerar (escrevem ou montam algo novo), Analisar (só leem o projeto e mostram um relatório), Manutenção (deixam o projeto em ordem sem mudar a lore) e Zona de perigo (apagam o que não volta, sempre com confirmação).
 - Expander: procura tags <-- TODO: em todos os arquivos e as preenche com a IA. Um revisor confere o resultado contra a sua lore antes de salvar.
 - Reconstruir Contexto do Mundo: atualiza o que a IA sabe sobre o projeto (também é reconstruído automaticamente a cada 12 horas).
 - Auditar Lore do Mundo: procura contradições, buracos na linha do tempo e inconsistências geográficas e mostra um relatório que você pode salvar ou mandar ao WorldBuilder (🌍 Corrigir com o WorldBuilder). Marque Montar o plano de correção no WorldBuilder ao terminar para isso acontecer sozinho; o plano sempre espera a sua revisão.
@@ -155,6 +157,9 @@
 # 9. INTERPRETAÇÃO (TEATRO DA MENTE)
 - Clique em ➕ Nova Persona, digite o nome do personagem e descreva o papel, a motivação ou o mistério dele. A IA monta a persona completa a partir do contexto do seu mundo.
 - Converse em personagem no lado direito. Cada persona lembra a própria conversa.
+- A ficha da esquerda é editável: corrija o que a IA errou ou acrescente detalhes. Ela salva sozinha no arquivo da persona ("✓ Salvo") e a próxima fala já usa o texto novo.
+- A seção 🎨 da ficha, logo depois da aparência, é o pedido do retrato (em inglês). Mude ali e gere um retrato novo. A seção termina na primeira linha em branco.
+- ↺ Ficha original descarta as suas edições e volta à ficha que a IA gerou.
 - 📝 Depoimento (ou botão direito numa fala): guarda a fala nas Notas do Mestre, de preferência no arquivo do próprio personagem. É a versão dele: pode mentir ou estar enganado.
 - 🎨 Gerar Retrato do NPC cria uma imagem do personagem. Clique com o botão direito na imagem para abri-la, salvá-la ou mostrá-la na pasta de dados.
 > As imagens (retratos e mapas de batalha das aventuras) usam o modelo de imagem do Gemini. Se ele não estiver disponível para a sua chave ou a cota acabar, o programa usa o serviço gratuito Pollinations (só a descrição da imagem é enviada).
@@ -167,7 +172,7 @@
 
 # 11. OPÇÕES
 As Opções têm quatro abas. Tudo salva sozinho; um "✓ Salvo" no topo confirma.
-- Geral: idioma, abrir a aba Requisições antes de cada pedido, versão, atualizações e o aviso legal.
+- Geral: idioma, abrir a aba Requisições antes de cada pedido, ícones de ajuda (?), o assistente de início, versão, atualizações e o aviso legal.
 - IA (Gemini): a chave do Gemini, o status do cache e a ordem de uso dos modelos (veja a seção 12).
 - Projeto: Estilo (Gênero, Tom, Clima e Estilo de escrita), Sistema de Regras, palavras secretas e o Expander automático. Estas valem só para o projeto aberto e ficam salvas na pasta dele (.silent_projeto.json); um projeto novo começa com os valores atuais.
 - Discord: token do bot, IDs de Mestre e as regras por servidor (veja a seção 13).
