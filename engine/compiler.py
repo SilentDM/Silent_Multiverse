@@ -1,5 +1,6 @@
 import os, re, unicodedata
 from pathlib import Path
+import core.propriedades as propriedades
 import engine.project_utils as pu
 import core.eventos as ev
 from core.i18n import t, tc
@@ -24,12 +25,10 @@ def _slug_documento(nome: str) -> str:
     return "doc-" + re.sub(r'[^a-z0-9]', '', nome.lower())
 
 def _limpar_conteudo_markdown(texto: str) -> str:
-    """Remove metadados de rascunho e tags TODO do texto final do livro."""
+    """Remove as propriedades (YAML), os marcadores antigos e as tags TODO do texto final do livro."""
     linhas = []
-    for linha in texto.splitlines():
+    for linha in propriedades.corpo_limpo(texto).splitlines():
         if any(tag in linha for tag in pu.TAG_ALVO):
-            continue
-        if pu.eh_rascunho(linha):
             continue
         linhas.append(linha)
     return "\n".join(linhas).strip()

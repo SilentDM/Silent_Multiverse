@@ -57,3 +57,15 @@ def caminho_icone():
     import engine.project_utils as pu
     candidatos.append(pu.BASE_DIR / "icon.ico")
     return next((c for c in candidatos if c.exists()), None)
+
+
+def comando_para_reiniciar() -> list:
+    """Comando que abre o programa de novo (o .exe empacotado ou o python com o main.py)."""
+    if getattr(sys, "frozen", False):
+        return [sys.executable] + sys.argv[1:]
+    return [sys.executable] + sys.argv
+
+
+def abrir_nova_instancia():
+    """Abre uma nova cópia do programa (quem chama encerra a atual em seguida)."""
+    subprocess.Popen(comando_para_reiniciar(), cwd=os.getcwd())

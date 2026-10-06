@@ -253,8 +253,11 @@ class GradeRolavel(ttk.Frame):
         self.caixas = []
         self._colunas = 0
 
-    def nova_caixa(self, titulo: str) -> ttk.LabelFrame:
-        caixa = ttk.LabelFrame(self.interno, text=titulo)
+    def nova_caixa(self, titulo: str, explicacao: str = "", estilo: str = "TLabelframe") -> ttk.LabelFrame:
+        caixa = ttk.LabelFrame(self.interno, text=titulo, style=estilo)
+        if explicacao:
+            ttk.Label(caixa, text=explicacao, style="Dica.TLabel", wraplength=420,
+                      justify="left").pack(anchor=tk.W, padx=10, pady=(6, 0))
         self.caixas.append(caixa)
         return caixa
 

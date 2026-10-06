@@ -1,3 +1,11 @@
+---
+type: npc
+tags: [npc]
+aliases: []
+location:
+faction:
+occupation:
+---
 # [Nome do NPC]
 *" [Citação memorável, frase de efeito ou rumor sobre o NPC que revele algo de sua natureza ou reputação] "*
 

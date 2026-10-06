@@ -46,6 +46,8 @@ def aplicar_tema(root):
     # Cartões com o MESMO fundo dos textos e linhas dentro deles (antes ficavam "caixinhas" escuras atrás de cada texto)
     style.configure('TLabelframe', background='#121212', bordercolor='#2d2d2d', borderwidth=1, relief='solid')
     style.configure('TLabelframe.Label', background='#121212', foreground='#10b981', font=('Segoe UI', 10, 'bold'))
+    style.configure('Perigo.TLabelframe', background='#121212', bordercolor='#7f1d1d', borderwidth=1, relief='solid')
+    style.configure('Perigo.TLabelframe.Label', background='#121212', foreground='#ef4444', font=('Segoe UI', 10, 'bold'))
     style.configure('Dica.TLabel', foreground='#888888', font=('Segoe UI', 9))
     style.configure('Salvo.TLabel', foreground='#10b981', font=('Segoe UI', 9, 'bold'))
 

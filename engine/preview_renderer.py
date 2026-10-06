@@ -1,3 +1,4 @@
+import core.propriedades as propriedades
 import re, os
 from pathlib import Path
 import engine.project_utils as pu
@@ -238,19 +239,13 @@ code {
 """
 
 def _extrair_frontmatter(texto: str) -> tuple[dict, str]:
-    """Separa o bloco YAML --- do restante do texto."""
-    if texto.startswith("---"):
-        partes = texto.split("---", 2)
-        if len(partes) >= 3:
-            raw_yaml = partes[1].strip()
-            corpo = partes[2].strip()
-            metadados = {}
-            for linha in raw_yaml.splitlines():
-                if ":" in linha and not linha.strip().startswith("#"):
-                    k, v = linha.split(":", 1)
-                    metadados[k.strip().lower()] = v.strip().strip("\"'")
-            return metadados, corpo
-    return {}, texto
+    """Separa as propriedades do Obsidian (bloco YAML ---) do restante do texto; listas viram "a, b"."""
+    linhas, corpo = propriedades.separar(texto)
+    if linhas is None:
+        return {}, texto
+    metadados = {chave.lower(): ", ".join(valor) if isinstance(valor, list) else valor
+                 for chave, valor in propriedades.ler(texto).items()}
+    return metadados, corpo.strip()
 
 def _markdown_para_html_rico(conteudo_md: str, caminho_base_arquivo: Path) -> str:
     """Converte sintaxe de Markdown para HTML completo com suporte a tabelas, Callouts e imagens."""

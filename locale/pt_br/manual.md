@@ -15,6 +15,7 @@
 - Ícones de ajuda: o círculo com ? ao lado de uma opção explica o que ela faz. Passe o mouse por cima (ou clique). Para escondê-los, desmarque Opções → Geral → Mostrar os ícones de ajuda.
 
 # 1. PRIMEIROS PASSOS
+> Na primeira vez que o programa abre, um assistente guia estes passos: idioma, chave do Gemini e pasta do projeto. Para repeti-lo, use Opções → Geral → Abrir o assistente de início.
 ## 1) Consiga uma chave de API do Gemini
 - Abra o Google AI Studio (https://aistudio.google.com), entre com uma conta Google e clique em "Get API key".
 - Existe um nível gratuito. Os limites mudam com o tempo e aparecem no próprio AI Studio.
@@ -92,14 +93,34 @@
 ## Tags de expansão <-- TODO: motivo
 - Clique com o botão direito no editor para inserir a tag, ou digite-a. Depois dos dois-pontos, escreva o que a IA deve fazer.
 - O Expander encontra a tag e preenche aquele trecho, seguindo sua instrução e o contexto do mundo.
+## Propriedades do Obsidian
+- Silent guarda os marcadores do arquivo como propriedades do Obsidian, o bloco entre linhas --- no topo do arquivo:
+```
+---
+status: segredo
+aliases: [O Rei das Cinzas]
+---
+```
+- O Obsidian mostra esse bloco como Propriedades. O resto do bloco (tags, tipo, campos seus) é mantido como você escreveu.
+- Arquivos antigos com a linha solta "status: segredo" continuam funcionando. Quando Silent grava o arquivo (IA, WorldBuilder, notas), a linha vira propriedade. O que você salva no Editor não é convertido.
+- aliases (apelidos): ao digitar [[ no Editor, um apelido aparece na lista e vira [[Arquivo|Apelido]], o mesmo link que o Obsidian usa.
+- Os campos de cada tipo vêm dos templates. Um template de cidade com type: cidade, kingdom:, ruler: faz toda cidade ter esses campos. As chaves são sempre em inglês (tags e aliases só funcionam assim no Obsidian).
+- Templates procurados nesta ordem: a pasta Templates do seu cofre, a pasta de dados do Silent, os modelos do programa. Os templates iniciais já trazem campos; os que você nunca editou recebem as atualizações do programa.
+- Ao criar um arquivo a partir de um template, as propriedades dele vão para o topo do arquivo.
+- Melhorar Arquivo (e o WorldBuilder, que usa o Melhorar) pede à IA para preencher os campos vazios. A ordem de prioridade é:
+  1. o que já está no arquivo (inclusive o que veio do Obsidian) nunca é trocado;
+  2. campos vazios recebem o que a IA preencheu a partir do texto e do mundo;
+  3. sem resposta da IA, vale o valor padrão do template.
+- A IA não cria chaves fora do template e nunca mexe em status. Um arquivo sem type recebe o tipo que a IA reconhecer, com os campos desse tipo.
+- Chaves antigas em português que o Silent usava (tipo, sistema, nivel) continuam valendo pela chave em inglês.
 ## Segredos do Mestre vs jogadores
-- Arquivo inteiro: status: segredo (ou status: secret) no cabeçalho, ou tags: [segredo].
+- Arquivo inteiro: a propriedade status: segredo (ou secret), ou tags: [segredo]. A linha antiga status: segredo no começo do texto também vale.
 - Uma seção: adicione [segredo] (ou [secret]) ao título dela, ex.: ### O Culto Oculto [segredo].
 - Um parágrafo: o parágrafo que contém <!-- segredo --> (ou <!-- secret -->) ou 🤫 fica oculto.
 - Palavras secretas (Opções): qualquer arquivo, pasta, título ou parágrafo que contenha esses nomes é removido da visão dos jogadores.
 - O Mestre (chat local e cargos/IDs de Mestre no Discord) vê tudo; os jogadores veem só a lore pública.
 ## Rascunhos
-- status: rascunho (ou status: draft) deixa o arquivo fora do contexto da IA até você terminá-lo. Arquivos vazios e com tags <-- TODO pendentes também ficam de fora.
+- A propriedade status: rascunho (ou draft) deixa o arquivo fora do contexto da IA até você terminá-lo. Arquivos vazios e com tags <-- TODO pendentes também ficam de fora.
 ## Imagens
 - ![[imagem.png]] mostra retratos e mapas de batalha na visualização e no livro de cenário.
 ## Notas do Mestre
@@ -128,8 +149,10 @@
 - Estilo em quatro eixos: Gênero, Tom, Clima e Estilo de escrita (ex.: numa aventura de Mistério, a caverna lovecraftiana pode usar Horror Cósmico).
 - Diretrizes extras, arquivos de referência (os ligados por [[links]] aparecem sugeridos), modo (reescrever tudo ou só acrescentar), profundidade, público (Mestre ou texto para jogadores), nível do grupo, número de jogadores, criatividade e a marca 🤫 de segredo.
 - Predefinições guardam combinações que você usa sempre; o tamanho estimado mostra quantos tokens o pedido vai usar.
+- Se o arquivo está como rascunho (status: rascunho), aparece ✎ Tirar do rascunho ao terminar, já marcada: quando a IA termina, o arquivo deixa de ser rascunho e entra no contexto da IA. Desmarque para manter como rascunho.
 
 # 7. AÇÕES
+As ferramentas estão em quatro grupos: Gerar (escrevem ou montam algo novo), Analisar (só leem o projeto e mostram um relatório), Manutenção (deixam o projeto em ordem sem mudar a lore) e Zona de perigo (apagam o que não volta, sempre com confirmação).
 - Expander: procura tags <-- TODO: em todos os arquivos e as preenche com a IA. Um revisor confere o resultado contra a sua lore antes de salvar.
 - Reconstruir Contexto do Mundo: atualiza o que a IA sabe sobre o projeto (também é reconstruído automaticamente a cada 12 horas).
 - Auditar Lore do Mundo: procura contradições, buracos na linha do tempo e inconsistências geográficas e mostra um relatório que você pode salvar ou mandar ao WorldBuilder (🌍 Corrigir com o WorldBuilder). Marque Montar o plano de correção no WorldBuilder ao terminar para isso acontecer sozinho; o plano sempre espera a sua revisão.
@@ -155,6 +178,9 @@
 # 9. INTERPRETAÇÃO (TEATRO DA MENTE)
 - Clique em ➕ Nova Persona, digite o nome do personagem e descreva o papel, a motivação ou o mistério dele. A IA monta a persona completa a partir do contexto do seu mundo.
 - Converse em personagem no lado direito. Cada persona lembra a própria conversa.
+- A ficha da esquerda é editável: corrija o que a IA errou ou acrescente detalhes. Ela salva sozinha no arquivo da persona ("✓ Salvo") e a próxima fala já usa o texto novo.
+- A seção 🎨 da ficha, logo depois da aparência, é o pedido do retrato (em inglês). Mude ali e gere um retrato novo. A seção termina na primeira linha em branco.
+- ↺ Ficha original descarta as suas edições e volta à ficha que a IA gerou.
 - 📝 Depoimento (ou botão direito numa fala): guarda a fala nas Notas do Mestre, de preferência no arquivo do próprio personagem. É a versão dele: pode mentir ou estar enganado.
 - 🎨 Gerar Retrato do NPC cria uma imagem do personagem. Clique com o botão direito na imagem para abri-la, salvá-la ou mostrá-la na pasta de dados.
 > As imagens (retratos e mapas de batalha das aventuras) usam o modelo de imagem do Gemini. Se ele não estiver disponível para a sua chave ou a cota acabar, o programa usa o serviço gratuito Pollinations (só a descrição da imagem é enviada).
@@ -167,7 +193,7 @@
 
 # 11. OPÇÕES
 As Opções têm quatro abas. Tudo salva sozinho; um "✓ Salvo" no topo confirma.
-- Geral: idioma, abrir a aba Requisições antes de cada pedido, versão, atualizações e o aviso legal.
+- Geral: idioma, abrir a aba Requisições antes de cada pedido, ícones de ajuda (?), o assistente de início, versão, atualizações e o aviso legal.
 - IA (Gemini): a chave do Gemini, o status do cache e a ordem de uso dos modelos (veja a seção 12).
 - Projeto: Estilo (Gênero, Tom, Clima e Estilo de escrita), Sistema de Regras, palavras secretas e o Expander automático. Estas valem só para o projeto aberto e ficam salvas na pasta dele (.silent_projeto.json); um projeto novo começa com os valores atuais.
 - Discord: token do bot, IDs de Mestre e as regras por servidor (veja a seção 13).

@@ -1,3 +1,11 @@
+---
+type: cidade
+tags: [cidade]
+aliases: []
+kingdom:
+ruler:
+population:
+---
 # Nome da Cidade
 
 ## Resumo

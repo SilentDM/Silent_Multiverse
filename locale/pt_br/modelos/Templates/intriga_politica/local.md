@@ -1,3 +1,10 @@
+---
+type: local
+tags: [local]
+aliases: []
+location:
+owner:
+---
 # Nome do Local
 > Aqui, quem controla a porta controla a conversa.
 

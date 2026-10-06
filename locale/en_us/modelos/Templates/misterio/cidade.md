@@ -1,3 +1,11 @@
+---
+type: city
+tags: [city]
+aliases: []
+kingdom:
+ruler:
+population:
+---
 # City Name
 > Everyone knows everyone. No one tells everything.
 

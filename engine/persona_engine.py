@@ -60,19 +60,22 @@ def forjar_nova_persona(nome_personagem: str, descricao_direta: str) -> str:
     return nome_salvo
 
 
+def _instrucoes_da_ficha_editada(dados: dict) -> str:
+    """A ficha que o Mestre editou (sem a seção do retrato) vira a identidade do personagem."""
+    return carregar_prompt("persona_dialogo_ficha_sistema", nome=dados.get("nome", ""),
+                           ficha=_separar_retrato(dados[CHAVE_FICHA])[0])
+
+
 def dialogar_com_persona(nome_persona: str, prompt_usuario: str) -> str:
-    """Executa a chamada da IA assumindo estritamente a persona."""
+    """Executa a chamada da IA assumindo estritamente a persona (relida do disco a cada fala)."""
     dados, historico = carregar_persona(nome_persona)
     if not dados:
         raise RuntimeError(t("persona.erro_carregar", nome=nome_persona))
 
-    instrucoes = carregar_prompt(
-        "persona_dialogo_sistema", nome=dados.get("nome"), alcunha=dados.get("titulo_ou_alcunha"),
-        ocupacao=dados.get("ocupacao_ou_papel"), alinhamento=dados.get("alinhamento_moral"),
-        bordao=dados.get("bordao_ou_frase_marcante"), voz=dados.get("tom_de_voz_e_estilo_fala"),
-        psicologia=dados.get("psicologia_e_temperamento"), motivacao=dados.get("motivacao_primaria"),
-        fraqueza=dados.get("fraqueza_ou_medo_oculto"),
-        instrucoes="\n".join(f"- {d}" for d in dados.get("instrucoes_de_atuacao", [])))
+    if (dados.get(CHAVE_FICHA) or "").strip():
+        instrucoes = _instrucoes_da_ficha_editada(dados)
+    else:
+        instrucoes = _instrucoes_dos_campos(dados)
 
     # Histórico recente (as últimas 6 mensagens); o autor interno "Interlocutor" vira o rótulo do idioma
     rotulo_interlocutor = tc("persona.interlocutor")
@@ -87,30 +90,91 @@ def dialogar_com_persona(nome_persona: str, prompt_usuario: str) -> str:
         use_world_context=True,
     )
     resposta = str(resposta).strip()
+    # Relê antes de gravar: a ficha pode ter sido editada enquanto a IA respondia
+    dados_atuais, _ = carregar_persona(nome_persona)
     historico.append({"autor": AUTOR_INTERLOCUTOR, "texto": prompt_usuario})
     historico.append({"autor": dados.get("nome"), "texto": resposta})
-    salvar_persona(nome_persona, dados, historico)
+    salvar_persona(nome_persona, dados_atuais or dados, historico)
     return resposta
+
+
+def _instrucoes_dos_campos(dados: dict) -> str:
+    return carregar_prompt(
+        "persona_dialogo_sistema", nome=dados.get("nome"), alcunha=dados.get("titulo_ou_alcunha"),
+        ocupacao=dados.get("ocupacao_ou_papel"), alinhamento=dados.get("alinhamento_moral"),
+        bordao=dados.get("bordao_ou_frase_marcante"), voz=dados.get("tom_de_voz_e_estilo_fala"),
+        psicologia=dados.get("psicologia_e_temperamento"), motivacao=dados.get("motivacao_primaria"),
+        fraqueza=dados.get("fraqueza_ou_medo_oculto"),
+        instrucoes="\n".join(f"- {d}" for d in dados.get("instrucoes_de_atuacao", [])))
 
 
 # ----------------------------------------------------------------------
 # FICHA E RETRATO (usados pela página de Roleplay)
 # ----------------------------------------------------------------------
+# A ficha é exibida como texto editável. Quando o Mestre edita, o texto vai para o JSON
+# (CHAVE_FICHA) e passa a ser a identidade usada nas conversas. A seção "## 🎨" guarda o
+# prompt do retrato; ao salvar, ela atualiza o prompt usado pelo gerador de imagem.
+CHAVE_FICHA = "ficha_texto"
+MARCA_RETRATO = "## 🎨"
+
+
+def _ficha_gerada(dados: dict) -> str:
+    try:
+        return persona_para_markdown(PersonaRoleplay(**dados))
+    except Exception:
+        return json.dumps({k: v for k, v in dados.items() if k != CHAVE_FICHA}, ensure_ascii=False, indent=2)
+
+
+def _separar_retrato(texto: str) -> tuple:
+    """(ficha sem a seção do retrato, prompt do retrato ou ""). A seção vai do título "## 🎨" até a primeira linha em branco."""
+    linhas = (texto or "").splitlines()
+    for i, linha in enumerate(linhas):
+        if linha.strip().startswith(MARCA_RETRATO):
+            fim = i + 1
+            while fim < len(linhas) and linhas[fim].strip() and not linhas[fim].lstrip().startswith(("#", ">")):
+                fim += 1
+            corpo = linhas[:i] + linhas[fim:]
+            return "\n".join(corpo).strip(), "\n".join(linhas[i + 1:fim]).strip()
+    return (texto or "").strip(), ""
 
 
 def ficha(nome_persona: str) -> dict:
-    """Dados prontos para exibir: Markdown da ficha, histórico e caminho do retrato."""
+    """Dados prontos para exibir: a ficha (editada pelo Mestre ou a gerada), histórico e retrato."""
     dados, historico = carregar_persona(nome_persona)
     if not dados:
-        return {"markdown": "", "historico": historico, "retrato": None, "nome": nome_persona}
-    try:
-        markdown = persona_para_markdown(PersonaRoleplay(**dados))
-    except Exception:
-        markdown = json.dumps(dados, ensure_ascii=False, indent=2)
+        return {"markdown": "", "historico": historico, "retrato": None, "nome": nome_persona, "editada": False}
+    editada = bool((dados.get(CHAVE_FICHA) or "").strip())
+    markdown = dados[CHAVE_FICHA] if editada else _ficha_gerada(dados)
     retrato = dados.get("portrait_path")
     if retrato and not Path(retrato).exists():
         retrato = None
-    return {"markdown": markdown, "historico": historico, "retrato": retrato, "nome": dados.get("nome", nome_persona)}
+    return {"markdown": markdown, "historico": historico, "retrato": retrato, "nome": dados.get("nome", nome_persona),
+            "editada": editada}
+
+
+def salvar_ficha(nome_persona: str, texto: str) -> bool:
+    """Grava a ficha editada no JSON da persona (mantendo o histórico). Devolve False se nada mudou."""
+    dados, historico = carregar_persona(nome_persona)
+    if not dados:
+        raise RuntimeError(t("persona.erro_carregar", nome=nome_persona))
+    texto = (texto or "").rstrip()
+    atual = dados.get(CHAVE_FICHA) or _ficha_gerada(dados)
+    if texto == atual.rstrip():
+        return False
+    dados[CHAVE_FICHA] = texto
+    prompt_retrato = _separar_retrato(texto)[1]
+    if prompt_retrato:
+        dados["prompt_visual_ingles"] = prompt_retrato
+    salvar_persona(nome_persona, dados, historico)
+    return True
+
+
+def restaurar_ficha(nome_persona: str) -> str:
+    """Descarta as edições do Mestre e volta à ficha gerada pela IA. Devolve o texto dela."""
+    dados, historico = carregar_persona(nome_persona)
+    dados.pop(CHAVE_FICHA, None)
+    salvar_persona(nome_persona, dados, historico)
+    return _ficha_gerada(dados)
 
 
 def gerar_retrato(nome_persona: str):

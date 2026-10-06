@@ -31,6 +31,7 @@ import engine.expander as ex
 import engine.geradores as geradores
 import engine.historico as hist
 import engine.melhorar as melhorar
+import core.propriedades as propriedades
 import engine.project_utils as pu
 import engine.requisicao as requisicao
 import engine.style_manager as estilo
@@ -229,7 +230,7 @@ def _ler_canon(sessao: dict) -> str:
 # ETAPA 1 — CÂNONE
 # ----------------------------------------------------------------------
 def canon_para_markdown(canon: CanonCampanha) -> str:
-    linhas = [f"# {canon.titulo}", tc("marcador.segredo"), "", f"> {tc('wb.canon.aviso')}", "",
+    linhas = [f"# {canon.titulo}", "", f"> {tc('wb.canon.aviso')}", "",
               f"## {tc('wb.canon.premissa')}", canon.premissa.strip(), "",
               f"## {tc('wb.canon.visao_publica')}", canon.visao_geral_publica.strip(), "",
               f"## {tc('wb.canon.entidades')}"]
@@ -277,7 +278,7 @@ def gerar_canon(objetivo: str = None) -> str:
         destino, n = pasta / f"{base}.md", 2
         while destino.exists():
             destino, n = pasta / f"{base} ({n}).md", n + 1
-    destino.write_text(canon_para_markdown(canon), encoding="utf-8")
+    pu.gravar_markdown(destino, canon_para_markdown(canon), segredo=True)     # só o Mestre vê o Cânone
 
     sessao.update(objetivo=objetivo, etapa=ETAPA_CANON, canon=caminho_relativo(destino), plano=[], resumo=None)
     salvar_sessao(sessao)
@@ -456,9 +457,10 @@ def _criar_esboco(arquivo: Path, item: dict, com_template: bool):
     titulo = re.sub(r"_v\d+$", "", arquivo.stem)
     conteudo = tc("wb.stub_arquivo", titulo=titulo, motivo=item["objective"])
     if com_template:
-        conteudo += "\n\n" + obter_conteudo_template(item.get("template"), item.get("genero") or estilo.padrao("genero"))
+        conteudo = propriedades.juntar_template(
+            conteudo + "\n", obter_conteudo_template(item.get("template"), item.get("genero") or estilo.padrao("genero")))
     arquivo.parent.mkdir(parents=True, exist_ok=True)
-    arquivo.write_text(conteudo.rstrip() + "\n", encoding="utf-8")
+    pu.gravar_markdown(arquivo, conteudo)
     ev.log(t("wb.log_arquivo_criado", caminho=caminho_relativo(arquivo)))
 
 

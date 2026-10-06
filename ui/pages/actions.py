@@ -26,38 +26,42 @@ class PaginaAcoes(PaginaBase):
         self.botoes = {}
         self.status = {}
 
-        caixa = self.grade.nova_caixa(t("actions.expander_title"))
+        # Gerar: a IA escreve ou o programa monta algo novo
+        caixa = self.grade.nova_caixa(t("actions.grupo.gerar"), t("actions.grupo.gerar_dica"))
         self._botao(caixa, "expander", t("actions.expander_btn"), self._expander)
         self._status(caixa, "expander")
-        self._botao(caixa, "contexto", t("actions.rebuild_ctx_btn"), self._contexto)
+        self._botao(caixa, "livro", t("actions.export_btn"), self._livro)
 
-        caixa = self.grade.nova_caixa(t("actions.audit_title"))
+        # Analisar: só lê o projeto e mostra um relatório
+        caixa = self.grade.nova_caixa(t("actions.grupo.analisar"), t("actions.grupo.analisar_dica"))
         self._botao(caixa, "auditoria", t("actions.audit_btn"), self._auditoria)
         self._status(caixa, "auditoria")
         self.var_auditoria_wb = tk.BooleanVar(value=acoes.auditoria_vai_ao_worldbuilder())
         ttk.Checkbutton(caixa, text=t("actions.audit_para_wb"), variable=self.var_auditoria_wb,
                         command=lambda: acoes.definir_auditoria_vai_ao_worldbuilder(self.var_auditoria_wb.get())
                         ).pack(anchor=tk.W, padx=10)
-        ttk.Label(caixa, text=t("actions.audit_para_wb_dica"), style="Dica.TLabel", wraplength=300,
-                  justify="left").pack(anchor=tk.W, padx=10, pady=(0, 8))
-
-        caixa = self.grade.nova_caixa(t("actions.export_title"))
-        self._botao(caixa, "livro", t("actions.export_btn"), self._livro)
+        ttk.Label(caixa, text=t("actions.audit_para_wb_dica"), style="Dica.TLabel", wraplength=380,
+                  justify="left").pack(anchor=tk.W, padx=10, pady=(0, 4))
         self._botao(caixa, "tamanho", t("actions.size_btn"), self._tamanho)
 
-        caixa = self.grade.nova_caixa(t("actions.mgmt_title"))
+        # Manutenção: deixa o projeto em ordem, sem mudar a lore
+        caixa = self.grade.nova_caixa(t("actions.grupo.manutencao"), t("actions.grupo.manutencao_dica"))
+        self._botao(caixa, "contexto", t("actions.rebuild_ctx_btn"), self._contexto)
         self._botao(caixa, "backup", t("actions.backup_btn"), self._backup)
-        self._botao(caixa, "memorias", t("actions.del_memories_btn"), self._excluir_memorias)
         self._botao(caixa, "dados", t("actions.open_data_btn"), acoes.abrir_pasta_dados)
+
+        # Zona de perigo: apaga coisas que não voltam
+        caixa = self.grade.nova_caixa(t("actions.grupo.perigo"), t("actions.grupo.perigo_dica"), estilo="Perigo.TLabelframe")
+        self._botao(caixa, "memorias", t("actions.del_memories_btn"), self._excluir_memorias, estilo="Perigo.TButton")
 
         self.grade.organizar()
         ev.inscrever_evento("acao.estado", lambda d: tarefas.na_interface(self._estado_acao, d))
 
     # --- montagem ---
-    def _botao(self, caixa, chave, texto, comando):
+    def _botao(self, caixa, chave, texto, comando, estilo="TButton"):
         linha = ttk.Frame(caixa)
         linha.pack(fill=tk.X, padx=10, pady=(8, 4))
-        botao = ttk.Button(linha, text=texto, command=comando)
+        botao = ttk.Button(linha, text=texto, command=comando, style=estilo)
         botao.pack(side=tk.LEFT, fill=tk.X, expand=True)
         ajuda(linha, t(f"ajuda.acoes.{chave}")).pack(side=tk.LEFT, padx=(6, 0))
         self.botoes[chave] = botao

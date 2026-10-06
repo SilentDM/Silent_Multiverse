@@ -51,10 +51,23 @@ class PaginaRoleplay(PaginaBase):
         self.btn_retrato = ttk.Button(linha_retrato, text=t("rp.gerar_retrato"), command=self._gerar_retrato)
         self.btn_retrato.pack(side=tk.LEFT, fill=tk.X, expand=True)
         ajuda(linha_retrato, t("ajuda.rp.retrato")).pack(side=tk.LEFT, padx=(6, 0))
-        ttk.Label(esquerda, text=t("rp.caracteristicas"), font=("Segoe UI", 8, "bold"),
-                  foreground=tema.SUAVE).pack(anchor=tk.W, padx=10, pady=(4, 2))
-        self.ficha = texto_rolavel(esquerda, fonte=("Consolas", 10))
+        cab_ficha = ttk.Frame(esquerda)
+        cab_ficha.pack(fill=tk.X, padx=10, pady=(4, 2))
+        ttk.Label(cab_ficha, text=t("rp.caracteristicas"), font=("Segoe UI", 8, "bold"),
+                  foreground=tema.SUAVE).pack(side=tk.LEFT)
+        ajuda(cab_ficha, t("ajuda.rp.ficha")).pack(side=tk.LEFT, padx=(3, 0))
+        self.btn_restaurar_ficha = ttk.Button(cab_ficha, text=t("rp.ficha_restaurar"), style="Ferramenta.TButton",
+                                              command=self._restaurar_ficha)
+        self.btn_restaurar_ficha.pack(side=tk.RIGHT)
+        self.lbl_ficha = ttk.Label(cab_ficha, text="", style="Dica.TLabel")
+        self.lbl_ficha.pack(side=tk.RIGHT, padx=6)
+        # Ficha editável: salva sozinha no JSON da persona e a conversa sempre usa o texto atual
+        self.ficha = texto_rolavel(esquerda, fonte=("Consolas", 10), somente_leitura=False)
         self.ficha.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 8))
+        self.ficha.bind("<KeyRelease>", self._ficha_editada)
+        self.ficha.bind("<FocusOut>", lambda e: self._salvar_ficha_agora())
+        self._salvar_agendado = None
+        self._ficha_de = None             # persona dona do texto que está na caixa
 
         # --- Diálogo (direita) ---
         direita = caixa_com_ajuda(painel, t("rp.dialogo"), t("ajuda.rp.dialogo"))
@@ -86,14 +99,20 @@ class PaginaRoleplay(PaginaBase):
             self._carregar(alvo)
         else:
             self.combo.set("")
+            self._ficha_de = None
             substituir_texto(self.ficha, t("rp.nenhuma"))
+            self.lbl_ficha.config(text="")
 
     def _carregar(self, nome):
         if not nome:
             return
+        self._salvar_ficha_agora()                  # não perde a edição da persona anterior
         self.persona_atual = nome
         dados = pe.ficha(nome)
-        substituir_texto(self.ficha, dados["markdown"])
+        substituir_texto(self.ficha, dados["markdown"], somente_leitura=False)
+        self.ficha.edit_reset()
+        self._ficha_de = nome
+        self._estado_ficha(t("rp.ficha_editada") if dados["editada"] else t("rp.ficha_gerada"))
         substituir_texto(self.chat, "")
         self._falas = []
         anexar_texto(self.chat, t("rp.narrador") + ": ", "sistema")
@@ -124,6 +143,42 @@ class PaginaRoleplay(PaginaBase):
         self.lbl_retrato.pack_forget()
         self.btn_retrato.config(text=t("rp.gerar_retrato"))
 
+    # --- ficha editável ---
+    def _estado_ficha(self, texto, cor=None):
+        self.lbl_ficha.config(text=texto, foreground=cor or tema.SUAVE)
+
+    def _ficha_editada(self, _evento=None):
+        if not self._ficha_de:
+            return
+        if self._salvar_agendado:
+            self.after_cancel(self._salvar_agendado)
+        self._estado_ficha(t("rp.ficha_salvando"), tema.AMARELO)
+        self._salvar_agendado = self.after(800, self._salvar_ficha_agora)
+
+    def _salvar_ficha_agora(self):
+        if self._salvar_agendado:
+            self.after_cancel(self._salvar_agendado)
+            self._salvar_agendado = None
+        if not self._ficha_de:
+            return
+        try:
+            mudou = pe.salvar_ficha(self._ficha_de, self.ficha.get("1.0", "end-1c"))
+        except Exception as e:
+            self._estado_ficha(t("rp.ficha_erro", erro=e), tema.VERMELHO)
+            return
+        if mudou:
+            self._estado_ficha(t("rp.ficha_salva"), tema.VERDE)
+
+    def _restaurar_ficha(self):
+        if not self._ficha_de or not messagebox.askyesno(t("rp.ficha_restaurar"), t("rp.ficha_restaurar_confirmar"),
+                                                         parent=self):
+            return
+        if self._salvar_agendado:
+            self.after_cancel(self._salvar_agendado)
+            self._salvar_agendado = None
+        substituir_texto(self.ficha, pe.restaurar_ficha(self._ficha_de), somente_leitura=False)
+        self._estado_ficha(t("rp.ficha_gerada"))
+
     # --- criar persona ---
     def _nova_persona(self):
         nome = simpledialog.askstring(t("rp.nova_titulo"), t("rp.nova_nome"), parent=self)
@@ -146,6 +201,7 @@ class PaginaRoleplay(PaginaBase):
         mensagem = self.entrada.get().strip()
         if not mensagem:
             return
+        self._salvar_ficha_agora()                  # a fala usa a ficha como está na tela
         self.entrada.delete(0, tk.END)
         persona = self.persona_atual
         anexar_texto(self.chat, t("rp.voce") + ": ", "usuario")

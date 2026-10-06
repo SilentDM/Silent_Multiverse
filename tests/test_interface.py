@@ -33,6 +33,8 @@ def fechar(root):
 class TesteInterface(unittest.TestCase):
     def setUp(self):
         self.raiz_projeto = novo_projeto({"Valia.md": "# Valia\ntexto"})
+        import core.config as cfg
+        cfg.atualizar_configuracoes({"assistente_concluido": True})      # o assistente tem o seu próprio teste
         self.patches = [mock.patch("bot.runner.iniciar"), mock.patch("bot.runner.parar"),
                         mock.patch("core.modelos_gemini.atualizar_se_necessario"),
                         mock.patch("core.atualizacoes.verificar_na_inicializacao"),
@@ -68,6 +70,35 @@ class TesteInterface(unittest.TestCase):
                     self.assertEqual(janela.botoes_nav["actions"].cget("text").strip().split()[-1], palavra)
                 finally:
                     fechar(root)
+
+    def test_opcao_de_tirar_rascunho_so_para_rascunhos(self):
+        (self.raiz_projeto / "Rascunho.md").write_text("---\nstatus: rascunho\n---\n# R", encoding="utf-8")
+        root, janela = self._montar("pt_br")
+        try:
+            pagina = janela.pagina("requisicoes")
+            janela.abrir_requisicao("melhorar", str(self.raiz_projeto / "Valia.md"))
+            root.update()
+            self.assertEqual(pagina.frame_rascunho.winfo_manager(), "")       # arquivo normal: não aparece
+            janela.abrir_requisicao("melhorar", str(self.raiz_projeto / "Rascunho.md"))
+            root.update()
+            self.assertEqual(pagina.frame_rascunho.winfo_manager(), "grid")
+            self.assertTrue(pagina.var_tirar_rascunho.get())                   # já vem marcada
+            self.assertTrue(pagina._ler_campos().tirar_rascunho)
+        finally:
+            fechar(root)
+
+    def test_marcar_todas_as_referencias(self):
+        root, janela = self._montar("pt_br")
+        try:
+            pagina = janela.pagina("requisicoes")
+            pagina._refs = [("a.md", "x", False), ("b.md", "y", True), ("c.md", "z", False)]
+            pagina._alternar_todas_refs()                                   # alguma desmarcada: marca todas
+            self.assertEqual([m for *_, m in pagina._refs], [True, True, True])
+            self.assertEqual({pagina.tree_refs.set(i, "ativo") for i in pagina.tree_refs.get_children()}, {"☑"})
+            pagina._alternar_todas_refs()                                   # todas marcadas: desmarca todas
+            self.assertEqual([m for *_, m in pagina._refs], [False, False, False])
+        finally:
+            fechar(root)
 
     def test_menu_requisicao_e_barra_de_tarefas(self):
         import core.eventos as ev

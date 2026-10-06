@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 
 import core.ai_utils as au
 import core.eventos as ev
+import engine.esquemas as esquemas
 import engine.expander as ex
 import engine.historico as hist
 import engine.notas as notas
@@ -149,10 +150,11 @@ def sintetizar_e_salvar_arquivo_canonica(caminho_arquivo: Path, texto_arquiteto:
         response_schema=DocumentoFinalConsolidado, use_world_context=True)
     decisao = DocumentoFinalConsolidado.model_validate_json(ex.remover_markdown_fences(str(resposta)))
 
+    original = caminho.read_text(encoding="utf-8", errors="ignore")
     hist.arquivar_versao_para_historico(caminho)
-    caminho.write_text(notas.reanexar(decisao.conteudo_markdown.strip(), secao_notas), encoding="utf-8")
-    if requisicao and requisicao.segredo:
-        pu.garantir_marcadores_arquivo(caminho, True, tirar_rascunho=False)
+    pu.gravar_markdown(caminho, esquemas.aplicar(original, notas.reanexar(decisao.conteudo_markdown.strip(), secao_notas)),
+                       segredo=True if requisicao and requisicao.segredo else None,
+                       rascunho=requisicao.status_rascunho() if requisicao else None)
     ev.log(t("conselho.log_consolidado", nome=caminho.name))
     ev.log(t("conselho.log_nota_juiz", nota=decisao.resumo_decisao_juiz))
     return True

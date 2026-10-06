@@ -1,3 +1,11 @@
+---
+type: kingdom
+tags: [kingdom]
+aliases: []
+capital:
+ruler:
+government:
+---
 # Kingdom Name
 
 ## Summary

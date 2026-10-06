@@ -10,6 +10,8 @@ from pathlib import Path
 
 import core.ai_utils as au
 import core.eventos as ev
+import core.propriedades as propriedades
+import engine.esquemas as esquemas
 import engine.expander as ex
 import engine.historico as hist
 import engine.notas as notas
@@ -29,7 +31,8 @@ def melhorar_arquivo(caminho, objetivo: str = None, canon: str = None, requisica
 
     ex.marcar_processamento(arquivo, True)
     try:
-        corpo, secao_notas = notas.separar(arquivo.read_text(encoding="utf-8", errors="ignore"))
+        original = arquivo.read_text(encoding="utf-8", errors="ignore")
+        corpo, secao_notas = notas.separar(original)
         # Referência do WorldBuilder: o Cânone da campanha ou o relatório da Auditoria de Lore
         if canon:
             bloco_canon = carregar_prompt("melhorar_canon", canon=canon)
@@ -41,20 +44,23 @@ def melhorar_arquivo(caminho, objetivo: str = None, canon: str = None, requisica
         texto = au.ask_ai(
             contents=carregar_prompt("melhorar_usuario", objetivo=objetivo, conteudo=corpo, canon=bloco_canon,
                                      requisicao=requisicao.bloco_prompt() if requisicao else "",
-                                     notas=notas.bloco_para_prompt(arquivo, secao_notas)),
+                                     notas=notas.bloco_para_prompt(arquivo, secao_notas),
+                                     propriedades=esquemas.bloco_prompt(original)),
             system_instruction=carregar_prompt("melhorar_sistema", arquivo=arquivo.name, objetivo=objetivo,
                                                estilo=ex.carregar_diretrizes_estilo(escolhas)),
             temperature=requisicao.temperatura(0.4) if requisicao else 0.4)
         if not texto or not str(texto).strip():
             ev.log(t("wb.log_retorno_vazio", nome=arquivo.name))
             return False
-        resultado = notas.separar(ex.remover_markdown_fences(str(texto)))[0]
+        bruto = ex.remover_markdown_fences(str(texto))
+        resultado = notas.separar(bruto)[0]
         if requisicao and requisicao.modo == "acrescentar":
-            resultado = corpo.rstrip() + "\n\n" + resultado.strip() + "\n"
+            resultado = corpo.rstrip() + "\n\n" + propriedades.separar(resultado)[1].strip() + "\n"
         hist.arquivar_versao_para_historico(arquivo)
-        arquivo.write_text(notas.reanexar(resultado, secao_notas), encoding="utf-8")
-        if requisicao and requisicao.segredo:
-            pu.garantir_marcadores_arquivo(arquivo, True, tirar_rascunho=False)
+        # Propriedades (YAML do Obsidian): as do arquivo ficam; a IA só completa as chaves vazias do esquema
+        novo = esquemas.aplicar(original, notas.reanexar(resultado, secao_notas), saida_ia=bruto)
+        pu.gravar_markdown(arquivo, novo, segredo=True if requisicao and requisicao.segredo else None,
+                           rascunho=requisicao.status_rascunho() if requisicao else None)
         ev.log(t("wb.log_melhorado", nome=arquivo.name))
         return True
     except Exception as e:

@@ -1,3 +1,11 @@
+---
+type: city
+tags: [city]
+aliases: []
+kingdom:
+ruler:
+population:
+---
 # City Name
 > Official power sits in the palace. Real power does not.
 

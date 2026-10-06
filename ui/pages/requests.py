@@ -101,6 +101,14 @@ class PaginaRequisicoes(PaginaBase):
                             variable=self.var_criatura).pack(side=tk.LEFT, padx=(0, 8))
         ajuda(self.frame_criatura, t("ajuda.req.segredo")).pack(side=tk.LEFT)
         linha += 1
+        # Só aparece quando o arquivo está como rascunho (e já vem marcada)
+        self.var_tirar_rascunho = tk.BooleanVar()
+        self.frame_rascunho = ttk.Frame(opcoes)
+        self.frame_rascunho.grid(row=linha, column=0, columnspan=4, sticky="w", padx=6, pady=(0, 3))
+        ttk.Checkbutton(self.frame_rascunho, text=t("req.tirar_rascunho"), variable=self.var_tirar_rascunho).pack(side=tk.LEFT)
+        ajuda(self.frame_rascunho, t("ajuda.req.tirar_rascunho")).pack(side=tk.LEFT, padx=(3, 0))
+        self.frame_rascunho.grid_remove()
+        linha += 1
 
         cab_refs = ttk.Frame(opcoes)
         cab_refs.grid(row=linha, column=0, columnspan=4, sticky="ew", padx=6, pady=(6, 0))
@@ -110,7 +118,8 @@ class PaginaRequisicoes(PaginaBase):
         linha += 1
         self.tree_refs = ttk.Treeview(opcoes, columns=("ativo", "arquivo", "motivo"), show="headings", height=5)
         for coluna, largura in (("ativo", 30), ("arquivo", 200), ("motivo", 140)):
-            self.tree_refs.heading(coluna, text=t(f"req.col_{coluna}"))
+            self.tree_refs.heading(coluna, text=t(f"req.col_{coluna}"),
+                                   command=self._alternar_todas_refs if coluna == "ativo" else "")
             self.tree_refs.column(coluna, width=largura, anchor="center" if coluna == "ativo" else "w", stretch=coluna == "arquivo")
         self.tree_refs.grid(row=linha, column=0, columnspan=4, sticky="nsew", padx=6, pady=2)
         self.tree_refs.bind("<Button-1>", self._clique_ref)
@@ -193,6 +202,11 @@ class PaginaRequisicoes(PaginaBase):
         self.var_nivel.set(str(req.nivel_grupo))
         self.var_jogadores.set(str(req.jogadores))
         self.var_segredo.set(bool(req.segredo))
+        self.var_tirar_rascunho.set(bool(req.tirar_rascunho))
+        if req.eh_rascunho:
+            self.frame_rascunho.grid()
+        else:
+            self.frame_rascunho.grid_remove()
         self.var_criatura.set(req.criatura)
         for filho in self.frame_criatura.winfo_children():
             filho.config(state=tk.NORMAL if req.tipo == "ficha" else tk.DISABLED)
@@ -214,6 +228,7 @@ class PaginaRequisicoes(PaginaBase):
         req.nivel_grupo = int(self.var_nivel.get()) if self.var_nivel.get().isdigit() else 0
         req.jogadores = int(self.var_jogadores.get()) if self.var_jogadores.get().isdigit() else 0
         req.segredo = bool(self.var_segredo.get())
+        req.tirar_rascunho = bool(self.var_tirar_rascunho.get()) and req.eh_rascunho
         req.criatura = self.var_criatura.get()
         req.referencias = [c for c, _, marcado in self._refs if marcado]
         return req
@@ -234,6 +249,14 @@ class PaginaRequisicoes(PaginaBase):
             caminho, motivo, marcado = self._refs[int(iid)]
             self._refs[int(iid)] = (caminho, motivo, not marcado)
             self._exibir_refs()
+
+    def _alternar_todas_refs(self):
+        """O ✔ do cabeçalho marca todas as referências (ou desmarca, se todas já estão marcadas)."""
+        if not self._refs:
+            return
+        marcar = not all(marcado for _, _, marcado in self._refs)
+        self._refs = [(caminho, motivo, marcar) for caminho, motivo, _ in self._refs]
+        self._exibir_refs()
 
     def _adicionar_referencia(self):
         if not self.req:

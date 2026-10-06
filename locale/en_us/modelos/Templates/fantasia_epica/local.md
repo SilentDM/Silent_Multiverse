@@ -1,3 +1,10 @@
+---
+type: place
+tags: [place]
+aliases: []
+location:
+owner:
+---
 # Location Name
 > A place of legend, where the world shows its wonder.
 

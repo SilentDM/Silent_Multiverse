@@ -52,6 +52,9 @@ def persona_para_markdown(p: PersonaRoleplay) -> str:
         f"> - **{t('md.persona.cabelo')}:** {p.cabelo}",
         f"> - **{t('md.persona.marcas')}:** {p.tracos_marcantes}",
         f"> - **{t('md.persona.vestimentas')}:** {p.vestimentas_e_acessorios}\n",
+        # O pedido do retrato fica junto da aparência e termina na primeira linha em branco (lido de volta ao salvar)
+        t("md.persona.retrato"),
+        f"{p.prompt_visual_ingles}\n",
         t("md.persona.voz"),
         f"> - **{t('md.persona.fala')}:** {p.tom_de_voz_e_estilo_fala}",
         f"> - **{t('md.persona.psicologia')}:** {p.psicologia_e_temperamento}\n",

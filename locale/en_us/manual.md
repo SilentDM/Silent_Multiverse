@@ -15,6 +15,7 @@
 - Help icons: the circle with a ? next to an option explains what it does. Hover over it (or click it). To hide them, uncheck Options → General → Show the help icons.
 
 # 1. FIRST STEPS
+> The first time the program opens, an assistant walks you through these steps: language, Gemini key and project folder. To run it again, use Options → General → Open the setup assistant.
 ## 1) Get a Gemini API key
 - Open Google AI Studio (https://aistudio.google.com), sign in with a Google account and click "Get API key".
 - There is a free tier. Its limits change over time and are shown in AI Studio.
@@ -92,14 +93,34 @@
 ## Expansion tags <-- TODO: reason
 - Right-click in the editor to insert the tag, or type it. After the colon, write what the AI should do.
 - The Expander finds the tag and fills that part, following your instruction and the world context.
+## Obsidian properties
+- Silent keeps a file's markers as Obsidian properties, the block between --- lines at the top of the file:
+```
+---
+status: secret
+aliases: [The Ash King]
+---
+```
+- Obsidian shows this block as Properties. The rest of the block (tags, type, your own fields) stays as you wrote it.
+- Older files with the loose line "status: secret" keep working. When Silent writes the file (AI, WorldBuilder, notes), the line becomes a property. What you save in the Editor is not converted.
+- aliases: when you type [[ in the Editor, an alias shows in the list and becomes [[File|Alias]], the same link Obsidian uses.
+- Each type's fields come from the templates. A city template with type: city, kingdom:, ruler: gives every city those fields. Keys are always in English (tags and aliases only work that way in Obsidian).
+- Templates are looked up in this order: your vault's Templates folder, Silent's data folder, the program's starter templates. The starter templates already have fields; the ones you never edited get the program's updates.
+- When a file is created from a template, its properties go to the top of the file.
+- Improve File (and the WorldBuilder, which uses Improve) asks the AI to fill in the empty fields. The order of priority is:
+  1. what is already in the file (including what came from Obsidian) is never replaced;
+  2. empty fields get what the AI filled in from the text and the world;
+  3. without an answer from the AI, the template's default value applies.
+- The AI doesn't create keys outside the template and never touches status. A file without type gets the type the AI recognizes, with that type's fields.
+- Old Portuguese keys Silent used to write (tipo, sistema, nivel) still count as their English key.
 ## GM secrets vs players
-- Whole file: status: secret (or status: segredo) in the header, or tags: [secret].
+- Whole file: the property status: secret (or segredo), or tags: [secret]. The old line status: secret at the start of the text also counts.
 - One section: add [secret] (or [segredo]) to its heading, e.g. ### The Hidden Cult [secret].
 - One paragraph: a paragraph that contains <!-- secret --> (or <!-- segredo -->) or 🤫 is hidden.
 - Secret words (Options): any file, folder, heading or paragraph containing these names is removed from the players' view.
 - The GM (local chat and GM Discord roles/IDs) sees everything; players only see public lore.
 ## Drafts
-- status: draft (or status: rascunho) keeps the file out of the AI context until you finish it. Empty files and files with pending <-- TODO tags are also left out.
+- The property status: draft (or rascunho) keeps the file out of the AI context until you finish it. Empty files and files with pending <-- TODO tags are also left out.
 ## Images
 - ![[image.png]] shows portraits and battlemaps in the preview and in the sourcebook.
 ## GM Notes
@@ -128,8 +149,10 @@
 - Style in four axes: Genre, Tone, Mood and Writing style (e.g. in a Mystery adventure, the Lovecraftian cave can use Cosmic Horror).
 - Extra guidelines, reference files (files linked by [[links]] are suggested), mode (rewrite everything or only add), depth, audience (GM or player-facing text), party level, number of players, creativity and the 🤫 secret mark.
 - Presets keep combinations you use often; the size estimate shows how many tokens the request will use.
+- If the file is a draft (status: draft), ✎ Remove the draft status when done appears, already checked: when the AI finishes, the file stops being a draft and joins the AI context. Uncheck it to keep the draft.
 
 # 7. ACTIONS
+The tools are in four groups: Generate (write or build something new), Analyze (only read the project and show a report), Maintenance (keep the project in order without changing the lore) and Danger zone (erase what can't be recovered, always with a confirmation).
 - Expander: looks for <-- TODO: tags in every file and fills them with the AI. A reviewer checks the result against your lore before it is saved.
 - Rebuild World Context: refreshes what the AI knows about the project (it is also rebuilt automatically every 12 hours).
 - Audit World Lore: looks for contradictions, timeline gaps and geographic inconsistencies and shows a report you can save or send to the WorldBuilder (🌍 Fix with the WorldBuilder). Check Build the correction plan in the WorldBuilder when done to make it automatic; the plan always waits for your review.
@@ -155,6 +178,9 @@
 # 9. ROLEPLAY (THEATER OF THE MIND)
 - Click ➕ New Persona, type the character's name and describe their role, motivation or mystery. The AI builds the full persona from your world context.
 - Talk in character on the right side. Each persona remembers its conversation.
+- The sheet on the left is editable: fix what the AI got wrong or add details. It saves on its own to the persona's file ("✓ Saved") and the next line already uses the new text.
+- The 🎨 section of the sheet, right after the appearance, is the portrait request (in English). Change it there and generate a new portrait. The section ends at the first blank line.
+- ↺ Original sheet discards your edits and goes back to the sheet the AI generated.
 - 📝 Testimony (or right-click a line): keeps the line in the GM Notes, preferably in the character's own file. It is their version: they may lie or be wrong.
 - 🎨 Generate NPC Portrait creates an image of the character. Right-click the image to open it, save it or show it in the data folder.
 > Images (portraits and adventure battlemaps) use Gemini's image model. If it isn't available for your key or its quota is used up, the program falls back to the free Pollinations service (only the image description is sent).
@@ -167,7 +193,7 @@
 
 # 11. OPTIONS
 Options has four tabs. Everything saves by itself; a "✓ Saved" at the top confirms it.
-- General: language, opening the Requests tab before each request, version, updates and the legal notice.
+- General: language, opening the Requests tab before each request, help icons (?), the setup assistant, version, updates and the legal notice.
 - AI (Gemini): the Gemini key, the cache status and the order in which models are used (see section 12).
 - Project: Style (Genre, Tone, Mood and Writing style), Rules System, secret words and the auto-Expander. These apply only to the open project and are saved inside its folder (.silent_projeto.json); a new project starts with the current values.
 - Discord: bot token, GM IDs and the rules per server (see section 13).

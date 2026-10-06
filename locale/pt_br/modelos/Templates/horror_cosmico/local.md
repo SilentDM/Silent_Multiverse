@@ -1,3 +1,10 @@
+---
+type: local
+tags: [local]
+aliases: []
+location:
+owner:
+---
 # Nome do Local
 > Algo aqui está errado, mas ninguém sabe dizer o quê.
 

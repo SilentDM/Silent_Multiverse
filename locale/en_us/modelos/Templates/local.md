@@ -1,3 +1,10 @@
+---
+type: place
+tags: [place]
+aliases: []
+location:
+owner:
+---
 # Location Name
 
 > A short sentence that captures the essence of the place.

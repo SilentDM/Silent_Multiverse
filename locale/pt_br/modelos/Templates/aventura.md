@@ -1,3 +1,11 @@
+---
+type: aventura
+tags: [aventura]
+aliases: []
+level:
+system:
+location:
+---
 # Aventura: [TÍTULO DA AVENTURA]
 **Tom:** 
 **Tema central:** [ex.: fé corrompida, sacrifício necessário, justiça monstruosa]  

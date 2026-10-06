@@ -1,3 +1,10 @@
+---
+type: local
+tags: [local]
+aliases: []
+location:
+owner:
+---
 # Nome do Local
 > Um lugar de lenda, onde o mundo mostra sua maravilha.
 

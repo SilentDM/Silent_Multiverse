@@ -1,3 +1,10 @@
+---
+type: monstro
+tags: [monstro]
+aliases: []
+habitat:
+challenge:
+---
 # [Nome da Criatura]
 *" [Uma frase sobre a criatura: um rumor, um aviso ou o que as testemunhas contam] "*
 

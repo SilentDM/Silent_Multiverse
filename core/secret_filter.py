@@ -18,7 +18,6 @@ TAGS_FIXAS_SEGREDO = [
     "status: secret",
     "🤫",
 ]
-MARCADORES_ARQUIVO_SECRETO = ("status: segredo", "status: secret")
 
 def obter_termos_secretos_configurados() -> list[str]:
     """Lê as palavras secretas cadastradas nas Opções e unifica com as tags fixas."""
@@ -75,13 +74,14 @@ def filtrar_conteudo_por_permissao(texto_markdown: str, is_dm: bool = True, term
 
     termos_secretos = termos_custom if termos_custom is not None else obter_termos_secretos_configurados()
 
-    # 1. Checagem de Arquivo Inteiro (se o H1 principal ou YAML tiver a palavra secreta, elimina o arquivo)
+    # 1. Checagem de Arquivo Inteiro: propriedade "status: segredo" (ou a linha antiga), H1 ou tags secretas
+    import core.propriedades as propriedades
+    if propriedades.eh_segredo(texto_markdown):
+        return ""
     primeiras_linhas = texto_markdown[:1200].splitlines()
     for l in primeiras_linhas:
         l_str = l.strip()
         if l_str.startswith("# ") and _contem_termo_secreto(l_str[2:], termos_secretos):
-            return ""
-        if any(marcador in l.lower() for marcador in MARCADORES_ARQUIVO_SECRETO):
             return ""
         if "tags:" in l.lower() and _contem_termo_secreto(l, termos_secretos):
             return ""

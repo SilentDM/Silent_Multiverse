@@ -52,6 +52,23 @@ class TesteModelosIniciais(unittest.TestCase):
         self.assertIn("# Aventura:", self._ler("Templates/aventura.md"))
         self.assertEqual(self._ler("Templates/npc.md"), "# Meu NPC editado")
 
+    def test_modelo_atualizado_so_onde_nao_foi_editado(self):
+        import json
+        pu.instalar_modelos_iniciais("pt_br", self.dados)
+        registro_caminho = self.dados / "logs" / "modelos_iniciais.json"
+        registro = json.loads(registro_caminho.read_text(encoding="utf-8"))
+        # Simula a versão anterior do programa: cópias antigas, nunca editadas, registradas como originais
+        for relativo in ("Templates/cidade.md", "Templates/npc.md"):
+            (self.dados / relativo).write_text("# versão antiga do modelo", encoding="utf-8")
+            registro["arquivos"][relativo] = pu._hash_arquivo(self.dados / relativo)
+        registro_caminho.write_text(json.dumps(registro), encoding="utf-8")
+        (self.dados / "Templates/npc.md").write_text("# meu npc editado", encoding="utf-8")   # o usuário editou este
+
+        copiados = pu.instalar_modelos_iniciais("pt_br", self.dados)
+        self.assertEqual([Path(c).name for c in copiados], ["cidade.md"])
+        self.assertTrue(self._ler("Templates/cidade.md").startswith("---\ntype: cidade"))   # recebeu as propriedades
+        self.assertEqual(self._ler("Templates/npc.md"), "# meu npc editado")                # edição preservada
+
     def test_modelo_novo_chega_uma_vez_em_instalacao_existente(self):
         import json
         pu.instalar_modelos_iniciais("pt_br", self.dados)

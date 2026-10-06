@@ -411,3 +411,27 @@ def executar_benchmark_modelos(ao_concluir=None, ao_falhar=None) -> bool:
     """Testa e reordena os modelos Gemini (página Performance). ao_concluir recebe a lista nova."""
     import core.modelos_gemini as modelos
     return _iniciar("benchmark", modelos.executar_benchmark, ao_concluir=ao_concluir, ao_falhar=ao_falhar)
+
+
+# ----------------------------------------------------------------------
+# ASSISTENTE DE PRIMEIRA EXECUÇÃO
+# ----------------------------------------------------------------------
+URL_CHAVE_GEMINI = "https://aistudio.google.com/apikey"
+
+
+def tem_chave_gemini() -> bool:
+    return bool(os.getenv("GOOGLE_API_KEY", "").strip())
+
+
+def precisa_assistente() -> bool:
+    """Mostra o assistente só a quem nunca o viu e ainda não configurou a chave da IA."""
+    return not cfg.obter("assistente_concluido", False) and not tem_chave_gemini()
+
+
+def concluir_assistente():
+    cfg.atualizar_configuracoes({"assistente_concluido": True})
+
+
+def salvar_chave_gemini(chave: str):
+    if chave and chave.strip():
+        cfg.salvar_credenciais({"GOOGLE_API_KEY": chave.strip()})

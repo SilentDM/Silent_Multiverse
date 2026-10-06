@@ -126,7 +126,8 @@ class TesteRequisicao(unittest.TestCase):
         with ia_falsa("## Rumores\nDizem que o rei não dorme.") as ia:
             self.assertTrue(melhorar.melhorar_arquivo(self.alvo, requisicao=req))
         texto = self.alvo.read_text(encoding="utf-8")
-        self.assertTrue(texto.startswith("# Valia\nstatus: segredo\nGovernada por"))   # texto original mantido
+        # texto original mantido; a linha antiga "status: segredo" virou propriedade do Obsidian ao gravar
+        self.assertTrue(texto.startswith("---\nstatus: segredo\n---\n# Valia\nGovernada por"))
         self.assertIn("## Rumores", texto)
         self.assertIn("Horror Cósmico", ia.ultima["system_instruction"])
         self.assertIn("NÃO reescreva", ia.ultima["contents"])

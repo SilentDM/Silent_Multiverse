@@ -1,3 +1,10 @@
+---
+type: place
+tags: [place]
+aliases: []
+location:
+owner:
+---
 # Location Name
 > Something here is wrong, but no one can say what.
 

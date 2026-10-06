@@ -1,3 +1,11 @@
+---
+type: npc
+tags: [npc]
+aliases: []
+location:
+faction:
+occupation:
+---
 # [NPC Name]
 *" [A memorable quote, catchphrase or rumor about the NPC that reveals something of their nature or reputation] "*
 

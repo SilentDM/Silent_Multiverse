@@ -1,3 +1,10 @@
+---
+type: place
+tags: [place]
+aliases: []
+location:
+owner:
+---
 # Location Name
 > An ordinary place that holds the answer for someone attentive.
 
