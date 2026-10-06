@@ -93,14 +93,26 @@
 ## Expansion tags <-- TODO: reason
 - Right-click in the editor to insert the tag, or type it. After the colon, write what the AI should do.
 - The Expander finds the tag and fills that part, following your instruction and the world context.
+## Obsidian properties
+- Silent keeps a file's markers as Obsidian properties, the block between --- lines at the top of the file:
+```
+---
+status: secret
+aliases: [The Ash King]
+---
+```
+- Obsidian shows this block as Properties. The rest of the block (tags, type, your own fields) stays as you wrote it.
+- Older files with the loose line "status: secret" keep working. When Silent writes the file (AI, WorldBuilder, notes), the line becomes a property. What you save in the Editor is not converted.
+- aliases: when you type [[ in the Editor, an alias shows in the list and becomes [[File|Alias]], the same link Obsidian uses.
+- Templates with their own properties work: when a file is created, the template's properties go to the top.
 ## GM secrets vs players
-- Whole file: status: secret (or status: segredo) in the header, or tags: [secret].
+- Whole file: the property status: secret (or segredo), or tags: [secret]. The old line status: secret at the start of the text also counts.
 - One section: add [secret] (or [segredo]) to its heading, e.g. ### The Hidden Cult [secret].
 - One paragraph: a paragraph that contains <!-- secret --> (or <!-- segredo -->) or 🤫 is hidden.
 - Secret words (Options): any file, folder, heading or paragraph containing these names is removed from the players' view.
 - The GM (local chat and GM Discord roles/IDs) sees everything; players only see public lore.
 ## Drafts
-- status: draft (or status: rascunho) keeps the file out of the AI context until you finish it. Empty files and files with pending <-- TODO tags are also left out.
+- The property status: draft (or rascunho) keeps the file out of the AI context until you finish it. Empty files and files with pending <-- TODO tags are also left out.
 ## Images
 - ![[image.png]] shows portraits and battlemaps in the preview and in the sourcebook.
 ## GM Notes

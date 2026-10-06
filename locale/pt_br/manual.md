@@ -93,14 +93,26 @@
 ## Tags de expansão <-- TODO: motivo
 - Clique com o botão direito no editor para inserir a tag, ou digite-a. Depois dos dois-pontos, escreva o que a IA deve fazer.
 - O Expander encontra a tag e preenche aquele trecho, seguindo sua instrução e o contexto do mundo.
+## Propriedades do Obsidian
+- Silent guarda os marcadores do arquivo como propriedades do Obsidian, o bloco entre linhas --- no topo do arquivo:
+```
+---
+status: segredo
+aliases: [O Rei das Cinzas]
+---
+```
+- O Obsidian mostra esse bloco como Propriedades. O resto do bloco (tags, tipo, campos seus) é mantido como você escreveu.
+- Arquivos antigos com a linha solta "status: segredo" continuam funcionando. Quando Silent grava o arquivo (IA, WorldBuilder, notas), a linha vira propriedade. O que você salva no Editor não é convertido.
+- aliases (apelidos): ao digitar [[ no Editor, um apelido aparece na lista e vira [[Arquivo|Apelido]], o mesmo link que o Obsidian usa.
+- Templates com propriedades próprias funcionam: ao criar um arquivo, as propriedades do template vão para o topo.
 ## Segredos do Mestre vs jogadores
-- Arquivo inteiro: status: segredo (ou status: secret) no cabeçalho, ou tags: [segredo].
+- Arquivo inteiro: a propriedade status: segredo (ou secret), ou tags: [segredo]. A linha antiga status: segredo no começo do texto também vale.
 - Uma seção: adicione [segredo] (ou [secret]) ao título dela, ex.: ### O Culto Oculto [segredo].
 - Um parágrafo: o parágrafo que contém <!-- segredo --> (ou <!-- secret -->) ou 🤫 fica oculto.
 - Palavras secretas (Opções): qualquer arquivo, pasta, título ou parágrafo que contenha esses nomes é removido da visão dos jogadores.
 - O Mestre (chat local e cargos/IDs de Mestre no Discord) vê tudo; os jogadores veem só a lore pública.
 ## Rascunhos
-- status: rascunho (ou status: draft) deixa o arquivo fora do contexto da IA até você terminá-lo. Arquivos vazios e com tags <-- TODO pendentes também ficam de fora.
+- A propriedade status: rascunho (ou draft) deixa o arquivo fora do contexto da IA até você terminá-lo. Arquivos vazios e com tags <-- TODO pendentes também ficam de fora.
 ## Imagens
 - ![[imagem.png]] mostra retratos e mapas de batalha na visualização e no livro de cenário.
 ## Notas do Mestre

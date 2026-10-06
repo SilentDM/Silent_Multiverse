@@ -1,5 +1,6 @@
 # Em engine/project_utils.py
 import sys, os, re, json, threading, unicodedata, difflib, zipfile, ctypes, shutil
+import core.propriedades as propriedades
 import core.secret_filter as sf
 from core.i18n import t, tc
 from pathlib import Path
@@ -49,17 +50,12 @@ IGNORELIST = [
     ".obsidian",
     ".git",
     ".trash",
-    "status: rascunho",
-    "status: draft",
 ]
-
-# Marcadores de rascunho aceitos (português e inglês) — arquivos com eles ficam fora do contexto da IA
-MARCADORES_RASCUNHO = ("status: rascunho", "status: draft")
 
 
 def eh_rascunho(texto: str) -> bool:
-    texto = (texto or "").lower()
-    return any(marcador in texto for marcador in MARCADORES_RASCUNHO)
+    """Rascunhos ficam fora do contexto da IA: propriedade "status: rascunho/draft" (ou a linha antiga)."""
+    return propriedades.eh_rascunho(texto)
 
 ARQUIVO_ORDEM_GLOBAL = PASTA_LOGS / "folder_orders.json"
 
@@ -513,8 +509,10 @@ def avaliar_conteudo_para_contexto(content: str, is_dm: bool = True, termos_secr
     # Ignora arquivos que possuam tags de TODO ou marcações ignoradas
     if any(tag in content for tag in TAG_ALVO):
         return "", "todo"
+    if eh_rascunho(content):
+        return "", "rascunho"
     if any(ignore in content for ignore in IGNORELIST):
-        return "", "rascunho" if eh_rascunho(content) else "marcador"
+        return "", "marcador"
 
     content_filtrado = sf.filtrar_conteudo_por_permissao(content, is_dm=is_dm, termos_custom=termos_secretos)
     if not content_filtrado:
@@ -692,18 +690,21 @@ def carregar_conhecimento_discord(guild_id: str = "global") -> str:
     return "\n\n".join(conteudo)
 
 
+def gravar_markdown(arquivo, texto: str, original: str = None, segredo=None, rascunho=None):
+    """
+    Grava um arquivo .md do projeto escrito por Silent, no formato do Obsidian: as propriedades do
+    'original' são mantidas (a IA reescreve só o texto), os marcadores antigos viram propriedades e
+    segredo/rascunho ligam ou desligam a propriedade status. Edições do Mestre no Editor não passam aqui.
+    """
+    if original is not None:
+        texto = propriedades.mesclar(original, texto)
+    texto = propriedades.normalizar(texto, segredo=segredo, rascunho=rascunho)
+    Path(arquivo).write_text(texto.rstrip() + "\n", encoding="utf-8")
+
+
 def garantir_marcadores_arquivo(arquivo: Path, segredo: bool, tirar_rascunho: bool = True):
-    """Tira marcadores de rascunho (o arquivo entra no contexto da IA) e marca o arquivo como segredo se pedido."""
+    """Tira o rascunho (o arquivo entra no contexto da IA) e marca o arquivo como segredo se pedido."""
     texto = arquivo.read_text(encoding="utf-8", errors="ignore")
-    linhas = [l for l in texto.splitlines() if not (tirar_rascunho and l.strip().lower() in MARCADORES_RASCUNHO)]
-    inicio = "\n".join(linhas[:40]).lower()
-    if segredo and not any(m in inicio for m in sf.MARCADORES_ARQUIVO_SECRETO):
-        marcador = tc("marcador.segredo")
-        if linhas and linhas[0].strip() == "---":                    # dentro do cabeçalho YAML
-            linhas.insert(1, marcador)
-        else:
-            posicao = next((i + 1 for i, l in enumerate(linhas) if l.startswith("# ")), 0)
-            linhas.insert(posicao, marcador)
-    novo = "\n".join(linhas).rstrip() + "\n"
-    if novo != texto:
-        arquivo.write_text(novo, encoding="utf-8")
+    novo = propriedades.normalizar(texto, segredo=True if segredo else None, rascunho=False if tirar_rascunho else None)
+    if novo.rstrip() != texto.rstrip():
+        arquivo.write_text(novo.rstrip() + "\n", encoding="utf-8")

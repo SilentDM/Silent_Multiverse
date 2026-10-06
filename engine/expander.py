@@ -180,7 +180,7 @@ def processar_arquivo_unico(path):
             # --- ETAPA 3: GRAVAÇÃO (nome estável, versão anterior no histórico) ---
             if conteudo_salvar:
                 arquivar_versao_para_historico(arquivo)
-                arquivo.write_text(notas.reanexar(conteudo_salvar, secao_notas), encoding="utf-8")
+                pu.gravar_markdown(arquivo, notas.reanexar(conteudo_salvar, secao_notas), original=conteudo)
                 ev.log(t("expander.log_atualizado", nome=arquivo.name))
         except Exception as e:
             ev.log(t("expander.log_erro", nome=arquivo.name, erro=e))

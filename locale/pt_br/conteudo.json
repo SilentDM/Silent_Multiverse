@@ -6,7 +6,7 @@
   "style.conteudo.neutro": "# DIRETRIZ DE TOM E CLIMA: NEUTRO\n\n- Mantenha um tom informativo, claro e descritivo padrão para worldbuilding de RPG sem viés de gênero.",
   "marcador.rascunho": "status: rascunho",
   "marcador.segredo": "status: segredo",
-  "arquivos.stub_com_template": "# {titulo}\n{marcador_rascunho}\n---\n<-- TODO: Preencha as informações de {titulo} usando o template.",
+  "arquivos.stub_com_template": "# {titulo}\n\n<-- TODO: Preencha as informações de {titulo} usando o template.",
   "arquivos.stub_simples": "# {titulo}\n\n<-- TODO: Crie informações para {titulo}.",
   "arquivos.stub_wikilink": "# {titulo}\n\nDocumento criado a partir de wikilink em [[{origem}]].",
   "arquivos.sufixo_copia": "copia",
@@ -190,5 +190,7 @@
   "marcador.secao_secreta": "[segredo]",
   "wb.objetivo_auditoria": "Corrigir as inconsistências apontadas pela Auditoria de Lore.",
   "chat.bloco_imagem": "--- IMAGEM ANEXADA PELO USUÁRIO ({nome}): veja a imagem enviada junto desta mensagem ---",
-  "chat.registro_anexos": "(anexos: {nomes})"
+  "chat.registro_anexos": "(anexos: {nomes})",
+  "propriedade.segredo": "segredo",
+  "propriedade.rascunho": "rascunho"
 }

@@ -34,10 +34,11 @@ def _contexto_requisicao(arquivo: Path, requisicao):
 
 
 def _gravar(arquivo: Path, texto: str, secao_notas: str, requisicao):
+    """Grava o que o gerador escreveu mantendo as propriedades (YAML) que o arquivo já tinha."""
+    original = arquivo.read_text(encoding="utf-8", errors="ignore") if arquivo.exists() else None
     hist.arquivar_versao_para_historico(arquivo)
-    arquivo.write_text(notas.reanexar(texto, secao_notas), encoding="utf-8")
-    if requisicao and requisicao.segredo:
-        pu.garantir_marcadores_arquivo(arquivo, True, tirar_rascunho=False)
+    pu.gravar_markdown(arquivo, notas.reanexar(texto, secao_notas), original=original,
+                       segredo=True if requisicao and requisicao.segredo else None)
 
 
 def gerar_aventura_completa(path, reason=None, requisicao=None):

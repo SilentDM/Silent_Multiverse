@@ -10,6 +10,7 @@ from pathlib import Path
 
 import core.ai_utils as au
 import core.eventos as ev
+import core.propriedades as propriedades
 import engine.expander as ex
 import engine.historico as hist
 import engine.notas as notas
@@ -29,7 +30,8 @@ def melhorar_arquivo(caminho, objetivo: str = None, canon: str = None, requisica
 
     ex.marcar_processamento(arquivo, True)
     try:
-        corpo, secao_notas = notas.separar(arquivo.read_text(encoding="utf-8", errors="ignore"))
+        original = arquivo.read_text(encoding="utf-8", errors="ignore")
+        corpo, secao_notas = notas.separar(original)
         # Referência do WorldBuilder: o Cânone da campanha ou o relatório da Auditoria de Lore
         if canon:
             bloco_canon = carregar_prompt("melhorar_canon", canon=canon)
@@ -50,11 +52,11 @@ def melhorar_arquivo(caminho, objetivo: str = None, canon: str = None, requisica
             return False
         resultado = notas.separar(ex.remover_markdown_fences(str(texto)))[0]
         if requisicao and requisicao.modo == "acrescentar":
-            resultado = corpo.rstrip() + "\n\n" + resultado.strip() + "\n"
+            resultado = corpo.rstrip() + "\n\n" + propriedades.separar(resultado)[1].strip() + "\n"
         hist.arquivar_versao_para_historico(arquivo)
-        arquivo.write_text(notas.reanexar(resultado, secao_notas), encoding="utf-8")
-        if requisicao and requisicao.segredo:
-            pu.garantir_marcadores_arquivo(arquivo, True, tirar_rascunho=False)
+        # As propriedades do arquivo (YAML do Obsidian) ficam como estavam; a IA reescreve só o texto
+        pu.gravar_markdown(arquivo, notas.reanexar(resultado, secao_notas), original=original,
+                           segredo=True if requisicao and requisicao.segredo else None)
         ev.log(t("wb.log_melhorado", nome=arquivo.name))
         return True
     except Exception as e:

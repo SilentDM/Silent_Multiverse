@@ -6,7 +6,7 @@
   "style.conteudo.neutro": "# TONE AND MOOD GUIDELINE: NEUTRAL\n\n- Keep a standard informative, clear and descriptive tone for RPG worldbuilding, without genre bias.",
   "marcador.rascunho": "status: draft",
   "marcador.segredo": "status: secret",
-  "arquivos.stub_com_template": "# {titulo}\n{marcador_rascunho}\n---\n<-- TODO: Fill in the information for {titulo} using the template.",
+  "arquivos.stub_com_template": "# {titulo}\n\n<-- TODO: Fill in the information for {titulo} using the template.",
   "arquivos.stub_simples": "# {titulo}\n\n<-- TODO: Create information for {titulo}.",
   "arquivos.stub_wikilink": "# {titulo}\n\nDocument created from a wikilink in [[{origem}]].",
   "arquivos.sufixo_copia": "copy",
@@ -190,5 +190,7 @@
   "marcador.secao_secreta": "[secret]",
   "wb.objetivo_auditoria": "Fix the inconsistencies pointed out by the Lore Audit.",
   "chat.bloco_imagem": "--- IMAGE ATTACHED BY THE USER ({nome}): see the image sent with this message ---",
-  "chat.registro_anexos": "(attachments: {nomes})"
+  "chat.registro_anexos": "(attachments: {nomes})",
+  "propriedade.segredo": "secret",
+  "propriedade.rascunho": "draft"
 }

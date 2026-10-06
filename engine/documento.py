@@ -19,7 +19,7 @@ import threading
 import time
 from pathlib import Path
 
-import core.secret_filter as sf
+import core.propriedades as propriedades
 import engine.notas as notas
 import engine.project_utils as pu
 
@@ -29,7 +29,7 @@ EXTENSOES_IMAGEM = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp")
 INTERVALO_VERIFICACAO = 2.0       # segundos entre conferências da pasta do projeto
 
 _lock = threading.Lock()
-_indice = {"projeto": None, "assinatura": None, "nomes": {}}      # nome normalizado -> caminho
+_indice = {"projeto": None, "assinatura": None, "nomes": {}, "apelidos": []}   # nome normalizado -> caminho
 _estados = {}                                                      # caminho -> (mtime, estado)
 
 
@@ -72,18 +72,30 @@ def _indice_atual() -> dict:
             return _indice["nomes"]
         assinatura = assinatura_projeto()
         if not mesmo_projeto or _indice["assinatura"] != assinatura:
-            nomes = {}
+            nomes, apelidos = {}, []
             for caminho in _arquivos_md():
                 nomes.setdefault(_normalizar(caminho.stem), str(caminho))
-            _indice.update(projeto=pu.CAMINHO_PROJETO, assinatura=assinatura, nomes=nomes)
+                for apelido in _apelidos_do_arquivo(caminho):
+                    apelidos.append((_normalizar(apelido), apelido, caminho.stem))
+            _indice.update(projeto=pu.CAMINHO_PROJETO, assinatura=assinatura, nomes=nomes, apelidos=apelidos)
         _indice["verificado"] = agora
         return _indice["nomes"]
+
+
+def _apelidos_do_arquivo(caminho: Path) -> list:
+    """Os aliases das propriedades do arquivo (só o começo do arquivo é lido)."""
+    try:
+        with open(caminho, "r", encoding="utf-8", errors="ignore") as f:
+            inicio = f.read(4000)
+    except OSError:
+        return []
+    return propriedades.apelidos(inicio)
 
 
 def invalidar():
     """Esquece o cache (após criar/renomear/mover arquivos pelo próprio programa)."""
     with _lock:
-        _indice.update(projeto=None, assinatura=None, nomes={}, verificado=0)
+        _indice.update(projeto=None, assinatura=None, nomes={}, apelidos=[], verificado=0)
 
 
 def buscar_arquivos(consulta: str, limite: int = 30) -> list:
@@ -137,11 +149,16 @@ def links_quebrados(texto: str) -> list:
 
 
 def sugerir_links(prefixo: str, limite: int = 8) -> list:
-    """Nomes de arquivo (sem .md) para o autocompletar: primeiro os que começam com o prefixo, depois os que contêm."""
+    """
+    Nomes de arquivo (sem .md) para o autocompletar: primeiro os que começam com o prefixo, depois os que contêm.
+    Um apelido (aliases) vem como "Arquivo|Apelido", o link que o Obsidian também usa para apelidos.
+    """
     alvo = _normalizar(prefixo or "")
     comeca, contem = [], []
-    for normal, caminho in _indice_atual().items():
-        nome = re.sub(r"_v\d+$", "", Path(caminho).stem, flags=re.IGNORECASE)
+    candidatos = [(normal, re.sub(r"_v\d+$", "", Path(caminho).stem, flags=re.IGNORECASE))
+                  for normal, caminho in _indice_atual().items()]
+    candidatos += [(normal, f"{arquivo}|{apelido}") for normal, apelido, arquivo in _indice.get("apelidos", [])]
+    for normal, nome in candidatos:
         if not alvo or normal.startswith(alvo):
             comeca.append(nome)
         elif alvo in normal:
@@ -270,11 +287,11 @@ def estado(caminho) -> dict:
         if guardado and guardado[0] == mtime:
             return guardado[1]
     texto = pu.ler_markdown(Path(caminho)) or ""
-    inicio = texto[:1500].lower()
     corpo, secao_notas = notas.separar(texto)
+    marcas = propriedades.estado(texto)
     resultado = {
-        "segredo": any(m in inicio for m in sf.MARCADORES_ARQUIVO_SECRETO),
-        "rascunho": pu.eh_rascunho(texto[:1500]),
+        "segredo": marcas["segredo"],
+        "rascunho": marcas["rascunho"],
         "todo": any(tag in corpo for tag in pu.TAG_ALVO),
         "notas": bool(secao_notas.strip()),
     }

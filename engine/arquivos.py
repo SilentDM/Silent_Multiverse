@@ -10,6 +10,7 @@ import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import core.propriedades as propriedades
 import engine.project_utils as pu
 from core.i18n import t, tc
 
@@ -124,12 +125,11 @@ def criar_arquivo(pasta: str, nome: str, template: str = None) -> str:
     titulo = _titulo_de(nome)
     conteudo_template = wb.obter_conteudo_template(template) if template else ""
     if conteudo_template:
-        conteudo = tc("arquivos.stub_com_template", titulo=titulo, marcador_rascunho=tc("marcador.rascunho")) \
-            + "\n" + conteudo_template
+        # Esboço de template: rascunho (fora do contexto da IA) até ser preenchido, marcado como propriedade
+        conteudo = propriedades.juntar_template(tc("arquivos.stub_com_template", titulo=titulo), conteudo_template)
+        pu.gravar_markdown(caminho, conteudo, rascunho=True)
     else:
-        conteudo = tc("arquivos.stub_simples", titulo=titulo)
-    with open(caminho, "w", encoding="utf-8") as f:
-        f.write(conteudo)
+        pu.gravar_markdown(caminho, tc("arquivos.stub_simples", titulo=titulo))
     return caminho
 
 

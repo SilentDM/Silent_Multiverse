@@ -16,6 +16,7 @@ from pathlib import Path
 import core.eventos as ev
 import core.i18n as i18n
 import engine.historico as hist
+import engine.project_utils as pu
 from core.i18n import t, tc
 
 ORIGENS = ("silent", "roleplay", "mestre")
@@ -95,7 +96,7 @@ def adicionar_nota(caminho, texto: str, origem: str = "mestre", autor: str = "")
     citacao = "\n".join(f"> {linha}" if linha.strip() else ">" for linha in texto.splitlines())
     entrada = f"### {rotulo_origem(origem, autor)} — {data}\n{citacao}\n"
     hist.arquivar_versao_para_historico(caminho)
-    caminho.write_text(reanexar(corpo, secao.rstrip() + "\n\n" + entrada), encoding="utf-8")
+    pu.gravar_markdown(caminho, reanexar(corpo, secao.rstrip() + "\n\n" + entrada))
     ev.log(t("notas.log_adicionada", nome=caminho.name, origem=rotulo_origem(origem, autor)))
     return str(caminho)
 
