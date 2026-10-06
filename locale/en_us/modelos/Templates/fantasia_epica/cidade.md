@@ -1,3 +1,11 @@
+---
+type: city
+tags: [city]
+aliases: []
+kingdom:
+ruler:
+population:
+---
 # City Name
 > Towers, banners and magic on every corner.
 

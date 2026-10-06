@@ -229,3 +229,95 @@ def juntar_template(cabecalho: str, template: str) -> str:
     if linhas is None:
         return f"{cabecalho}\n{template or ''}"
     return "---\n" + "\n".join(linhas) + "\n---\n" + f"{cabecalho}\n{corpo.lstrip()}"
+
+
+# ----------------------------------------------------------------------
+# ESQUEMA: as chaves que um arquivo deve ter (vindas do template)
+# ----------------------------------------------------------------------
+# Hierarquia ao preencher: o que já está no arquivo (inclusive vindo do Obsidian) > o que a IA preencheu
+# nas chaves vazias > o valor padrão do template. Chaves fora do esquema que a IA inventar são descartadas.
+CHAVES_BASE = (("type", None), ("tags", []), ("aliases", []))
+# Chaves antigas (em português) que já valem pela chave em inglês do esquema
+EQUIVALENTES = {"type": ("tipo",), "system": ("sistema",),
+                "level": ("nivel", "nível", "nivel_recomendado", "recommended_level")}
+
+
+def vazio(valor) -> bool:
+    if isinstance(valor, list):
+        return not [v for v in valor if str(v).strip()]
+    return not str(valor or "").strip()
+
+
+def valor_de(propriedades: dict, chave: str):
+    """Valor da chave (ou de uma chave equivalente antiga, ex.: tipo para type), ignorando maiúsculas."""
+    nomes = (chave,) + EQUIVALENTES.get(chave, ())
+    for nome, valor in propriedades.items():
+        if nome.lower() in nomes and not vazio(valor):
+            return valor
+    return None
+
+
+def esquema_de(texto: str) -> list:
+    """[(chave, padrão)] na ordem do bloco YAML (ex.: o de um template). Padrão vazio vira None ou []."""
+    linhas, _ = separar(texto)
+    esquema = []
+    for chave, valor in ler(texto).items():
+        if isinstance(valor, list):
+            esquema.append((chave, valor))
+        else:
+            bruto = next((l for l in linhas or [] if _CHAVE.match(l) and _CHAVE.match(l).group(1) == chave), "")
+            lista_vazia = bruto.split(":", 1)[-1].strip() == "[]"
+            esquema.append((chave, [] if lista_vazia else (valor or None)))
+    return esquema
+
+
+def _yaml_escalar(valor) -> str:
+    valor = str(valor).strip()
+    if not valor:
+        return ""
+    if valor.startswith(("[", "{", "*", "&", "!", "%", "@", "`", "'", '"')) or ": " in valor or " #" in valor:
+        return '"' + valor.replace('"', "'") + '"'
+    return valor
+
+
+def _yaml_valor(valor) -> str:
+    if isinstance(valor, list):
+        return "[" + ", ".join(_yaml_escalar(v) for v in valor if str(v).strip()) + "]"
+    return _yaml_escalar(valor)
+
+
+def aplicar_esquema(original: str, novo: str, esquema: list, valores_ia: dict = None, incluir_vazias: bool = True) -> str:
+    """
+    O corpo do texto 'novo' com o bloco de propriedades do 'original' completado pelo esquema:
+    as chaves do original ficam como estão; chaves do esquema vazias ou ausentes recebem o valor
+    da IA (valores_ia) ou, sem ele, o padrão do template. Nada fora do esquema é acrescentado.
+    incluir_vazias=False não acrescenta chaves que ficariam sem valor (esquema básico, sem template).
+    """
+    original = normalizar(original or "")
+    linhas, _ = separar(original)
+    linhas = list(linhas or [])
+    atuais = ler(original)
+    valores_ia = valores_ia or {}
+    for chave, padrao in esquema:
+        if chave.lower() == CHAVE_STATUS or valor_de(atuais, chave) is not None:
+            continue                                              # o arquivo já tem: vence sempre
+        valor = valor_de(valores_ia, chave)
+        if valor is None:
+            valor = padrao
+        if isinstance(padrao, list) and valor is not None and not isinstance(valor, list):
+            valor = [v.strip() for v in str(valor).split(",") if v.strip()]
+        bloco = _bloco_da_chave(linhas, chave)
+        texto_valor = _yaml_valor(valor) if valor is not None else ""
+        if vazio(valor) and not incluir_vazias:
+            continue
+        if not texto_valor and isinstance(padrao, list):
+            texto_valor = "[]"
+        nova = f"{chave}: {texto_valor}".rstrip()
+        if bloco:
+            linhas[bloco[0]:bloco[1]] = [nova]
+        else:
+            linhas.append(nova)
+    _, corpo_novo = separar(novo or "")
+    if not linhas:
+        return corpo_novo.lstrip("\n")
+    return "---\n" + "\n".join(linhas) + "\n---\n" + corpo_novo.lstrip("\n")

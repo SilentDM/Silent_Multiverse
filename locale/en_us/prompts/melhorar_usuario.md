@@ -6,4 +6,4 @@ ORIGINAL CONTENT:
 {{conteudo}}
 
 Return only the final content of the file.
-{{requisicao}}{{notas}}
+{{requisicao}}{{notas}}{{propriedades}}

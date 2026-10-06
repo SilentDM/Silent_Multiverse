@@ -1,3 +1,10 @@
+---
+type: monster
+tags: [monster]
+aliases: []
+habitat:
+challenge:
+---
 # [Creature Name]
 *" [A sentence about the creature: a rumor, a warning or what witnesses say] "*
 

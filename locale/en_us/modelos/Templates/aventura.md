@@ -1,3 +1,11 @@
+---
+type: adventure
+tags: [adventure]
+aliases: []
+level:
+system:
+location:
+---
 # Adventure: [ADVENTURE TITLE]
 **Tone:** 
 **Central theme:** [e.g. corrupted faith, necessary sacrifice, monstrous justice]  

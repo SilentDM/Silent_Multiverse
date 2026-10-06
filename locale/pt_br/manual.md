@@ -104,7 +104,15 @@ aliases: [O Rei das Cinzas]
 - O Obsidian mostra esse bloco como Propriedades. O resto do bloco (tags, tipo, campos seus) é mantido como você escreveu.
 - Arquivos antigos com a linha solta "status: segredo" continuam funcionando. Quando Silent grava o arquivo (IA, WorldBuilder, notas), a linha vira propriedade. O que você salva no Editor não é convertido.
 - aliases (apelidos): ao digitar [[ no Editor, um apelido aparece na lista e vira [[Arquivo|Apelido]], o mesmo link que o Obsidian usa.
-- Templates com propriedades próprias funcionam: ao criar um arquivo, as propriedades do template vão para o topo.
+- Os campos de cada tipo vêm dos templates. Um template de cidade com type: cidade, kingdom:, ruler: faz toda cidade ter esses campos. As chaves são sempre em inglês (tags e aliases só funcionam assim no Obsidian).
+- Templates procurados nesta ordem: a pasta Templates do seu cofre, a pasta de dados do Silent, os modelos do programa. Os templates iniciais já trazem campos; os que você nunca editou recebem as atualizações do programa.
+- Ao criar um arquivo a partir de um template, as propriedades dele vão para o topo do arquivo.
+- Melhorar Arquivo (e o WorldBuilder, que usa o Melhorar) pede à IA para preencher os campos vazios. A ordem de prioridade é:
+  1. o que já está no arquivo (inclusive o que veio do Obsidian) nunca é trocado;
+  2. campos vazios recebem o que a IA preencheu a partir do texto e do mundo;
+  3. sem resposta da IA, vale o valor padrão do template.
+- A IA não cria chaves fora do template e nunca mexe em status. Um arquivo sem type recebe o tipo que a IA reconhecer, com os campos desse tipo.
+- Chaves antigas em português que o Silent usava (tipo, sistema, nivel) continuam valendo pela chave em inglês.
 ## Segredos do Mestre vs jogadores
 - Arquivo inteiro: a propriedade status: segredo (ou secret), ou tags: [segredo]. A linha antiga status: segredo no começo do texto também vale.
 - Uma seção: adicione [segredo] (ou [secret]) ao título dela, ex.: ### O Culto Oculto [segredo].

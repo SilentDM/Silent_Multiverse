@@ -1,3 +1,11 @@
+---
+type: reino
+tags: [reino]
+aliases: []
+capital:
+ruler:
+government:
+---
 # Nome do Reinado
 
 ## Resumo

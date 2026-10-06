@@ -89,7 +89,8 @@ class TesteNoProjeto(unittest.TestCase):
         self.assertTrue((self.raiz / "Rei.md").read_text(encoding="utf-8").startswith("---\nstatus: segredo\n---\n"))
         caminho = arq.criar_arquivo(str(self.raiz), "Taverna", "local")
         texto = open(caminho, encoding="utf-8").read()
-        self.assertTrue(texto.startswith("---\nstatus: rascunho\n---\n# Taverna"))
+        # O esboço traz as propriedades do template (type, tags, campos vazios) e o rascunho
+        self.assertTrue(texto.startswith("---\ntype: local\ntags: [local]\naliases: []\nlocation:\nowner:\nstatus: rascunho\n---\n# Taverna"))
         self.assertTrue(documento.estado(caminho)["rascunho"])
 
     def test_template_com_propriedades_vai_para_o_topo(self):
@@ -112,6 +113,76 @@ class TesteNoProjeto(unittest.TestCase):
         limpo = comp._limpar_conteudo_markdown((self.raiz / "Lich.md").read_text(encoding="utf-8"))
         self.assertEqual(limpo, "# Lich\nNo vulcão.")
         self.assertEqual(comp._limpar_conteudo_markdown("# Rei\nstatus: segredo\nTexto"), "# Rei\nTexto")
+
+
+class TesteEsquemaDosTemplates(unittest.TestCase):
+    """Hierarquia: o que está no arquivo > o que a IA preencheu nas chaves vazias > o padrão do template."""
+
+    def setUp(self):
+        usar_idioma("pt_br")
+        self.raiz = novo_projeto({
+            "Capital Zephyrus.md": "---\ntipo: cidade\nstatus: rascunho\n---\n# Capital Zephyrus\nTexto.",
+            "Sem Tipo.md": "# Mercador Osmund\nVende peles.",
+            "Tags Minhas.md": "---\ntype: cidade\ntags: [capital, zephyr]\n---\n# Outra",
+        })
+
+    def tearDown(self):
+        apagar(self.raiz)
+
+    def test_catalogo_dos_templates(self):
+        import engine.esquemas as esquemas
+        catalogo = esquemas.catalogo()
+        self.assertEqual([c for c, _ in catalogo["cidade"]][:6], ["type", "tags", "aliases", "kingdom", "ruler", "population"])
+        self.assertIn("npc", catalogo)
+        # Um template na pasta Templates do cofre tem prioridade sobre os do programa
+        (self.raiz / "Templates").mkdir()
+        (self.raiz / "Templates" / "cidade.md").write_text("---\ntype: cidade\nmayor:\n---\n# C", encoding="utf-8")
+        chaves = [c for c, _ in esquemas.catalogo()["cidade"]]
+        self.assertIn("mayor", chaves)
+        self.assertNotIn("population", chaves)
+
+    def test_caso_da_capital(self):
+        resposta = ("---\ntype: city\nstatus: completo\nkingdom: \"[[Reinado de Zephyr]]\"\nruler: \"[[Rei Zephyr Aventus]]\"\n"
+                    "aliases: [Zephyrus]\ninventado: x\n---\n# Capital Zephyrus\nTexto novo.")
+        alvo = self.raiz / "Capital Zephyrus.md"
+        with ia_falsa(resposta) as ia:
+            melhorar.melhorar_arquivo(alvo, "reescrever")
+        self.assertIn("PROPRIEDADES DO OBSIDIAN", ia.ultima["contents"])
+        self.assertIn("- kingdom", ia.ultima["contents"])
+        p = props.ler(alvo.read_text(encoding="utf-8"))
+        self.assertEqual(p["tipo"], "cidade")                       # do arquivo: fica (e vale como type)
+        self.assertNotIn("type", p)
+        self.assertEqual(p["status"], "rascunho")                   # status nunca vem da IA
+        self.assertEqual(p["kingdom"], "[[Reinado de Zephyr]]")     # chaves vazias: preenchidas pela IA
+        self.assertEqual(p["aliases"], ["Zephyrus"])
+        self.assertEqual(p["tags"], ["cidade"])                     # sem valor da IA: padrão do template
+        self.assertEqual(p["population"], "")                       # campo do template, ainda vazio
+        self.assertNotIn("inventado", p)                            # fora do esquema: descartado
+        self.assertIn("Texto novo.", alvo.read_text(encoding="utf-8"))
+
+    def test_valores_do_arquivo_vencem_o_template(self):
+        alvo = self.raiz / "Tags Minhas.md"
+        with ia_falsa("---\ntags: [cidade]\nruler: \"[[Alguém]]\"\n---\n# Outra\nnovo") as ia:
+            melhorar.melhorar_arquivo(alvo, "x")
+        p = props.ler(alvo.read_text(encoding="utf-8"))
+        self.assertEqual(p["tags"], ["capital", "zephyr"])
+        self.assertEqual(p["ruler"], "[[Alguém]]")
+
+    def test_sem_tipo_a_ia_escolhe_e_o_esquema_segue(self):
+        alvo = self.raiz / "Sem Tipo.md"
+        with ia_falsa("---\ntype: npc\noccupation: Mercador\nlocation: \"[[Mercado Aberto]]\"\ncor: azul\n---\n# Mercador Osmund\nVende peles raras.") as ia:
+            melhorar.melhorar_arquivo(alvo, "x")
+        self.assertIn("- npc: location, faction, occupation", ia.ultima["contents"])   # catálogo de tipos no pedido
+        p = props.ler(alvo.read_text(encoding="utf-8"))
+        self.assertEqual((p["type"], p["occupation"], p["location"]), ("npc", "Mercador", "[[Mercado Aberto]]"))
+        self.assertEqual(p["faction"], "")
+        self.assertNotIn("cor", p)
+
+    def test_sem_nada_para_preencher_nao_cria_bloco(self):
+        alvo = self.raiz / "Sem Tipo.md"
+        with ia_falsa("# Mercador Osmund\nVende peles raras."):
+            melhorar.melhorar_arquivo(alvo, "x")
+        self.assertTrue(alvo.read_text(encoding="utf-8").startswith("# Mercador Osmund"))
 
 
 if __name__ == "__main__":

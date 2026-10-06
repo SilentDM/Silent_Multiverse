@@ -1,3 +1,10 @@
+---
+type: place
+tags: [place]
+aliases: []
+location:
+owner:
+---
 # Location Name
 > Here, whoever controls the door controls the conversation.
 

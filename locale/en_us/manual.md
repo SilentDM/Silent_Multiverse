@@ -104,7 +104,15 @@ aliases: [The Ash King]
 - Obsidian shows this block as Properties. The rest of the block (tags, type, your own fields) stays as you wrote it.
 - Older files with the loose line "status: secret" keep working. When Silent writes the file (AI, WorldBuilder, notes), the line becomes a property. What you save in the Editor is not converted.
 - aliases: when you type [[ in the Editor, an alias shows in the list and becomes [[File|Alias]], the same link Obsidian uses.
-- Templates with their own properties work: when a file is created, the template's properties go to the top.
+- Each type's fields come from the templates. A city template with type: city, kingdom:, ruler: gives every city those fields. Keys are always in English (tags and aliases only work that way in Obsidian).
+- Templates are looked up in this order: your vault's Templates folder, Silent's data folder, the program's starter templates. The starter templates already have fields; the ones you never edited get the program's updates.
+- When a file is created from a template, its properties go to the top of the file.
+- Improve File (and the WorldBuilder, which uses Improve) asks the AI to fill in the empty fields. The order of priority is:
+  1. what is already in the file (including what came from Obsidian) is never replaced;
+  2. empty fields get what the AI filled in from the text and the world;
+  3. without an answer from the AI, the template's default value applies.
+- The AI doesn't create keys outside the template and never touches status. A file without type gets the type the AI recognizes, with that type's fields.
+- Old Portuguese keys Silent used to write (tipo, sistema, nivel) still count as their English key.
 ## GM secrets vs players
 - Whole file: the property status: secret (or segredo), or tags: [secret]. The old line status: secret at the start of the text also counts.
 - One section: add [secret] (or [segredo]) to its heading, e.g. ### The Hidden Cult [secret].

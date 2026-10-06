@@ -114,6 +114,7 @@ def instalar_modelos_iniciais(idioma: str = None, pasta_dados: Path = None) -> l
     - Primeira vez: uma pasta (Templates ou Style) sem nenhum .md recebe todos os modelos dela.
       Pastas que já têm arquivos (instalações antigas) ficam como estão.
     - Modelo novo numa versão nova do programa (nunca oferecido antes): é copiado uma vez, se faltar.
+    - Modelo que mudou numa versão nova: a cópia que o usuário nunca editou é atualizada.
     - Troca de idioma: os modelos que ainda são a cópia original são trocados pela versão
       do novo idioma. Arquivos editados ou criados pelo usuário nunca são alterados.
     """
@@ -155,6 +156,16 @@ def instalar_modelos_iniciais(idioma: str = None, pasta_dados: Path = None) -> l
             novo_na_versao = registro is not None and relativo not in conhecidos
             conhecidos.add(relativo)
             destino = pasta_destino / subcaminho
+            # Modelo que mudou numa versão nova do programa: a cópia nunca editada é atualizada
+            if (destino.is_file() and relativo in instalados and _hash_arquivo(destino) == instalados[relativo]
+                    and _hash_arquivo(arq) != instalados[relativo]):
+                try:
+                    shutil.copy2(arq, destino)
+                    instalados[relativo] = _hash_arquivo(destino)
+                    copiados.append(str(destino))
+                except OSError:
+                    pass
+                continue
             if destino.exists() or not (primeira_vez or novo_na_versao or relativo in substituir):
                 continue
             try:

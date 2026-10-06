@@ -1,3 +1,10 @@
+---
+type: local
+tags: [local]
+aliases: []
+location:
+owner:
+---
 # Nome do Local
 > Um lugar comum que guarda a resposta para alguém atento.
 

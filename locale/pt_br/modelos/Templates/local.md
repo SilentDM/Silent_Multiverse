@@ -1,3 +1,10 @@
+---
+type: local
+tags: [local]
+aliases: []
+location:
+owner:
+---
 # Nome do Local
 
 > Frase curta que descreve a essência do local.

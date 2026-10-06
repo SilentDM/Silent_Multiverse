@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 import core.ai_utils as au
 import core.eventos as ev
+import engine.esquemas as esquemas
 import engine.notas as notas
 import engine.project_utils as pu
 from core.i18n import t
@@ -180,7 +181,8 @@ def processar_arquivo_unico(path):
             # --- ETAPA 3: GRAVAÇÃO (nome estável, versão anterior no histórico) ---
             if conteudo_salvar:
                 arquivar_versao_para_historico(arquivo)
-                pu.gravar_markdown(arquivo, notas.reanexar(conteudo_salvar, secao_notas), original=conteudo)
+                # Propriedades: as do arquivo ficam; chaves vazias do esquema podem ser preenchidas, nada inventado
+                pu.gravar_markdown(arquivo, esquemas.aplicar(conteudo, notas.reanexar(conteudo_salvar, secao_notas)))
                 ev.log(t("expander.log_atualizado", nome=arquivo.name))
         except Exception as e:
             ev.log(t("expander.log_erro", nome=arquivo.name, erro=e))
