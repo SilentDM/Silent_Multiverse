@@ -670,7 +670,7 @@
   "ajuda.req.modo": "Rewrite everything: the AI returns the whole file revised. Append only: the current text stays as it is and the AI adds new content.",
   "ajuda.req.mesa": "Party level and number of players calibrate adventures, encounters and combat statblocks (difficulty and number of enemies). 0 = don't say.",
   "ajuda.req.segredo": "Marks the result as secret: the file disappears from the players' context and the Discord bot. NPC or Monster picks the kind of combat statblock.",
-  "ajuda.req.referencias": "Other files the AI should read along with this one. Files connected by [[links]] are already suggested; click ☐ to include them. Add file picks any other one.",
+  "ajuda.req.referencias": "Other files the AI should read along with this one. Files connected by [[links]] are already suggested; click ☐ to include one, or the ✔ at the top of the list to check or uncheck them all. Add file picks any other one.",
   "ajuda.req.tokens": "Estimated size of the request, in tokens (the unit the AI counts). The world context is sent too and is not included in this number.",
   "ajuda.wb.passo1": "Write the campaign idea (or leave it blank to complete the project from what already exists). Generate Canon creates Canon/<title>.md with the official names, facts and secrets. Edit the file freely before step 2: the plan and the execution follow whatever is in it.",
   "ajuda.wb.permissoes": "What the WorldBuilder may do. Plan items that need a permission that is off arrive unchecked. The maximum number of actions limits the size of the plan.",

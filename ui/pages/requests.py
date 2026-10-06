@@ -110,7 +110,8 @@ class PaginaRequisicoes(PaginaBase):
         linha += 1
         self.tree_refs = ttk.Treeview(opcoes, columns=("ativo", "arquivo", "motivo"), show="headings", height=5)
         for coluna, largura in (("ativo", 30), ("arquivo", 200), ("motivo", 140)):
-            self.tree_refs.heading(coluna, text=t(f"req.col_{coluna}"))
+            self.tree_refs.heading(coluna, text=t(f"req.col_{coluna}"),
+                                   command=self._alternar_todas_refs if coluna == "ativo" else "")
             self.tree_refs.column(coluna, width=largura, anchor="center" if coluna == "ativo" else "w", stretch=coluna == "arquivo")
         self.tree_refs.grid(row=linha, column=0, columnspan=4, sticky="nsew", padx=6, pady=2)
         self.tree_refs.bind("<Button-1>", self._clique_ref)
@@ -234,6 +235,14 @@ class PaginaRequisicoes(PaginaBase):
             caminho, motivo, marcado = self._refs[int(iid)]
             self._refs[int(iid)] = (caminho, motivo, not marcado)
             self._exibir_refs()
+
+    def _alternar_todas_refs(self):
+        """O ✔ do cabeçalho marca todas as referências (ou desmarca, se todas já estão marcadas)."""
+        if not self._refs:
+            return
+        marcar = not all(marcado for _, _, marcado in self._refs)
+        self._refs = [(caminho, motivo, marcar) for caminho, motivo, _ in self._refs]
+        self._exibir_refs()
 
     def _adicionar_referencia(self):
         if not self.req:

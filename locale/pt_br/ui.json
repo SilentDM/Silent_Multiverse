@@ -670,7 +670,7 @@
   "ajuda.req.modo": "Reescrever tudo: a IA devolve o arquivo inteiro revisado. Só acrescentar: o texto atual fica como está e a IA adiciona conteúdo novo.",
   "ajuda.req.mesa": "Nível do grupo e número de jogadores calibram aventuras, encontros e fichas de combate (dificuldade e quantidade de inimigos). 0 = não informar.",
   "ajuda.req.segredo": "Marca o resultado como segredo: o arquivo some do contexto dos jogadores e do bot do Discord. NPC ou Monstro escolhe o tipo de ficha de combate.",
-  "ajuda.req.referencias": "Outros arquivos que a IA deve ler junto com este. Os ligados por [[links]] já aparecem sugeridos; clique em ☐ para incluir. Adicionar arquivo escolhe qualquer outro.",
+  "ajuda.req.referencias": "Outros arquivos que a IA deve ler junto com este. Os ligados por [[links]] já aparecem sugeridos; clique em ☐ para incluir um, ou no ✔ do topo da lista para marcar ou desmarcar todos. Adicionar arquivo escolhe qualquer outro.",
   "ajuda.req.tokens": "Tamanho estimado do pedido, em tokens (a unidade que a IA conta). O contexto do mundo vai junto e não entra nessa conta.",
   "ajuda.wb.passo1": "Escreva a ideia da campanha (ou deixe em branco para completar o projeto a partir do que já existe). Gerar Cânone cria Canon/<título>.md com os nomes, fatos e segredos oficiais. Edite o arquivo à vontade antes do passo 2: o plano e a execução seguem o que estiver nele.",
   "ajuda.wb.permissoes": "O que o WorldBuilder pode fazer. Itens do plano que dependem de uma permissão desligada chegam desmarcados. O máximo de ações limita o tamanho do plano.",

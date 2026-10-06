@@ -71,6 +71,19 @@ class TesteInterface(unittest.TestCase):
                 finally:
                     fechar(root)
 
+    def test_marcar_todas_as_referencias(self):
+        root, janela = self._montar("pt_br")
+        try:
+            pagina = janela.pagina("requisicoes")
+            pagina._refs = [("a.md", "x", False), ("b.md", "y", True), ("c.md", "z", False)]
+            pagina._alternar_todas_refs()                                   # alguma desmarcada: marca todas
+            self.assertEqual([m for *_, m in pagina._refs], [True, True, True])
+            self.assertEqual({pagina.tree_refs.set(i, "ativo") for i in pagina.tree_refs.get_children()}, {"☑"})
+            pagina._alternar_todas_refs()                                   # todas marcadas: desmarca todas
+            self.assertEqual([m for *_, m in pagina._refs], [False, False, False])
+        finally:
+            fechar(root)
+
     def test_menu_requisicao_e_barra_de_tarefas(self):
         import core.eventos as ev
         root, janela = self._montar("pt_br")
