@@ -67,6 +67,7 @@ class PaginaEditor(PaginaBase):
         self._posicoes = {}                 # caminho -> (cursor, rolagem) ao trocar de aba
         self._assinatura = None
         self._popup = None                  # autocompletar de [[
+        self._bloqueado = None              # arquivo mostrado como "IA trabalhando"; reabre quando a IA terminar
 
         self.painel = ttk.PanedWindow(self, orient=tk.HORIZONTAL)
         self.painel.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
@@ -348,6 +349,11 @@ class PaginaEditor(PaginaBase):
             if self._arraste is None and self.winfo_ismapped():
                 if documento.assinatura_projeto() != self._assinatura:
                     self.atualizar_arvore()
+            # O arquivo que estava bloqueado pela IA foi liberado: abre a versão nova
+            if self._bloqueado and not self.sessao.em_processamento(self._bloqueado):
+                caminho, self._bloqueado = self._bloqueado, None
+                if not self.sessao.arquivo_atual and arq.eh_arquivo(caminho):
+                    self.ir_para(caminho, registrar_historico=False)
         except Exception:
             pass
         self.after(VIGIA_MS, self._vigiar_projeto)
@@ -368,11 +374,14 @@ class PaginaEditor(PaginaBase):
     def selecionar_caminho(self, caminho):
         item = self._itens.get(arq.absoluto(caminho))
         if item:
-            self.tree.selection_set(item)
+            # Selecionar de novo o que já está selecionado dispararia <<TreeviewSelect>> -> ir_para outra vez
+            if self.tree.selection() != (item,):
+                self.tree.selection_set(item)
             self.tree.see(item)
 
     def projeto_alterado(self):
         self.sessao.fechar()
+        self._bloqueado = None
         self._abas, self._posicoes = [], {}
         documento.invalidar()
         self._mostrar_aviso(t("editor.titulo_vazio"), "")
@@ -549,7 +558,9 @@ class PaginaEditor(PaginaBase):
         if self.sessao.em_processamento(caminho):
             self.sessao.fechar()
             self._mostrar_aviso(t("editor.bloqueado_titulo"), t("editor.bloqueado_texto", nome=arq.nome(caminho)), tema.AMARELO)
+            self._bloqueado = caminho
             return
+        self._bloqueado = None
         try:
             texto = self.sessao.abrir(caminho, registrar_historico)
         except arq.ErroOperacao as e:
@@ -561,6 +572,10 @@ class PaginaEditor(PaginaBase):
         """Abre um arquivo vindo da árvore, das abas, da abertura rápida, do painel lateral ou de um link."""
         if not caminho or (self.sessao.eh_atual(caminho) and not self.sessao.em_processamento(caminho)):
             return
+        if caminho == self._bloqueado and self.sessao.em_processamento(caminho):
+            return                    # o aviso "IA trabalhando" já está na tela; reabre sozinho quando a IA terminar
+        if caminho != self._bloqueado:
+            self._bloqueado = None    # o Mestre foi para outro lugar: não volta sozinho ao arquivo bloqueado
         anterior = self.sessao.arquivo_atual
         editado = bool(self.editor.edit_modified())
         self._guardar_posicao()
@@ -1108,16 +1123,19 @@ class PaginaEditor(PaginaBase):
         m.delete(0, tk.END)
         caminho = self.sessao.arquivo_atual
         estado = tk.NORMAL if caminho and arq.eh_markdown(caminho) else tk.DISABLED
-        for rotulo, comando in (("editor.menu_melhorar", lambda: self._acao_ia("melhorar", caminho)),
-                                ("editor.menu_aventura", lambda: self._acao_ia("aventura", caminho)),
-                                ("editor.menu_conhecimento", lambda: self._acao_ia("conhecimento", caminho)),
-                                ("editor.menu_ficha", lambda: self._acao_ia("ficha", caminho)),
-                                ("editor.menu_conselho", lambda: self._enviar_conselho(caminho)), None,
-                                ("editor.menu_perguntar_silent", lambda: self._perguntar_silent(caminho)),
-                                ("editor.menu_historico", lambda: self._historico(caminho))):
-            if rotulo is None:
+        itens = (("editor.menu_melhorar", lambda: self._acao_ia("melhorar", caminho)),
+                 ("editor.menu_aventura", lambda: self._acao_ia("aventura", caminho)),
+                 ("editor.menu_conhecimento", lambda: self._acao_ia("conhecimento", caminho)),
+                 ("editor.menu_ficha", lambda: self._acao_ia("ficha", caminho)),
+                 ("editor.menu_conselho", lambda: self._enviar_conselho(caminho)),
+                 None,                                          # separador
+                 ("editor.menu_perguntar_silent", lambda: self._perguntar_silent(caminho)),
+                 ("editor.menu_historico", lambda: self._historico(caminho)))
+        for item in itens:
+            if item is None:
                 m.add_separator()
             else:
+                rotulo, comando = item
                 m.add_command(label=t(rotulo), command=comando, state=estado)
 
     def _menu_editor(self, evento):
