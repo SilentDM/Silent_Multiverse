@@ -87,6 +87,30 @@ class TesteInterface(unittest.TestCase):
         finally:
             fechar(root)
 
+    def test_pagina_de_sessoes(self):
+        import engine.acoes as acoes
+        root, janela = self._montar("pt_br")
+        try:
+            pagina = janela.pagina("sessoes")
+            self.assertEqual(pagina.var_numero.get(), "1")
+            pagina.texto.insert("1.0", "grupo chegou na taverna")
+            pagina._editado()
+            self.assertEqual(pagina.lbl_estado.cget("text"), "● Salvando...")
+            janela.salvar_editor()                                  # trocar de projeto/fechar salva na hora
+            self.assertEqual(acoes.sessao_notas(), "grupo chegou na taverna")
+            with mock.patch("tkinter.messagebox.askyesno", return_value=True), \
+                    mock.patch("engine.acoes.finalizar_sessao", return_value=True) as finalizar:
+                pagina._finalizar()
+            self.assertEqual(finalizar.call_args.args[:2], ("grupo chegou na taverna", 1))
+            self.assertEqual(str(pagina.texto.cget("state")), "disabled")   # congelada enquanto Silent lê
+            pagina._falhou(RuntimeError("sem chave"))                       # falhou: volta a editar, nada se perde
+            self.assertEqual(str(pagina.texto.cget("state")), "normal")
+            self.assertIn("taverna", pagina.texto.get("1.0", "end"))
+        finally:
+            import engine.sessoes as sessoes
+            sessoes.salvar_notas("")
+            fechar(root)
+
     def test_marcar_todas_as_referencias(self):
         root, janela = self._montar("pt_br")
         try:

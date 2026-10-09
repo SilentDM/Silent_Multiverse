@@ -192,5 +192,19 @@
   "chat.bloco_imagem": "--- IMAGEM ANEXADA PELO USUÁRIO ({nome}): veja a imagem enviada junto desta mensagem ---",
   "chat.registro_anexos": "(anexos: {nomes})",
   "propriedade.segredo": "segredo",
-  "propriedade.rascunho": "rascunho"
+  "propriedade.rascunho": "rascunho",
+  "sessoes.pasta": "Sessões",
+  "sessoes.nome_arquivo": "Sessão {numero}",
+  "sessoes.tipo": "sessao",
+  "sessoes.md.aviso": "Diário escrito por Silent a partir das anotações do Mestre. Só o Mestre vê este arquivo.",
+  "sessoes.md.aconteceu": "## 🎬 O que aconteceu",
+  "sessoes.md.nasceu": "## 🌱 O que nasceu na mesa",
+  "sessoes.md.contradiz": "## ⚠️ O que contradiz o mundo",
+  "sessoes.md.contradicao": "- **Na mesa:** {dito}\n  **No mundo ({arquivo}):** {escrito}\n  **Sugestão:** {sugestao}",
+  "sessoes.md.segredos": "## 🤫 Segredos em risco",
+  "sessoes.md.pontas": "## 🧵 Pontas soltas",
+  "sessoes.md.conclusoes": "## 🔮 Conclusões de Silent",
+  "sessoes.md.anotacoes": "## 📝 Anotações da mesa",
+  "sessoes.md.nada": "- Nada.",
+  "sessoes.relatorio_wb": "Diário de {nome}: o que nasceu na mesa e o que contradiz o mundo. Crie arquivos para o que nasceu na mesa e corrija os arquivos citados nas contradições, seguindo a sugestão de cada uma."
 }

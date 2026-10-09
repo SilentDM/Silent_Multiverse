@@ -435,3 +435,38 @@ def concluir_assistente():
 def salvar_chave_gemini(chave: str):
     if chave and chave.strip():
         cfg.salvar_credenciais({"GOOGLE_API_KEY": chave.strip()})
+
+
+# ----------------------------------------------------------------------
+# SESSÕES DE JOGO (anotações livres -> diário de Silent)
+# ----------------------------------------------------------------------
+def sessao_notas() -> str:
+    import engine.sessoes as sessoes
+    return sessoes.carregar_notas()
+
+
+def sessao_salvar_notas(texto: str):
+    import engine.sessoes as sessoes
+    sessoes.salvar_notas(texto)
+
+
+def sessao_proximo_numero() -> int:
+    import engine.sessoes as sessoes
+    return sessoes.proximo_numero()
+
+
+def sessao_diarios() -> list:
+    """[(número, caminho)] dos diários, do mais recente para o mais antigo."""
+    import engine.sessoes as sessoes
+    return sessoes.listar_diarios()
+
+
+def finalizar_sessao(notas: str, numero: int, ao_concluir=None, ao_falhar=None) -> bool:
+    import engine.sessoes as sessoes
+    return _iniciar("sessao", sessoes.finalizar_sessao, notas, numero, ao_concluir=ao_concluir, ao_falhar=ao_falhar,
+                    reiniciar_cancelamento=True)
+
+
+def sessao_para_worldbuilder(caminho_diario: str) -> str:
+    import engine.sessoes as sessoes
+    return sessoes.relatorio_para_worldbuilder(caminho_diario)

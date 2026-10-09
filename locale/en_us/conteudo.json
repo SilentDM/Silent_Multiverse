@@ -192,5 +192,19 @@
   "chat.bloco_imagem": "--- IMAGE ATTACHED BY THE USER ({nome}): see the image sent with this message ---",
   "chat.registro_anexos": "(attachments: {nomes})",
   "propriedade.segredo": "secret",
-  "propriedade.rascunho": "draft"
+  "propriedade.rascunho": "draft",
+  "sessoes.pasta": "Sessions",
+  "sessoes.nome_arquivo": "Session {numero}",
+  "sessoes.tipo": "session",
+  "sessoes.md.aviso": "Journal written by Silent from the GM's notes. Only the GM sees this file.",
+  "sessoes.md.aconteceu": "## 🎬 What happened",
+  "sessoes.md.nasceu": "## 🌱 Born at the table",
+  "sessoes.md.contradiz": "## ⚠️ What contradicts the world",
+  "sessoes.md.contradicao": "- **At the table:** {dito}\n  **In the world ({arquivo}):** {escrito}\n  **Suggestion:** {sugestao}",
+  "sessoes.md.segredos": "## 🤫 Secrets at risk",
+  "sessoes.md.pontas": "## 🧵 Loose ends",
+  "sessoes.md.conclusoes": "## 🔮 Silent's conclusions",
+  "sessoes.md.anotacoes": "## 📝 Table notes",
+  "sessoes.md.nada": "- Nothing.",
+  "sessoes.relatorio_wb": "Journal of {nome}: what was born at the table and what contradicts the world. Create files for what was born at the table and fix the files named in the contradictions, following each suggestion."
 }

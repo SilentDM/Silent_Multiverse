@@ -32,19 +32,20 @@ from ui.pages.manual import PaginaManual
 from ui.pages.options import PaginaOpcoes
 from ui.pages.requests import PaginaRequisicoes
 from ui.pages.roleplay import PaginaRoleplay
+from ui.pages.sessions import PaginaSessoes
 from ui.pages.worldbuilder import PaginaWorldBuilder
 from ui.widgets import mostrar_toast, Dica
 
 # Menu lateral em grupos; "sistema" fica no rodapé. Requisições não tem botão próprio:
 # aparece como sub-item do Editor enquanto há um pedido aberto.
-GRUPOS_NAV = [("escrever", ["editor"]), ("criar", ["worldbuilder", "council", "roleplay", "chat"]),
+GRUPOS_NAV = [("escrever", ["editor", "sessoes"]), ("criar", ["worldbuilder", "council", "roleplay", "chat"]),
               ("projeto", ["actions"])]
 GRUPO_RODAPE = ("sistema", ["options", "log", "manual"])
-ICONES_NAV = {"editor": "✎", "worldbuilder": "◈", "council": "⚖", "roleplay": "♟", "chat": "◎",
+ICONES_NAV = {"editor": "✎", "sessoes": "✍", "worldbuilder": "◈", "council": "⚖", "roleplay": "♟", "chat": "◎",
               "actions": "⚒", "options": "⚙", "log": "≡", "manual": "§"}
 CLASSES_PAGINAS = {
     "editor": PaginaEditor, "requisicoes": PaginaRequisicoes, "worldbuilder": PaginaWorldBuilder, "actions": PaginaAcoes,
-    "chat": PaginaChat, "roleplay": PaginaRoleplay, "council": PaginaConselho,
+    "chat": PaginaChat, "roleplay": PaginaRoleplay, "council": PaginaConselho, "sessoes": PaginaSessoes,
     "options": PaginaOpcoes, "log": PaginaLog, "manual": PaginaManual,
 }
 COR_ICONE = "#9a9a9a"
@@ -423,6 +424,9 @@ class SilentApp:
         editor = self.paginas.get("editor")
         if editor is not None:
             editor.salvar_agora()
+        sessoes = self.paginas.get("sessoes")
+        if sessoes is not None:
+            sessoes.salvar_agora()              # anotações da sessão (antes de trocar de projeto ou fechar)
 
     # ------------------------------------------------------------------
     # BANDEJA DO SISTEMA
