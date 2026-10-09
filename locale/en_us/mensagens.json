@@ -213,5 +213,9 @@
   "wb.erro_sem_relatorio": "The audit report is empty.",
   "wb.log_auditoria_inicio": "🔎 Building the correction plan from the Lore Audit report...",
   "acoes.log_parada_tarefa": "🛑 Stop requested for: {tarefa}.",
-  "md.persona.retrato": "## 🎨 Portrait (English request for the image generator)"
+  "md.persona.retrato": "## 🎨 Portrait (English request for the image generator)",
+  "sessoes.erro_vazia": "There are no notes to analyze.",
+  "sessoes.erro_existe": "A journal named {nome} already exists. Change the session number.",
+  "sessoes.log_analisando": "📖 Silent is reading the notes of session {numero} against the world...",
+  "sessoes.log_pronto": "📖 Session journal saved: {nome}"
 }

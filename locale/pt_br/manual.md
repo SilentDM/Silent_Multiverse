@@ -86,6 +86,13 @@
 - Se a IA (ou outro programa) alterar um arquivo que você está com aberto, o Editor o recarrega e nunca sobrescreve a versão nova com o texto antigo.
 - Antes de a IA alterar um arquivo, a versão anterior é arquivada em .silent_data/logs (histórico).
 
+## Sessões (durante a mesa)
+- A aba Sessões é um editor livre para anotar enquanto você mestra: o que aconteceu, o que você disse, NPCs e lugares que inventou na hora. Não precisa de formato. Tudo salva sozinho, e ⏱ Hora marca o horário.
+- As anotações ficam na pasta de dados do Silent enquanto a sessão está aberta, então não entram no contexto da IA nem aparecem no cofre.
+- ✔ Finalizar sessão: Silent lê as anotações contra o mundo inteiro e escreve Sessões/Sessão N.md, com propriedades do Obsidian (type, session, date) e como segredo. O diário tem: o que aconteceu (com [[links]]), o que nasceu na mesa, o que contradiz o mundo, segredos em risco, pontas soltas e as conclusões de Silent para a próxima sessão. As anotações originais ficam no fim.
+- Depois de finalizar, a página começa em branco para a próxima sessão. Se a IA falhar, as anotações continuam lá.
+- Na lista de diários, 🌍 Atualizar o mundo leva o que nasceu na mesa e as contradições ao WorldBuilder, que monta um plano revisável.
+
 # 5. REGRAS DE ESCRITA E MARCADORES
 ## Wikilinks [[Nome do Arquivo]]
 - Ligue outras entidades com colchetes duplos: [[Reino de Lucius]]. Clique no link para abri-lo; se o arquivo não existir, o programa oferece criá-lo.

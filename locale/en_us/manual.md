@@ -86,6 +86,13 @@
 - If the AI (or another program) changes a file you have open, the Editor reloads it and never overwrites the new version with old text.
 - Before the AI changes a file, the previous version is archived in .silent_data/logs (history).
 
+## Sessions (during the game)
+- The Sessions tab is a free editor to take notes while you run the game: what happened, what you said, NPCs and places you made up on the spot. No format needed. Everything saves on its own, and ⏱ Time stamps the hour.
+- While the session is open, the notes stay in Silent's data folder, so they don't enter the AI context or show up in the vault.
+- ✔ Finish session: Silent reads the notes against the whole world and writes Sessions/Session N.md, with Obsidian properties (type, session, date) and marked secret. The journal has: what happened (with [[links]]), what was born at the table, what contradicts the world, secrets at risk, loose ends and Silent's conclusions for the next session. The original notes stay at the end.
+- After finishing, the page starts blank for the next session. If the AI fails, the notes are still there.
+- In the journal list, 🌍 Update the world sends what was born at the table and the contradictions to the WorldBuilder, which builds a reviewable plan.
+
 # 5. WRITING RULES & MARKERS
 ## Wikilinks [[File Name]]
 - Link to other entities with double brackets: [[Kingdom of Lucius]]. Click the link to open it; if the file doesn't exist, the program offers to create it.

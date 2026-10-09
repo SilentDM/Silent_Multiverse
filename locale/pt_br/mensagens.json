@@ -213,5 +213,9 @@
   "wb.erro_sem_relatorio": "O relatório da auditoria está vazio.",
   "wb.log_auditoria_inicio": "🔎 Montando o plano de correção a partir do relatório da Auditoria de Lore...",
   "acoes.log_parada_tarefa": "🛑 Pedido de parada enviado para: {tarefa}.",
-  "md.persona.retrato": "## 🎨 Retrato (pedido em inglês para o gerador de imagem)"
+  "md.persona.retrato": "## 🎨 Retrato (pedido em inglês para o gerador de imagem)",
+  "sessoes.erro_vazia": "Não há anotações para analisar.",
+  "sessoes.erro_existe": "Já existe um diário chamado {nome}. Mude o número da sessão.",
+  "sessoes.log_analisando": "📖 Silent está lendo as anotações da sessão {numero} contra o mundo...",
+  "sessoes.log_pronto": "📖 Diário da sessão gravado: {nome}"
 }
