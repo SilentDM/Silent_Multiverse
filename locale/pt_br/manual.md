@@ -204,7 +204,19 @@ As Opções têm quatro abas. Tudo salva sozinho; um "✓ Salvo" no topo confirm
 - IA (Gemini): a chave do Gemini, o status do cache e a ordem de uso dos modelos (veja a seção 12).
 - Projeto: Estilo (Gênero, Tom, Clima e Estilo de escrita), Sistema de Regras, palavras secretas e o Expander automático. Estas valem só para o projeto aberto e ficam salvas na pasta dele (.silent_projeto.json); um projeto novo começa com os valores atuais.
 - Discord: token do bot, IDs de Mestre e as regras por servidor (veja a seção 13).
+- Foundry: a ponte com o módulo Silent Nexus do Foundry VTT (veja Foundry VTT, abaixo).
 - Cache do Gemini: em contas sem faturamento o programa para de tentar o cache e usa o envio do bundle; "Tentar cache de novo" volta a tentar (trocar a chave também).
+
+## Foundry VTT (módulo Silent Nexus)
+- O módulo importa NPCs e lojas do projeto aberto para o Foundry (sistema dnd5e 5.x). Tudo acontece neste PC; a IA continua no Silent e as chaves nunca vão para o Foundry.
+- Instalar, uma vez: Opções → Foundry → Instalar / atualizar o módulo no Foundry. No Foundry, ative o Silent Nexus em Gerenciar Módulos do mundo.
+- Conectar: marque Ligar a ponte com o Foundry. Copie o Endereço e o Token para Configurações → Configurar Módulos → Silent Nexus, no Foundry.
+- Usar: na aba de Atores aparece o botão Silent Nexus (só para o Mestre). Ele lista os arquivos do projeto, com NPCs e Lojas separados. Marque os que quiser e clique em Criar fichas de NPC ou Criar lojas.
+- NPCs: a IA monta a ficha (atributos, CA, PV, ataques com rolagem, traços) a partir do arquivo e do mundo; se o arquivo já tem uma ficha de combate, ela é seguida. A biografia pública vai para os jogadores e a do Mestre fica com os segredos.
+- Imagens: uma imagem do projeto com o mesmo nome do arquivo (ou a primeira ![[imagem]] do texto) vira o retrato e o token.
+- Lojas: viram mercadores do Item Piles, com preços e estoque. Itens do SRD usam as estatísticas oficiais do compêndio do dnd5e. Sem o Item Piles, a loja vira um NPC com o estoque no inventário.
+- Tudo vai para a pasta Silent Nexus da aba de Atores. Importar o mesmo arquivo de novo atualiza o mesmo ator, sem duplicar.
+- Cada ficha e loja só é gerada de novo pela IA se o arquivo mudar (economiza a cota gratuita). Para forçar, marque Gerar de novo com a IA na janela do módulo.
 
 # 12. MODELOS DO GEMINI (Opções → IA)
 - Testar Modelos testa todos os modelos Gemini disponíveis e os ordena por tempo de resposta e taxa de sucesso.

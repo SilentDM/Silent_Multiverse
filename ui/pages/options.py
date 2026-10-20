@@ -25,7 +25,7 @@ from core.versao import VERSAO, URL_PROJETO
 from ui.pages.models import PaginaModelos
 from ui.widgets import PaginaBase, ColunaRolavel, cabecalho, ajuda, ajuda_visivel, definir_ajuda_visivel
 
-ABAS = ("geral", "ia", "projeto", "discord")
+ABAS = ("geral", "ia", "projeto", "discord", "foundry")
 CAMPOS_DISCORD = [
     ("discord_channels_knowledge", "options.discord_conhecimento", "options.discord_conhecimento_dica"),
     ("discord_prefix", "options.discord_prefixo", None),
@@ -70,6 +70,7 @@ class PaginaOpcoes(PaginaBase):
         self._montar_ia()
         self._montar_projeto()
         self._montar_discord()
+        self._montar_foundry()
         self.aba_atual = None
         self.mostrar_aba("geral")
 
@@ -84,6 +85,8 @@ class PaginaOpcoes(PaginaBase):
         if aba == "ia":
             self.modelos.atualizar()
             self._atualizar_status_cache()
+        elif aba == "foundry":
+            self._atualizar_foundry()
 
     def ao_exibir(self):
         if self.aba_atual == "ia":
@@ -327,6 +330,107 @@ class PaginaOpcoes(PaginaBase):
         ttk.Button(secao, text=t("options.discord_sync"), command=self._sincronizar).pack(fill=tk.X, padx=12, pady=(6, 12))
         self.atualizar_servidores()
         self._carregar_discord()
+
+    # ------------------------------------------------------------------
+    # FOUNDRY VTT
+    # ------------------------------------------------------------------
+    def _montar_foundry(self):
+        coluna = self._nova_coluna("foundry")
+        secao = coluna.nova_secao(t("options.foundry_ponte_titulo"), t("options.foundry_ponte_texto"))
+        linha = ttk.Frame(secao)
+        linha.pack(anchor=tk.W, padx=12, pady=(10, 2))
+        self.var_foundry = tk.BooleanVar(value=acoes.foundry_configurada())
+        ttk.Checkbutton(linha, text=t("options.foundry_ligar"), variable=self.var_foundry,
+                        command=self._ligar_foundry).pack(side=tk.LEFT)
+        ajuda(linha, t("ajuda.foundry.ponte")).pack(side=tk.LEFT, padx=(4, 0))
+        self.lbl_foundry = ttk.Label(secao, text="", font=("Segoe UI", 9))
+        self.lbl_foundry.pack(anchor=tk.W, padx=12, pady=(2, 6))
+        self._rotulo(secao, t("options.foundry_porta"), negrito=True)
+        self.var_porta = tk.StringVar(value=str(acoes.foundry_porta()))
+        entrada = ttk.Entry(secao, textvariable=self.var_porta, width=8, font=("Segoe UI", 10))
+        entrada.pack(anchor=tk.W, padx=12, pady=(0, 8))
+        entrada.bind("<FocusOut>", lambda e: self._salvar_porta())
+        entrada.bind("<Return>", lambda e: self._salvar_porta())
+
+        secao = coluna.nova_secao(t("options.foundry_conectar_titulo"), t("options.foundry_conectar_texto"))
+        self._rotulo(secao, t("options.foundry_endereco"), negrito=True)
+        self.var_endereco = tk.StringVar()
+        self._campo_copiavel(secao, self.var_endereco)
+        self._rotulo(secao, t("options.foundry_token"), negrito=True)
+        self.var_token = tk.StringVar(value=acoes.foundry_token())
+        linha = self._campo_copiavel(secao, self.var_token)
+        ttk.Button(linha, text=t("options.foundry_novo_token"), command=self._novo_token).pack(side=tk.LEFT, padx=(4, 0))
+        self._dica(secao, t("options.foundry_token_dica"))
+
+        secao = coluna.nova_secao(t("options.foundry_modulo_titulo"), t("options.foundry_modulo_texto"))
+        self.lbl_modulo = ttk.Label(secao, text="", font=("Segoe UI", 9), wraplength=700, justify="left")
+        self.lbl_modulo.pack(anchor=tk.W, padx=12, pady=(8, 4))
+        ttk.Button(secao, text=t("options.foundry_instalar"), command=self._instalar_modulo).pack(anchor=tk.W, padx=12, pady=(0, 10))
+        self._atualizar_foundry()
+
+    def _campo_copiavel(self, pai, var):
+        linha = ttk.Frame(pai)
+        linha.pack(fill=tk.X, padx=12, pady=(0, 6))
+        ttk.Entry(linha, textvariable=var, state="readonly", font=("Consolas", 10)).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Button(linha, text=t("options.foundry_copiar"), command=lambda: self._copiar(var.get())).pack(side=tk.LEFT, padx=(4, 0))
+        return linha
+
+    def _copiar(self, texto):
+        self.clipboard_clear()
+        self.clipboard_append(texto)
+        self.app.toast(t("options.foundry_copiado"))
+
+    def _atualizar_foundry(self):
+        ligada = acoes.foundry_ligada()
+        self.var_foundry.set(acoes.foundry_configurada())
+        self.var_endereco.set(acoes.foundry_endereco())
+        if ligada:
+            self.lbl_foundry.config(text=t("options.foundry_status_ligada", endereco=acoes.foundry_endereco()), foreground=tema.VERDE)
+        elif self.var_foundry.get():
+            self.lbl_foundry.config(text=t("options.foundry_status_erro"), foreground=tema.VERMELHO)
+        else:
+            self.lbl_foundry.config(text=t("options.foundry_status_desligada"), foreground=tema.SUAVE)
+        pasta = acoes.foundry_pasta_dados()
+        if not pasta:
+            texto = t("options.foundry_sem_foundry")
+        else:
+            instalada, atual = acoes.foundry_modulo_instalado(), acoes.foundry_versao_modulo()
+            texto = t("options.foundry_modulo_estado", pasta=pasta,
+                      estado=t("options.foundry_nao_instalado") if not instalada
+                      else t("options.foundry_instalado", versao=instalada, atual=atual))
+        self.lbl_modulo.config(text=texto)
+
+    def _ligar_foundry(self):
+        if not acoes.foundry_ligar(self.var_foundry.get()):
+            messagebox.showerror(t("options.foundry_ponte_titulo"), t("options.foundry_porta_ocupada", porta=acoes.foundry_porta()))
+        self._salvo()
+        self._atualizar_foundry()
+
+    def _salvar_porta(self):
+        texto = self.var_porta.get().strip()
+        if not texto.isdigit() or not 1024 <= int(texto) <= 65535:
+            self.var_porta.set(str(acoes.foundry_porta()))
+            return
+        if int(texto) == acoes.foundry_porta():
+            return
+        if not acoes.foundry_definir_porta(int(texto)):
+            messagebox.showerror(t("options.foundry_ponte_titulo"), t("options.foundry_porta_ocupada", porta=texto))
+        self._salvo()
+        self._atualizar_foundry()
+
+    def _novo_token(self):
+        if messagebox.askyesno(t("options.foundry_novo_token"), t("options.foundry_novo_token_confirmar")):
+            self.var_token.set(acoes.foundry_token(novo=True))
+            self._salvo()
+
+    def _instalar_modulo(self):
+        try:
+            destino = acoes.foundry_instalar_modulo()
+        except Exception as e:
+            messagebox.showerror(t("options.foundry_modulo_titulo"), str(e))
+            return
+        self._atualizar_foundry()
+        messagebox.showinfo(t("options.foundry_modulo_titulo"), t("options.foundry_instalado_ok", pasta=destino))
 
     def atualizar_servidores(self):
         self._mapa_servidores = {t("options.discord_global"): "global"}
