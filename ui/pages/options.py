@@ -364,8 +364,7 @@ class PaginaOpcoes(PaginaBase):
 
         secao = coluna.nova_secao(t("options.foundry_modulo_titulo"), t("options.foundry_modulo_texto"))
         self.lbl_modulo = ttk.Label(secao, text="", font=("Segoe UI", 9), wraplength=700, justify="left")
-        self.lbl_modulo.pack(anchor=tk.W, padx=12, pady=(8, 4))
-        ttk.Button(secao, text=t("options.foundry_instalar"), command=self._instalar_modulo).pack(anchor=tk.W, padx=12, pady=(0, 10))
+        self.lbl_modulo.pack(anchor=tk.W, padx=12, pady=(8, 10))
         self._atualizar_foundry()
 
     def _campo_copiavel(self, pai, var):
@@ -394,10 +393,10 @@ class PaginaOpcoes(PaginaBase):
         if not pasta:
             texto = t("options.foundry_sem_foundry")
         else:
-            instalada, atual = acoes.foundry_modulo_instalado(), acoes.foundry_versao_modulo()
+            instalada = acoes.foundry_modulo_instalado()
             texto = t("options.foundry_modulo_estado", pasta=pasta,
-                      estado=t("options.foundry_nao_instalado") if not instalada
-                      else t("options.foundry_instalado", versao=instalada, atual=atual))
+                      estado=t("options.foundry_instalado", versao=instalada) if instalada
+                      else t("options.foundry_nao_instalado"))
         self.lbl_modulo.config(text=texto)
 
     def _ligar_foundry(self):
@@ -422,15 +421,6 @@ class PaginaOpcoes(PaginaBase):
         if messagebox.askyesno(t("options.foundry_novo_token"), t("options.foundry_novo_token_confirmar")):
             self.var_token.set(acoes.foundry_token(novo=True))
             self._salvo()
-
-    def _instalar_modulo(self):
-        try:
-            destino = acoes.foundry_instalar_modulo()
-        except Exception as e:
-            messagebox.showerror(t("options.foundry_modulo_titulo"), str(e))
-            return
-        self._atualizar_foundry()
-        messagebox.showinfo(t("options.foundry_modulo_titulo"), t("options.foundry_instalado_ok", pasta=destino))
 
     def atualizar_servidores(self):
         self._mapa_servidores = {t("options.discord_global"): "global"}

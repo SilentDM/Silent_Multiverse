@@ -1,17 +1,15 @@
 """
-Foundry VTT: listagem do projeto, geração (com cache), a ponte local (token, origem, rotas),
-a instalação do módulo e os testes JavaScript da conversão para o dnd5e (com o Node, se houver).
+Foundry VTT: listagem do projeto, geração (com cache), a ponte local (token, origem, rotas)
+e a detecção do SilentModule na pasta de dados do Foundry.
 IA falsa, sem rede: a ponte é testada em 127.0.0.1 numa porta livre.
 """
 import http.client
 import json
-import shutil
-import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
-from tests import RAIZ_REPO, PASTA_TEMP
+from tests import PASTA_TEMP
 from tests.util import novo_projeto, apagar, usar_idioma, ia_falsa
 
 import core.config as cfg
@@ -155,38 +153,16 @@ class TestePonte(unittest.TestCase):
 
 
 class TesteModulo(unittest.TestCase):
-    def test_instalar_modulo(self):
+    def test_versao_do_silentmodule_instalado(self):
         dados = Path(tempfile.mkdtemp(prefix="foundry_", dir=PASTA_TEMP))
         try:
-            destino = fvtt.instalar_modulo(dados)
-            self.assertTrue((destino / "module.json").is_file())
-            self.assertTrue((destino / "scripts" / "main.js").is_file())
-            self.assertEqual(fvtt.versao_modulo(destino), fvtt.versao_modulo(fvtt.pasta_modulo_no_programa()))
-            fvtt.instalar_modulo(dados)                                         # atualizar por cima funciona
+            pasta = dados / "modules" / fvtt.ID_MODULO
+            self.assertIsNone(fvtt.versao_modulo(pasta))                       # ainda não instalado
+            pasta.mkdir(parents=True)
+            (pasta / "module.json").write_text(json.dumps({"id": "silent-module", "version": "0.1.0"}), encoding="utf-8")
+            self.assertEqual(fvtt.versao_modulo(pasta), "0.1.0")
         finally:
             apagar(dados)
-
-    def test_modulo_e_traducoes_coerentes(self):
-        pasta = RAIZ_REPO / "foundry" / "silent-nexus"
-        manifesto = json.loads((pasta / "module.json").read_text(encoding="utf-8"))
-        self.assertEqual(manifesto["id"], "silent-nexus")
-        for idioma in manifesto["languages"]:
-            self.assertTrue((pasta / idioma["path"]).is_file(), idioma["path"])
-        en = json.loads((pasta / "lang" / "en.json").read_text(encoding="utf-8"))["SILENTNEXUS"]
-        pt = json.loads((pasta / "lang" / "pt-BR.json").read_text(encoding="utf-8"))["SILENTNEXUS"]
-        self.assertEqual(set(en), set(pt))
-        usadas = set()
-        import re
-        for js in (pasta / "scripts").glob("*.js"):
-            texto = js.read_text(encoding="utf-8")
-            usadas |= set(re.findall(r'L\("([A-Za-z]+)"', texto)) | set(re.findall(r'SILENTNEXUS\.([A-Za-z]+)', texto))
-        self.assertEqual(usadas - set(en), set())
-
-    @unittest.skipUnless(shutil.which("node"), "Node.js não instalado")
-    def test_conversao_para_dnd5e_no_node(self):
-        resultado = subprocess.run(["node", "--test", str(RAIZ_REPO / "tests" / "foundry" / "mapeamento.test.mjs")],
-                                   capture_output=True, text=True, encoding="utf-8", cwd=RAIZ_REPO, timeout=120)
-        self.assertEqual(resultado.returncode, 0, resultado.stdout + resultado.stderr)
 
 
 if __name__ == "__main__":

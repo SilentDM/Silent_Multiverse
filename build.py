@@ -33,8 +33,7 @@ def conferir_tag(tag: str, versao: str):
 
 def dados_embutidos() -> list:
     # locale/ já traz os modelos iniciais (locale/<idioma>/modelos/Templates e Style);
-    # foundry/ é o módulo do Foundry VTT que o botão de Opções → Foundry instala
-    return [("locale", "locale"), ("foundry", "foundry"), ("icon.ico", ".")]
+    return [("locale", "locale"), ("icon.ico", ".")]
 
 
 def gerar_executavel():
