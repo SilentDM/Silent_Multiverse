@@ -470,3 +470,79 @@ def finalizar_sessao(notas: str, numero: int, ao_concluir=None, ao_falhar=None) 
 def sessao_para_worldbuilder(caminho_diario: str) -> str:
     import engine.sessoes as sessoes
     return sessoes.relatorio_para_worldbuilder(caminho_diario)
+
+
+# ----------------------------------------------------------------------
+# FOUNDRY VTT (ponte local para o módulo silent-nexus)
+# ----------------------------------------------------------------------
+def foundry_configurada() -> bool:
+    return bool(cfg.obter("foundry_ativo", False))
+
+
+def foundry_ligar(ativo: bool) -> bool:
+    """Liga ou desliga a ponte e guarda a escolha. Devolve False se não conseguiu ligar (porta ocupada)."""
+    import engine.ponte_foundry as ponte
+    cfg.atualizar_configuracoes({"foundry_ativo": bool(ativo)})
+    if not ativo:
+        ponte.parar()
+        return True
+    return ponte.iniciar()
+
+
+def foundry_ligada() -> bool:
+    import engine.ponte_foundry as ponte
+    return ponte.ativa()
+
+
+def foundry_parar():
+    import engine.ponte_foundry as ponte
+    ponte.parar()
+
+
+def foundry_endereco() -> str:
+    import engine.ponte_foundry as ponte
+    return f"http://127.0.0.1:{ponte.porta_em_uso() or ponte.porta()}"
+
+
+def foundry_definir_porta(porta: int) -> bool:
+    """Troca a porta; se a ponte estiver ligada, religa nela. Devolve False se a porta estiver ocupada."""
+    import engine.ponte_foundry as ponte
+    cfg.atualizar_configuracoes({"foundry_porta": int(porta)})
+    if ponte.ativa():
+        ponte.parar()
+        return ponte.iniciar()
+    return True
+
+
+def foundry_porta() -> int:
+    import engine.ponte_foundry as ponte
+    return ponte.porta()
+
+
+def foundry_token(novo: bool = False) -> str:
+    import engine.ponte_foundry as ponte
+    return ponte.novo_token() if novo else ponte.token()
+
+
+def foundry_pasta_dados():
+    import engine.foundry as fvtt
+    return fvtt.pasta_dados_foundry()
+
+
+def foundry_modulo_instalado():
+    """Versão do módulo instalada no Foundry (ou None)."""
+    import engine.foundry as fvtt
+    dados = fvtt.pasta_dados_foundry()
+    return fvtt.versao_modulo(dados / "modules" / fvtt.ID_MODULO) if dados else None
+
+
+def foundry_versao_modulo():
+    import engine.foundry as fvtt
+    return fvtt.versao_modulo(fvtt.pasta_modulo_no_programa())
+
+
+def foundry_instalar_modulo() -> str:
+    import engine.foundry as fvtt
+    destino = fvtt.instalar_modulo()
+    ev.log(t("foundry.log_instalado", pasta=destino))
+    return str(destino)

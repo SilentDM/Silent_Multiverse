@@ -74,8 +74,8 @@ class TesteTraducoes(unittest.TestCase):
 
     def test_todos_os_campos_de_schema_traduzidos(self):
         from pydantic import BaseModel
-        import engine.council_engine, engine.dnd_schemas, engine.expander, engine.knowledge_schemas, engine.persona_schemas, engine.wbuilder, engine.fichas, engine.sessoes
-        modulos = [engine.council_engine, engine.dnd_schemas, engine.expander, engine.knowledge_schemas, engine.persona_schemas, engine.wbuilder, engine.fichas, engine.sessoes]
+        import engine.council_engine, engine.dnd_schemas, engine.expander, engine.knowledge_schemas, engine.persona_schemas, engine.wbuilder, engine.fichas, engine.sessoes, engine.foundry
+        modulos = [engine.council_engine, engine.dnd_schemas, engine.expander, engine.knowledge_schemas, engine.persona_schemas, engine.wbuilder, engine.fichas, engine.sessoes, engine.foundry]
         for idioma in IDIOMAS:
             textos = _textos(idioma)
             for modulo in modulos:

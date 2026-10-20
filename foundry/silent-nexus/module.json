@@ -1,0 +1,18 @@
+{
+  "id": "silent-nexus",
+  "title": "Silent Nexus",
+  "description": "Imports NPCs (with portraits) and shops from the Silent Multiverse Nexus project open on this PC. The AI runs in Silent; this module only asks for ready-made data.",
+  "version": "0.1.0",
+  "authors": [{ "name": "SilentDM" }],
+  "compatibility": { "minimum": "13", "verified": "14.361" },
+  "relationships": {
+    "systems": [{ "id": "dnd5e", "type": "system", "compatibility": { "minimum": "5.0.0", "verified": "5.3.3" } }],
+    "recommends": [{ "id": "item-piles", "type": "module", "reason": "Shops become Item Piles merchants." }]
+  },
+  "esmodules": ["scripts/main.js"],
+  "styles": ["styles/silent-nexus.css"],
+  "languages": [
+    { "lang": "en", "name": "English", "path": "lang/en.json" },
+    { "lang": "pt-BR", "name": "Português (Brasil)", "path": "lang/pt-BR.json" }
+  ]
+}

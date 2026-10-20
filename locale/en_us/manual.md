@@ -204,7 +204,19 @@ Options has four tabs. Everything saves by itself; a "✓ Saved" at the top conf
 - AI (Gemini): the Gemini key, the cache status and the order in which models are used (see section 12).
 - Project: Style (Genre, Tone, Mood and Writing style), Rules System, secret words and the auto-Expander. These apply only to the open project and are saved inside its folder (.silent_projeto.json); a new project starts with the current values.
 - Discord: bot token, GM IDs and the rules per server (see section 13).
+- Foundry: the bridge to Foundry VTT's Silent Nexus module (see Foundry VTT, below).
 - Gemini cache: on accounts without billing the program stops trying the cache and uploads the bundle instead; "Try caching again" retries (so does changing the key).
+
+## Foundry VTT (Silent Nexus module)
+- The module imports NPCs and shops from the open project into Foundry (dnd5e 5.x system). Everything happens on this PC; the AI stays in Silent and the keys never go to Foundry.
+- Install, once: Options → Foundry → Install / update the module in Foundry. In Foundry, enable Silent Nexus in the world's Manage Modules.
+- Connect: check Turn on the bridge to Foundry. Copy the Address and the Token into Settings → Configure Settings → Silent Nexus, in Foundry.
+- Use: the Silent Nexus button shows up in the Actors tab (GM only). It lists the project's files, with NPCs and Shops apart. Check the ones you want and click Create NPC sheets or Create shops.
+- NPCs: the AI builds the sheet (abilities, AC, HP, attacks with rolls, traits) from the file and the world; if the file already has a combat statblock, it is followed. The public biography goes to the players and the GM one keeps the secrets.
+- Images: a project image with the same name as the file (or the first ![[image]] in the text) becomes the portrait and the token.
+- Shops: they become Item Piles merchants, with prices and stock. SRD items use the official stats from the dnd5e compendium. Without Item Piles, the shop becomes an NPC with the stock in its inventory.
+- Everything goes into the Silent Nexus folder of the Actors tab. Importing the same file again updates the same actor, without duplicates.
+- Each sheet and shop is only generated again by the AI if the file changes (saves the free quota). To force it, check Generate again with the AI in the module's window.
 
 # 12. GEMINI MODELS (Options → AI)
 - Model Benchmark tests every available Gemini model and ranks them by response time and success rate.

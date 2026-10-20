@@ -217,5 +217,18 @@
   "sessoes.erro_vazia": "There are no notes to analyze.",
   "sessoes.erro_existe": "A journal named {nome} already exists. Change the session number.",
   "sessoes.log_analisando": "📖 Silent is reading the notes of session {numero} against the world...",
-  "sessoes.log_pronto": "📖 Session journal saved: {nome}"
+  "sessoes.log_pronto": "📖 Session journal saved: {nome}",
+  "foundry.erro_fora_do_projeto": "File outside the project folder.",
+  "foundry.erro_arquivo": "File not found in the project: {nome}",
+  "foundry.erro_token": "Invalid token. Copy the token from Silent → Options → Foundry.",
+  "foundry.erro_sem_foundry": "Could not find Foundry's data folder on this PC.",
+  "foundry.erro_sem_modulo": "The Foundry module did not come with this copy of Silent.",
+  "foundry.log_pedido": "🎲 Foundry asked for {tipo}: {nome}",
+  "foundry.tipo.ficha": "the sheet",
+  "foundry.tipo.loja": "the shop",
+  "foundry.log_erro": "🎲 Error in Foundry's request: {erro}",
+  "foundry.log_porta_ocupada": "🎲 The Foundry bridge did not start on port {porta}: {erro}",
+  "foundry.log_ligada": "🎲 Foundry bridge on at port {porta}.",
+  "foundry.log_desligada": "🎲 Foundry bridge off.",
+  "foundry.log_instalado": "🎲 Foundry module installed in {pasta}"
 }

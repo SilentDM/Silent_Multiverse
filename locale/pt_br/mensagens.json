@@ -217,5 +217,18 @@
   "sessoes.erro_vazia": "Não há anotações para analisar.",
   "sessoes.erro_existe": "Já existe um diário chamado {nome}. Mude o número da sessão.",
   "sessoes.log_analisando": "📖 Silent está lendo as anotações da sessão {numero} contra o mundo...",
-  "sessoes.log_pronto": "📖 Diário da sessão gravado: {nome}"
+  "sessoes.log_pronto": "📖 Diário da sessão gravado: {nome}",
+  "foundry.erro_fora_do_projeto": "Arquivo fora da pasta do projeto.",
+  "foundry.erro_arquivo": "Arquivo não encontrado no projeto: {nome}",
+  "foundry.erro_token": "Token inválido. Copie o token em Silent → Opções → Foundry.",
+  "foundry.erro_sem_foundry": "Não encontrei a pasta de dados do Foundry neste PC.",
+  "foundry.erro_sem_modulo": "O módulo do Foundry não veio junto com esta cópia do Silent.",
+  "foundry.log_pedido": "🎲 Foundry pediu {tipo}: {nome}",
+  "foundry.tipo.ficha": "a ficha",
+  "foundry.tipo.loja": "a loja",
+  "foundry.log_erro": "🎲 Erro no pedido do Foundry: {erro}",
+  "foundry.log_porta_ocupada": "🎲 A ponte do Foundry não ligou na porta {porta}: {erro}",
+  "foundry.log_ligada": "🎲 Ponte do Foundry ligada na porta {porta}.",
+  "foundry.log_desligada": "🎲 Ponte do Foundry desligada.",
+  "foundry.log_instalado": "🎲 Módulo do Foundry instalado em {pasta}"
 }

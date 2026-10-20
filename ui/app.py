@@ -74,6 +74,8 @@ class SilentApp:
 
         self.mostrar_pagina("editor")
         self.root.after(700, self._talvez_assistente)
+        if acoes.foundry_configurada():
+            acoes.foundry_ligar(True)              # ponte com o módulo do Foundry (Opções → Foundry)
         discord_runner.iniciar(ao_descobrir_servidores=self._servidores_descobertos)
         tarefas.executar_em_segundo_plano(modelos.atualizar_se_necessario)
         tarefas.executar_em_segundo_plano(atualizacoes.verificar_na_inicializacao)
@@ -468,6 +470,7 @@ class SilentApp:
             except Exception:
                 pass
         discord_runner.parar()
+        acoes.foundry_parar()
         tarefas.na_interface(self._destruir)
 
     def _destruir(self):
