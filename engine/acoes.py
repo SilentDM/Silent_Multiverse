@@ -473,7 +473,7 @@ def sessao_para_worldbuilder(caminho_diario: str) -> str:
 
 
 # ----------------------------------------------------------------------
-# FOUNDRY VTT (ponte local para o módulo silent-nexus)
+# FOUNDRY VTT (ponte local para o SilentModule, funcionalidade Silent Nexus)
 # ----------------------------------------------------------------------
 def foundry_configurada() -> bool:
     return bool(cfg.obter("foundry_ativo", False))
@@ -530,19 +530,7 @@ def foundry_pasta_dados():
 
 
 def foundry_modulo_instalado():
-    """Versão do módulo instalada no Foundry (ou None)."""
+    """Versão do SilentModule instalada no Foundry (ou None)."""
     import engine.foundry as fvtt
     dados = fvtt.pasta_dados_foundry()
     return fvtt.versao_modulo(dados / "modules" / fvtt.ID_MODULO) if dados else None
-
-
-def foundry_versao_modulo():
-    import engine.foundry as fvtt
-    return fvtt.versao_modulo(fvtt.pasta_modulo_no_programa())
-
-
-def foundry_instalar_modulo() -> str:
-    import engine.foundry as fvtt
-    destino = fvtt.instalar_modulo()
-    ev.log(t("foundry.log_instalado", pasta=destino))
-    return str(destino)

@@ -2,7 +2,7 @@
 Conteúdo do projeto para o módulo do Foundry (sistema dnd5e): fichas de NPC, lojas e imagens.
 
 A IA preenche um formato pensado para o Foundry (números separados, códigos do dnd5e: tamanhos,
-perícias, tipos de dano), e o módulo silent-nexus (pasta foundry/ do repositório) o converte em Atores
+perícias, tipos de dano), e o SilentModule (funcionalidade Silent Nexus, no Foundry) o converte em Atores
 e Itens. As respostas ficam em cache pela data do arquivo, para não gastar a cota gratuita do Gemini
 gerando de novo a mesma ficha.
 """
@@ -246,16 +246,10 @@ def gerar_loja(relativo: str, forcar: bool = False) -> dict:
 
 
 # ----------------------------------------------------------------------
-# INSTALAÇÃO DO MÓDULO NO FOUNDRY
+# O SILENTMODULE NO FOUNDRY
 # ----------------------------------------------------------------------
-ID_MODULO = "silent-nexus"
-
-
-def pasta_modulo_no_programa() -> Path:
-    """O módulo que vem com o Silent (pasta foundry/ do repositório ou do executável)."""
-    import sys
-    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
-    return base / "foundry" / ID_MODULO
+# Quem usa a ponte é o SilentModule (funcionalidade Silent Nexus), instalado à parte no Foundry.
+ID_MODULO = "silent-module"
 
 
 def pasta_dados_foundry():
@@ -269,20 +263,6 @@ def pasta_dados_foundry():
         base = local
     dados = base / "Data"
     return dados if dados.is_dir() else None
-
-
-def instalar_modulo(pasta_dados: Path = None) -> Path:
-    """Copia (ou atualiza) o módulo para <Data>/modules/silent-nexus. Devolve a pasta instalada."""
-    import shutil
-    pasta_dados = pasta_dados or pasta_dados_foundry()
-    if not pasta_dados:
-        raise ErroFoundry(t("foundry.erro_sem_foundry"))
-    destino = Path(pasta_dados) / "modules" / ID_MODULO
-    origem = pasta_modulo_no_programa()
-    if not (origem / "module.json").is_file():
-        raise ErroFoundry(t("foundry.erro_sem_modulo"))
-    shutil.copytree(origem, destino, dirs_exist_ok=True)
-    return destino
 
 
 def versao_modulo(pasta: Path):

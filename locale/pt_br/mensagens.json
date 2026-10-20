@@ -221,14 +221,11 @@
   "foundry.erro_fora_do_projeto": "Arquivo fora da pasta do projeto.",
   "foundry.erro_arquivo": "Arquivo não encontrado no projeto: {nome}",
   "foundry.erro_token": "Token inválido. Copie o token em Silent → Opções → Foundry.",
-  "foundry.erro_sem_foundry": "Não encontrei a pasta de dados do Foundry neste PC.",
-  "foundry.erro_sem_modulo": "O módulo do Foundry não veio junto com esta cópia do Silent.",
   "foundry.log_pedido": "🎲 Foundry pediu {tipo}: {nome}",
   "foundry.tipo.ficha": "a ficha",
   "foundry.tipo.loja": "a loja",
   "foundry.log_erro": "🎲 Erro no pedido do Foundry: {erro}",
   "foundry.log_porta_ocupada": "🎲 A ponte do Foundry não ligou na porta {porta}: {erro}",
   "foundry.log_ligada": "🎲 Ponte do Foundry ligada na porta {porta}.",
-  "foundry.log_desligada": "🎲 Ponte do Foundry desligada.",
-  "foundry.log_instalado": "🎲 Módulo do Foundry instalado em {pasta}"
+  "foundry.log_desligada": "🎲 Ponte do Foundry desligada."
 }
