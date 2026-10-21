@@ -1,6 +1,6 @@
 """
 Foundry VTT: listagem do projeto, geração (com cache), a ponte local (token, origem, rotas)
-e a detecção do SilentModule na pasta de dados do Foundry.
+e a detecção do Silent Module na pasta de dados do Foundry.
 IA falsa, sem rede: a ponte é testada em 127.0.0.1 numa porta livre.
 """
 import http.client
