@@ -85,7 +85,7 @@ class SilentApp:
     # JANELA E LAYOUT
     # ------------------------------------------------------------------
     def _configurar_janela(self):
-        self.root.title(f"Silent Multiverse Nexus {VERSAO}")
+        self.root.title(f"Silent Multiverse {VERSAO}")
         self.root.geometry("1300x700")
         self.root.minsize(1050, 550)
         self.root.state("zoomed")

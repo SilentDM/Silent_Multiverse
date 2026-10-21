@@ -1,4 +1,4 @@
-# 🜂 Silent Multiverse Nexus
+# 🜂 Silent Multiverse
 
 [English](README.md) | **Português (Brasil)**
 
@@ -11,7 +11,7 @@
 ![Obsidian Compatible](https://img.shields.io/badge/Obsidian-Compat%C3%ADvel-7A3EE8?style=for-the-badge&logo=obsidian)
 ![License](https://img.shields.io/badge/Licen%C3%A7a-MIT-green?style=for-the-badge)
 
-O **Silent Multiverse Nexus** é um conjunto de ferramentas para Mestres, escritores e criadores de cenários. Você escreve o seu mundo em arquivos Markdown comuns (totalmente compatíveis com o **Obsidian**), e o programa ajuda a expandir, organizar, auditar e compartilhar esse mundo, com o Google Gemini fazendo o trabalho pesado e um bot de Discord que responde aos jogadores **sem revelar os seus segredos**.
+O **Silent Multiverse** é um conjunto de ferramentas para Mestres, escritores e criadores de cenários. Você escreve o seu mundo em arquivos Markdown comuns (totalmente compatíveis com o **Obsidian**), e o programa ajuda a expandir, organizar, auditar e compartilhar esse mundo, com o Google Gemini fazendo o trabalho pesado e um bot de Discord que responde aos jogadores **sem revelar os seus segredos**.
 
 Disponível em **português do Brasil** e **inglês**: a interface e tudo o que a IA escreve seguem o idioma escolhido.
 
@@ -130,7 +130,7 @@ Para alterar um texto ou prompt, edite nos **dois** idiomas (os testes conferem 
 Requer Windows e Python 3.14 (a versão com que o projeto é testado).
 
 ```bash
-git clone https://github.com/SilentDM/Silent_Multiverse.git
+git clone https://github.com/SilentDM/silent-multiverse.git
 cd Silent_Multiverse
 python -m venv venv
 venv\Scripts\activate
@@ -173,7 +173,7 @@ Isso cria `dist/SilentMultiverse.exe` e `dist/SilentMultiverse-<versão>-windows
 
 ## Aviso legal
 
-O Silent Multiverse Nexus é uma ferramenta independente e não oficial, feita por fãs. **Não é afiliada, endossada, patrocinada nem aprovada pela Wizards of the Coast LLC**.
+O Silent Multiverse é uma ferramenta independente e não oficial, feita por fãs. **Não é afiliada, endossada, patrocinada nem aprovada pela Wizards of the Coast LLC**.
 
 *Dungeons & Dragons* e *D&D* são marcas da Wizards of the Coast LLC. *Tormenta20* é marca da Jambô Editora. *Pathfinder* é marca da Paizo Inc. Esses nomes são usados apenas para indicar compatibilidade de regras. O programa não contém textos de regras nem conteúdo desses jogos.
 

@@ -1,5 +1,5 @@
 """
-Silent Multiverse Nexus - Ponto de Entrada Principal
+Silent Multiverse - Ponto de Entrada Principal
 """
 import sys, traceback
 import core.credentials as se

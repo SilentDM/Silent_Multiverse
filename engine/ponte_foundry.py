@@ -1,5 +1,5 @@
 """
-Ponte local entre o Silent e o SilentModule do Foundry VTT (funcionalidade Silent Nexus).
+Ponte local entre o Silent e o Silent Module do Foundry VTT (funcionalidade Silent Nexus).
 
 Um servidor HTTP pequeno que só escuta no próprio PC (127.0.0.1) e exige o token que o Mestre copia
 das Opções para as configurações do módulo. Sem o token, nenhuma página do navegador consegue ler

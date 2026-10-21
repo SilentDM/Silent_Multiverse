@@ -204,18 +204,18 @@ Options has four tabs. Everything saves by itself; a "✓ Saved" at the top conf
 - AI (Gemini): the Gemini key, the cache status and the order in which models are used (see section 12).
 - Project: Style (Genre, Tone, Mood and Writing style), Rules System, secret words and the auto-Expander. These apply only to the open project and are saved inside its folder (.silent_projeto.json); a new project starts with the current values.
 - Discord: bot token, GM IDs and the rules per server (see section 13).
-- Foundry: the bridge to Foundry VTT's SilentModule, Silent Nexus feature (see Foundry VTT, below).
+- Foundry: the bridge to Foundry VTT's Silent Module, Silent Nexus feature (see Foundry VTT, below).
 - Gemini cache: on accounts without billing the program stops trying the cache and uploads the bundle instead; "Try caching again" retries (so does changing the key).
 
-## Foundry VTT (SilentModule, Silent Nexus feature)
-- SilentModule's Silent Nexus feature imports NPCs and shops from the open project into Foundry (dnd5e 5.x system). Everything happens on this PC; the AI stays in Silent and the keys never go to Foundry.
-- Install: SilentModule is installed separately, in Foundry's Data/modules/silent-module folder. Options → Foundry shows whether it was found. In Foundry, enable SilentModule in the world's Manage Modules.
-- Connect: check Turn on the bridge to Foundry. In Foundry, under Settings → Configure Settings → SilentModule, enable Silent Nexus and paste the Address and the Token.
+## Foundry VTT (Silent Module, Silent Nexus feature)
+- Silent Module's Silent Nexus feature imports NPCs and shops from the open project into Foundry (dnd5e 5.x system). Everything happens on this PC; the AI stays in Silent and the keys never go to Foundry.
+- Install: Silent Module is installed separately, in Foundry's Data/modules/silent-module folder. Options → Foundry shows whether it was found. In Foundry, enable Silent Module in the world's Manage Modules.
+- Connect: check Turn on the bridge to Foundry. In Foundry, under Settings → Configure Settings → Silent Module, enable Silent Nexus and paste the Address and the Token.
 - Use: the Silent Nexus button shows up in the Token controls (GM only). It lists the project's files, with NPCs and Shops apart. Check the ones you want and click Create NPC sheets or Create shops.
 - NPCs: the AI builds the sheet (abilities, AC, HP, attacks with rolls, traits) from the file and the world; if the file already has a combat statblock, it is followed. The public biography goes to the players and the GM one keeps the secrets.
 - Images: a project image with the same name as the file (or the first ![[image]] in the text) becomes the portrait and the token.
 - Shops: they become Item Piles merchants, with prices and stock. SRD items use the official stats from the dnd5e compendium. Without Item Piles, the shop becomes an NPC with the stock in its inventory.
-- Everything goes into the Silent Nexus folder of the Actors tab (configurable in SilentModule). Importing the same file again updates the same actor, without duplicates.
+- Everything goes into the Silent Nexus folder of the Actors tab (configurable in Silent Module). Importing the same file again updates the same actor, without duplicates.
 - Each sheet and shop is only generated again by the AI if the file changes (saves the free quota). To force it, check Generate again with the AI in the module's window.
 
 # 12. GEMINI MODELS (Options → AI)
@@ -308,7 +308,7 @@ Options has four tabs. Everything saves by itself; a "✓ Saved" at the top conf
 ```
 
 # 20. LEGAL NOTICE
-- Silent Multiverse Nexus is an independent, unofficial fan tool. It is not affiliated with, endorsed, sponsored or approved by Wizards of the Coast LLC.
+- Silent Multiverse is an independent, unofficial fan tool. It is not affiliated with, endorsed, sponsored or approved by Wizards of the Coast LLC.
 - Dungeons & Dragons and D&D are trademarks of Wizards of the Coast LLC. Tormenta20 is a trademark of Jambô Editora. Pathfinder is a trademark of Paizo Inc. Names are used only to identify rules compatibility.
 - The program contains no rules text or content from these games. References to fifth edition rules (5e) follow the System Reference Document 5.1:
 > This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.

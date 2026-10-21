@@ -204,18 +204,18 @@ As Opções têm quatro abas. Tudo salva sozinho; um "✓ Salvo" no topo confirm
 - IA (Gemini): a chave do Gemini, o status do cache e a ordem de uso dos modelos (veja a seção 12).
 - Projeto: Estilo (Gênero, Tom, Clima e Estilo de escrita), Sistema de Regras, palavras secretas e o Expander automático. Estas valem só para o projeto aberto e ficam salvas na pasta dele (.silent_projeto.json); um projeto novo começa com os valores atuais.
 - Discord: token do bot, IDs de Mestre e as regras por servidor (veja a seção 13).
-- Foundry: a ponte com o SilentModule do Foundry VTT, funcionalidade Silent Nexus (veja Foundry VTT, abaixo).
+- Foundry: a ponte com o Silent Module do Foundry VTT, funcionalidade Silent Nexus (veja Foundry VTT, abaixo).
 - Cache do Gemini: em contas sem faturamento o programa para de tentar o cache e usa o envio do bundle; "Tentar cache de novo" volta a tentar (trocar a chave também).
 
-## Foundry VTT (SilentModule, funcionalidade Silent Nexus)
-- A funcionalidade Silent Nexus do SilentModule importa NPCs e lojas do projeto aberto para o Foundry (sistema dnd5e 5.x). Tudo acontece neste PC; a IA continua no Silent e as chaves nunca vão para o Foundry.
-- Instalar: o SilentModule é instalado à parte, na pasta Data/modules/silent-module do Foundry. Opções → Foundry mostra se ele foi encontrado. No Foundry, ative o SilentModule em Gerenciar Módulos do mundo.
-- Conectar: marque Ligar a ponte com o Foundry. No Foundry, em Configurações → Configurar Definições → SilentModule, ative o Silent Nexus e cole o Endereço e o Token.
+## Foundry VTT (Silent Module, funcionalidade Silent Nexus)
+- A funcionalidade Silent Nexus do Silent Module importa NPCs e lojas do projeto aberto para o Foundry (sistema dnd5e 5.x). Tudo acontece neste PC; a IA continua no Silent e as chaves nunca vão para o Foundry.
+- Instalar: o Silent Module é instalado à parte, na pasta Data/modules/silent-module do Foundry. Opções → Foundry mostra se ele foi encontrado. No Foundry, ative o Silent Module em Gerenciar Módulos do mundo.
+- Conectar: marque Ligar a ponte com o Foundry. No Foundry, em Configurações → Configurar Definições → Silent Module, ative o Silent Nexus e cole o Endereço e o Token.
 - Usar: nos controles de Token aparece o botão Silent Nexus (só para o Mestre). Ele lista os arquivos do projeto, com NPCs e Lojas separados. Marque os que quiser e clique em Criar fichas de NPC ou Criar lojas.
 - NPCs: a IA monta a ficha (atributos, CA, PV, ataques com rolagem, traços) a partir do arquivo e do mundo; se o arquivo já tem uma ficha de combate, ela é seguida. A biografia pública vai para os jogadores e a do Mestre fica com os segredos.
 - Imagens: uma imagem do projeto com o mesmo nome do arquivo (ou a primeira ![[imagem]] do texto) vira o retrato e o token.
 - Lojas: viram mercadores do Item Piles, com preços e estoque. Itens do SRD usam as estatísticas oficiais do compêndio do dnd5e. Sem o Item Piles, a loja vira um NPC com o estoque no inventário.
-- Tudo vai para a pasta Silent Nexus da aba de Atores (configurável no SilentModule). Importar o mesmo arquivo de novo atualiza o mesmo ator, sem duplicar.
+- Tudo vai para a pasta Silent Nexus da aba de Atores (configurável no Silent Module). Importar o mesmo arquivo de novo atualiza o mesmo ator, sem duplicar.
 - Cada ficha e loja só é gerada de novo pela IA se o arquivo mudar (economiza a cota gratuita). Para forçar, marque Gerar de novo com a IA na janela do módulo.
 
 # 12. MODELOS DO GEMINI (Opções → IA)
@@ -307,7 +307,7 @@ As Opções têm quatro abas. Tudo salva sozinho; um "✓ Salvo" no topo confirm
 ```
 
 # 20. AVISO LEGAL
-- O Silent Multiverse Nexus é uma ferramenta independente e não oficial, feita por fãs. Não é afiliada, endossada, patrocinada nem aprovada pela Wizards of the Coast LLC.
+- O Silent Multiverse é uma ferramenta independente e não oficial, feita por fãs. Não é afiliada, endossada, patrocinada nem aprovada pela Wizards of the Coast LLC.
 - Dungeons & Dragons e D&D são marcas da Wizards of the Coast LLC. Tormenta20 é marca da Jambô Editora. Pathfinder é marca da Paizo Inc. Os nomes são usados apenas para indicar compatibilidade de regras.
 - O programa não contém textos de regras nem conteúdo desses jogos. As referências às regras da quinta edição (5e) seguem o System Reference Document 5.1:
 > This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.
