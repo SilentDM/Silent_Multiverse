@@ -1,4 +1,4 @@
-import os, threading, time, json, concurrent.futures
+import os, re, threading, time, json, datetime, concurrent.futures
 import engine.project_utils as pu
 import core.config as st
 from typing import Any, Optional, Type
@@ -45,6 +45,52 @@ def _is_rate_limit_error(e: Exception) -> bool:
         for kw in ["429", "resource_exhausted", "quota", "rate limit", "too many requests"]
     )
 
+def _segundos_do_erro(e: Exception) -> Optional[float]:
+    """O retryDelay que a API manda junto com o 429 (ex.: 'retryDelay': '37s'), ou None."""
+    achado = re.search(r"retry_?delay['\"]?\s*[:=]\s*['\"]?(\d+(?:\.\d+)?)s", str(e), re.IGNORECASE)
+    return float(achado.group(1)) if achado else None
+
+
+def _domingo(ano: int, mes: int, ordem: int) -> datetime.date:
+    """O n-ésimo domingo do mês."""
+    primeiro = datetime.date(ano, mes, 1)
+    return primeiro + datetime.timedelta(days=(6 - primeiro.weekday()) % 7 + 7 * (ordem - 1))
+
+
+def proxima_renovacao_diaria(agora: Optional[float] = None) -> float:
+    """
+    Quando a cota diária do Gemini renova: meia-noite no horário do Pacífico (regra de horário de verão dos EUA:
+    do 2º domingo de março ao 1º domingo de novembro). Calculado à mão porque o Windows não traz o banco de fusos.
+    """
+    agora_utc = datetime.datetime.fromtimestamp(agora if agora is not None else time.time(), datetime.timezone.utc)
+    ano = agora_utc.year
+    inicio_verao = datetime.datetime.combine(_domingo(ano, 3, 2), datetime.time(10), datetime.timezone.utc)  # 2h PST
+    fim_verao = datetime.datetime.combine(_domingo(ano, 11, 1), datetime.time(9), datetime.timezone.utc)     # 2h PDT
+    deslocamento = datetime.timedelta(hours=-7 if inicio_verao <= agora_utc < fim_verao else -8)
+    local = agora_utc + deslocamento
+    meia_noite = datetime.datetime.combine(local.date() + datetime.timedelta(days=1), datetime.time(0))
+    # A virada de horário nunca cai à meia-noite, então o deslocamento de agora também vale para a meia-noite seguinte
+    return (meia_noite - deslocamento).replace(tzinfo=datetime.timezone.utc).timestamp()
+
+
+def descanso_do_erro(e: Exception, agora: Optional[float] = None) -> float:
+    """Até quando um modelo sem cota deve ser pulado: a cota diária volta na virada do dia do Google;
+    a por minuto, no tempo que a API pedir (ou em 1 minuto)."""
+    agora = agora if agora is not None else time.time()
+    if "perday" in str(e).lower().replace("_", ""):
+        return proxima_renovacao_diaria(agora)
+    return agora + (_segundos_do_erro(e) or 60)
+
+
+def modelo_descansando(m: dict, agora: Optional[float] = None) -> bool:
+    return float(m.get("resting_until") or 0) > (agora if agora is not None else time.time())
+
+
+def _taxa_sucesso(m: dict) -> float:
+    """Taxa suavizada: um modelo ainda sem uso fica no meio (50%), e cada pedido real a move aos poucos."""
+    return (int(m.get("success") or 0) + 1) / (int(m.get("attempts") or 0) + 2)
+
+
 def _criterio_ordenacao_eficiencia(m: dict):
     """
     Ordena os modelos priorizando a eficiência real observada:
@@ -52,11 +98,9 @@ def _criterio_ordenacao_eficiencia(m: dict):
     2. Menor tempo médio de resposta (mais veloz)
     3. Maior score de capacidade/contexto (inteligência do modelo)
     """
-    tentativas = max(1, m.get("attempts", 1))
-    sucessos = m.get("success", 0)
-    taxa_sucesso = sucessos / tentativas
+    taxa_sucesso = round(_taxa_sucesso(m), 2)
 
-    tempo_resposta = m.get("responsetime", 9999.0)
+    tempo_resposta = m.get("responsetime") or 9999.0
     score_qualidade = m.get("quality_score", 0)
 
     # Ordenamos por:
@@ -138,14 +182,19 @@ def _calcular_score_modelo(model_name: str, max_input_tokens: int, max_output_to
     return score
 
 def findmodel(file_path=pu.log_path("models.json"), forcar: bool = False):
+    """
+    Monta a lista de modelos a partir do catálogo da API, sem mandar nenhuma mensagem (listar não gasta cota).
+    A ordem começa pela pontuação de cada modelo e depois é ajustada pelo uso real (improvemodel).
+    Modelos que continuam no catálogo mantêm o histórico; os novos entram sem uso.
+    """
     client_fast = get_gemini_client(timeout_seconds=20)
-    
+
     if not client_fast:
         print(t("gemini.log_sem_chave_ranking"))
         return
 
     print(t("gemini.log_verificando_modelos"))
-    
+
     data = pu.ler_json_seguro(file_path, pu.LOCK_MODELS, padrao=None)
     is_empty = not data
 
@@ -159,71 +208,59 @@ def findmodel(file_path=pu.log_path("models.json"), forcar: bool = False):
 
     print(t("gemini.log_atualizando_modelos"))
     try:
-        all_models = client_fast.models.list()
+        all_models = list(client_fast.models.list())
     except Exception as e:
         print(t("gemini.log_erro_listar", erro=e))
         return
 
-    working_models = []
-    
-    teste_criativo = "Escreva uma frase de fantasia sombria sobre o [[Reino de Valia]]. Responda apenas a frase."
-
+    anteriores = {m.get("name"): m for m in (data or [])}
+    modelos = []
     for model in all_models:
         model_name = model.name
         max_input = getattr(model, 'input_token_limit', 0) or 0
         max_output = getattr(model, 'output_token_limit', 0) or 0
         supported_actions = getattr(model, 'supported_actions', []) or getattr(model, 'supported_generation_methods', [])
 
-        # 1. Filtro estrito de descarte
         if _modelo_eh_invalido_para_lore(model_name, max_input, supported_actions):
             continue
 
-        # 2. Benchmark de latência e execução
-        start_time = time.time()
-        try:
-            resp = client_fast.models.generate_content(
-                model=model_name, 
-                contents=teste_criativo
-            )
-            response_time = round(time.time() - start_time, 4)
-            texto_resp = resp.text or ""
-            
-            # Se a resposta foi vazia, descarta
-            if not texto_resp.strip():
-                continue
-
-        except Exception as e:
-            # Modelo instável, sem cota ou com erro de acesso
-            continue
-
-        # Bônus se respeitou o formato de wikilink [[...]] no mini-teste
-        bonus_instrucao = 500 if "[[" in texto_resp and "]]" in texto_resp else 0
-
-        quality_score = _calcular_score_modelo(model_name, max_input, max_output) + bonus_instrucao
-
-        working_models.append({
+        entrada = {
             "name": model_name,
-            "display_name": getattr(model, "display_name", model_name),
+            "display_name": getattr(model, "display_name", None) or model_name,
             "maxinputtokens": max_input,
             "maxoutputtokens": max_output,
-            "responsetime": response_time,
-            "quality_score": quality_score,
-            "attempts": 1,
-            "success": 1
-        })
-        time.sleep(0.3)
+            "quality_score": _calcular_score_modelo(model_name, max_input, max_output),
+            "responsetime": None,
+            "attempts": 0,
+            "success": 0,
+        }
+        antigo = anteriores.get(model_name)
+        if antigo:
+            for campo in ("responsetime", "attempts", "success", "resting_until"):
+                if antigo.get(campo) is not None:
+                    entrada[campo] = antigo[campo]
+        modelos.append(entrada)
 
-    if not working_models:
+    if not modelos:
         print(t("gemini.log_nenhum_modelo"))
         return
 
-    # Ordena combinando taxa de sucesso inicial, qualidade arquitetural e velocidade
-    working_models.sort(key=_criterio_ordenacao_eficiencia)
+    if st.carregar_configuracoes().get("modelos_modo_ordenacao", "automatico") == "manual" and data:
+        # No modo manual, a ordem escolhida pelo usuário continua; os modelos novos vão para o fim
+        posicao = {m.get("name"): i for i, m in enumerate(data)}
+        modelos.sort(key=lambda m: posicao.get(m["name"], len(posicao)))
+    else:
+        modelos.sort(key=_criterio_ordenacao_eficiencia)
 
-    pu.salvar_json_seguro(file_path, working_models, pu.LOCK_MODELS)
-    print(t("gemini.log_ranking_ok", total=len(working_models)))
+    pu.salvar_json_seguro(file_path, modelos, pu.LOCK_MODELS)
+    print(t("gemini.log_ranking_ok", total=len(modelos)))
 
-def improvemodel(model, success, response_time=None):
+
+def improvemodel(model, success, response_time=None, descanso_ate=None):
+    """
+    Registra o resultado de um pedido real. Sem cota (descanso_ate) não é falha do modelo: ele só é pulado até
+    a cota voltar, sem mexer na taxa de sucesso. Um sucesso encerra qualquer descanso.
+    """
     file_path = pu.log_path("models.json")
     if not file_path.exists():
         return
@@ -237,19 +274,52 @@ def improvemodel(model, success, response_time=None):
 
     for m in data:
         if m.get("name") == model:
-            if response_time is not None and success:
-                tempo_anterior = m.get("responsetime", response_time)
-                m["responsetime"] = round((tempo_anterior * 0.7) + (response_time * 0.3), 4)
-                
-            m["attempts"] = m.get("attempts", 0) + 1
-            m["success"] = m.get("success", 0) + (1 if success else 0)
-            m["quality_score"] = _calcular_score_modelo(m["name"], m.get("maxinputtokens", 0))
-            
+            if descanso_ate is not None:
+                m["resting_until"] = descanso_ate
+            else:
+                if response_time is not None and success:
+                    tempo_anterior = m.get("responsetime") or response_time
+                    m["responsetime"] = round((tempo_anterior * 0.7) + (response_time * 0.3), 4)
+                m["attempts"] = int(m.get("attempts") or 0) + 1
+                m["success"] = int(m.get("success") or 0) + (1 if success else 0)
+                if success:
+                    m.pop("resting_until", None)
+            m["quality_score"] = _calcular_score_modelo(m["name"], m.get("maxinputtokens", 0), m.get("maxoutputtokens", 0))
+
             if not modo_manual:
                 data.sort(key=_criterio_ordenacao_eficiencia)
-            
+
             pu.salvar_json_seguro(file_path, data, pu.LOCK_MODELS)
             return
+
+
+TESTE_MODELO = "Escreva uma frase de fantasia sombria sobre o [[Reino de Valia]]. Responda apenas a frase."
+
+
+def testar_modelo(model_name: str) -> dict:
+    """
+    Manda uma única mensagem curta para um modelo (botão Testar do cartão) e registra o resultado como um uso real.
+    Devolve {"ok", "tempo", "erro", "descanso_ate"}.
+    """
+    client = get_gemini_client(timeout_seconds=60)
+    if not client:
+        raise ValueError(t("gemini.log_sem_chave_ranking"))
+    inicio = time.time()
+    try:
+        resposta = client.models.generate_content(model=model_name, contents=TESTE_MODELO)
+        tempo = round(time.time() - inicio, 4)
+        ok = bool((resposta.text or "").strip())
+        improvemodel(model_name, ok, tempo)
+        return {"ok": ok, "tempo": tempo, "erro": None if ok else t("gemini.teste_vazio"), "descanso_ate": None}
+    except Exception as e:
+        tempo = round(time.time() - inicio, 4)
+        if _is_rate_limit_error(e):
+            descanso = descanso_do_erro(e)
+            improvemodel(model_name, False, descanso_ate=descanso)
+            return {"ok": False, "tempo": tempo, "erro": str(e), "descanso_ate": descanso}
+        improvemodel(model_name, False, tempo)
+        return {"ok": False, "tempo": tempo, "erro": str(e), "descanso_ate": None}
+
 
 def reordenar_modelos_manualmente(nova_ordem_nomes: list):
     """Reordena o models.json de acordo com a lista de nomes informada pelo usuário."""
@@ -287,6 +357,10 @@ def generate_content_with_fallback(contents: Any, config: types.GenerateContentC
 
     if not data:
         raise ValueError("models.json está vazio ou indisponível")
+
+    # Modelos sem cota ficam para o fim: só são tentados se todos os outros falharem
+    agora = time.time()
+    data = [m for m in data if not modelo_descansando(m, agora)] + [m for m in data if modelo_descansando(m, agora)]
 
     for model in data:
         model_name = model["name"]
@@ -326,12 +400,16 @@ def generate_content_with_fallback(contents: Any, config: types.GenerateContentC
 
         except Exception as e:
             response_time = round(time.time() - start_time, 4)
-            improvemodel(model_name, False, response_time)
-            
             err_msg = str(e).lower()
             if _is_rate_limit_error(e):
-                print(t("gemini.log_rate_limit", modelo=model_name))
-            elif "timeout" in err_msg or "timed out" in err_msg or "deadline" in err_msg:
+                descanso = descanso_do_erro(e)
+                improvemodel(model_name, False, descanso_ate=descanso)
+                print(t("gemini.log_rate_limit", modelo=model_name,
+                        hora=time.strftime("%d/%m %H:%M", time.localtime(descanso))))
+                continue
+            improvemodel(model_name, False, response_time)
+
+            if "timeout" in err_msg or "timed out" in err_msg or "deadline" in err_msg:
                 print(t("gemini.log_timeout", modelo=model_name, segundos=response_time))
             else:
                 print(t("gemini.log_erro_modelo", modelo=model_name, erro=e))

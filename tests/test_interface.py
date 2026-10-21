@@ -71,6 +71,39 @@ class TesteInterface(unittest.TestCase):
                 finally:
                     fechar(root)
 
+    def test_cartoes_de_modelos_sem_uso_usado_e_sem_cota(self):
+        import time
+        import engine.project_utils as pu
+        pu.salvar_json_seguro(pu.log_path("models.json"), [
+            {"name": "models/novo", "display_name": "Novo", "maxinputtokens": 1_000_000, "quality_score": 9000,
+             "responsetime": None, "attempts": 0, "success": 0},
+            {"name": "models/usado", "display_name": "Usado", "maxinputtokens": 1_000_000, "quality_score": 8000,
+             "responsetime": 2.5, "attempts": 4, "success": 3},
+            {"name": "models/cansado", "display_name": "Cansado", "maxinputtokens": 1_000_000, "quality_score": 7000,
+             "responsetime": 1.0, "attempts": 1, "success": 1, "resting_until": time.time() + 3600},
+        ], pu.LOCK_MODELS)
+        with mock.patch.dict("os.environ", {"GOOGLE_API_KEY": "chave-teste"}):
+            root, janela = self._montar("pt_br")
+            try:
+                janela.mostrar_pagina("options")
+                janela.paginas["options"].mostrar_aba("ia")
+                root.update()
+                textos = []
+                pilha = [janela.paginas["options"].modelos.interno]
+                while pilha:
+                    widget = pilha.pop()
+                    pilha.extend(widget.winfo_children())
+                    try:
+                        textos.append(widget.cget("text"))
+                    except tk.TclError:
+                        pass
+                self.assertIn("ainda sem uso", textos)
+                self.assertIn("75% (3/4)", textos)
+                self.assertTrue(any(str(x).startswith("😴 Sem cota até") for x in textos))
+                self.assertEqual(textos.count("🧪 Testar"), 3)
+            finally:
+                fechar(root)
+
     def test_opcao_de_tirar_rascunho_so_para_rascunhos(self):
         (self.raiz_projeto / "Rascunho.md").write_text("---\nstatus: rascunho\n---\n# R", encoding="utf-8")
         root, janela = self._montar("pt_br")
