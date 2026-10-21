@@ -535,6 +535,38 @@ def foundry_pasta_dados():
     return fvtt.pasta_dados_foundry()
 
 
+def homebrew_catalogo() -> list:
+    """Fontes de homebrew do 5etools conhecidas (vazio até buscar o catálogo)."""
+    import engine.homebrew as homebrew
+    return homebrew.catalogo()
+
+
+def homebrew_fontes() -> list:
+    import engine.homebrew as homebrew
+    return homebrew.fontes_escolhidas()
+
+
+def homebrew_atualizar_catalogo(ao_concluir=None, ao_falhar=None) -> bool:
+    import engine.homebrew as homebrew
+    return _iniciar("homebrew", homebrew.atualizar_catalogo, ao_concluir=ao_concluir, ao_falhar=ao_falhar)
+
+
+def homebrew_ativar(arquivo: str, ao_concluir=None, ao_falhar=None) -> bool:
+    """Baixa a fonte para este PC em segundo plano e passa a usá-la nas fichas."""
+    import engine.homebrew as homebrew
+
+    def _ativar():
+        homebrew.ativar_fonte(arquivo)
+        ev.log(t("foundry.log_homebrew_ativada", fonte=arquivo))
+        return arquivo
+    return _iniciar("homebrew", _ativar, ao_concluir=ao_concluir, ao_falhar=ao_falhar)
+
+
+def homebrew_desativar(arquivo: str):
+    import engine.homebrew as homebrew
+    homebrew.desativar_fonte(arquivo)
+
+
 def foundry_modulo_instalado():
     """Versão do Silent Module instalada no Foundry (ou None)."""
     import engine.foundry as fvtt

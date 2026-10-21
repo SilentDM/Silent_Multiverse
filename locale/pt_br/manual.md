@@ -216,6 +216,7 @@ As Opções têm quatro abas. Tudo salva sozinho; um "✓ Salvo" no topo confirm
 - Imagens: uma imagem do projeto com o mesmo nome do arquivo (ou a primeira ![[imagem]] do texto) vira o retrato e o token.
 - Lojas: viram mercadores do Item Piles, com preços e estoque. Itens do SRD usam as estatísticas oficiais do compêndio do dnd5e. Sem o Item Piles, a loja vira um NPC com o estoque no inventário.
 - Tudo vai para a pasta Silent Nexus da aba de Atores (configurável no Silent Module). Importar o mesmo arquivo de novo atualiza o mesmo ator, sem duplicar.
+- Homebrew do 5etools (Opções → Foundry): clique em Buscar catálogo e marque as fontes da comunidade que você aceita. Só elas são baixadas, para este PC. Ao montar uma ficha, o Silent procura nelas raças, habilidades de criaturas e talentos que combinam com o NPC e manda até 12 opções para a IA, que usa só as que fazem sentido e adapta ao Nível de Desafio. Cada habilidade vinda de homebrew mostra a fonte e os autores no fim da descrição. Aventuras, livros completos e fontes que se apresentam como material oficial ficam de fora. O conteúdo pertence aos autores: use na sua mesa e não redistribua.
 - Cada ficha e loja só é gerada de novo pela IA se o arquivo mudar (economiza a cota gratuita). Para forçar, marque Gerar de novo com a IA na janela do módulo.
 
 # 12. MODELOS DO GEMINI (Opções → IA)

@@ -207,5 +207,7 @@
   "schema.LojaFoundry.nome": "Shop name",
   "schema.LojaFoundry.dono": "Name of the owner or clerk",
   "schema.LojaFoundry.descricao": "Shop description for the players",
-  "schema.LojaFoundry.itens": "The items for sale"
+  "schema.LojaFoundry.itens": "The items for sale",
+  "schema.AtaqueFoundry.fonte": "Exact credit of the homebrew option used, copied from the list (empty if it didn't come from there)",
+  "schema.HabilidadeFoundry.fonte": "Exact credit of the homebrew option used, copied from the list (empty if it didn't come from there)"
 }

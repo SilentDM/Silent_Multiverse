@@ -216,6 +216,7 @@ Options has four tabs. Everything saves by itself; a "✓ Saved" at the top conf
 - Images: a project image with the same name as the file (or the first ![[image]] in the text) becomes the portrait and the token.
 - Shops: they become Item Piles merchants, with prices and stock. SRD items use the official stats from the dnd5e compendium. Without Item Piles, the shop becomes an NPC with the stock in its inventory.
 - Everything goes into the Silent Nexus folder of the Actors tab (configurable in Silent Module). Importing the same file again updates the same actor, without duplicates.
+- 5etools homebrew (Options → Foundry): click Fetch catalog and check the community sources you accept. Only those are downloaded, to this PC. When building a sheet, Silent looks in them for races, creature abilities and feats that fit the NPC and sends up to 12 options to the AI, which only uses the ones that make sense and adapts them to the Challenge Rating. Every ability taken from homebrew shows the source and its authors at the end of its description. Adventures, full books and sources that present themselves as official material are left out. The content belongs to its authors: use it at your table and don't redistribute it.
 - Each sheet and shop is only generated again by the AI if the file changes (saves the free quota). To force it, check Generate again with the AI in the module's window.
 
 # 12. GEMINI MODELS (Options → AI)

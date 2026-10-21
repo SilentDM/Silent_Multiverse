@@ -9,3 +9,4 @@ RULES:
 - Use the dnd5e codes the format asks for (size, creature type, skills, damage types).
 - Public biography: only what the players could know. GM biography: everything, secrets included.
 - Write names, descriptions and biographies in the project's language.
+- Leave the source field empty unless the ability comes from the homebrew options list.

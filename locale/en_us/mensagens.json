@@ -228,5 +228,7 @@
   "foundry.log_porta_ocupada": "🎲 The Foundry bridge did not start on port {porta}: {erro}",
   "foundry.log_ligada": "🎲 Foundry bridge on at port {porta}.",
   "foundry.log_desligada": "🎲 Foundry bridge off.",
-  "gemini.teste_vazio": "The model answered with nothing."
+  "gemini.teste_vazio": "The model answered with nothing.",
+  "foundry.fonte_homebrew": "Source: {fonte}",
+  "foundry.log_homebrew_ativada": "🎲 Homebrew source downloaded: {fonte}"
 }

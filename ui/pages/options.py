@@ -365,7 +365,79 @@ class PaginaOpcoes(PaginaBase):
         secao = coluna.nova_secao(t("options.foundry_modulo_titulo"), t("options.foundry_modulo_texto"))
         self.lbl_modulo = ttk.Label(secao, text="", font=("Segoe UI", 9), wraplength=700, justify="left")
         self.lbl_modulo.pack(anchor=tk.W, padx=12, pady=(8, 10))
+        self._montar_homebrew(coluna)
         self._atualizar_foundry()
+
+    # --- homebrew do 5etools ---
+    TIPOS_HOMEBREW = ("todos", "race", "monster", "feat")
+
+    def _montar_homebrew(self, coluna):
+        secao = coluna.nova_secao(t("options.homebrew_titulo"), t("options.homebrew_texto"))
+        linha = ttk.Frame(secao)
+        linha.pack(fill=tk.X, padx=12, pady=(8, 4))
+        ttk.Button(linha, text=t("options.homebrew_buscar"), command=self._buscar_catalogo_homebrew).pack(side=tk.LEFT)
+        ajuda(linha, t("ajuda.foundry.homebrew")).pack(side=tk.LEFT, padx=(4, 8))
+        self.var_filtro_homebrew = tk.StringVar()
+        self.var_filtro_homebrew.trace_add("write", lambda *_: self._ao_digitar("homebrew", self._exibir_homebrew))
+        ttk.Entry(linha, textvariable=self.var_filtro_homebrew, font=("Segoe UI", 10)).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.combo_tipo_homebrew = self._combo(linha, [(tipo, t(f"options.homebrew_tipo.{tipo}")) for tipo in self.TIPOS_HOMEBREW],
+                                               "todos", lambda _: self._exibir_homebrew())
+        self.combo_tipo_homebrew.configure(width=14)
+        self.combo_tipo_homebrew.pack(side=tk.LEFT, padx=(6, 0))
+        self.tree_homebrew = ttk.Treeview(secao, columns=("ativo", "autor", "titulo", "tipos"), show="headings", height=8)
+        for coluna_tree, largura in (("ativo", 40), ("autor", 180), ("titulo", 300), ("tipos", 170)):
+            self.tree_homebrew.heading(coluna_tree, text=t(f"options.homebrew_col.{coluna_tree}"))
+            self.tree_homebrew.column(coluna_tree, width=largura, anchor="center" if coluna_tree == "ativo" else "w",
+                                      stretch=coluna_tree == "titulo")
+        self.tree_homebrew.pack(fill=tk.X, padx=12, pady=(2, 4))
+        self.tree_homebrew.bind("<Button-1>", self._clique_homebrew)
+        self.lbl_homebrew = ttk.Label(secao, text="", style="Dica.TLabel")
+        self.lbl_homebrew.pack(anchor=tk.W, padx=12, pady=(0, 10))
+        self._exibir_homebrew()
+
+    def _exibir_homebrew(self):
+        catalogo = acoes.homebrew_catalogo()
+        ativas = set(acoes.homebrew_fontes())
+        tipo = self.TIPOS_HOMEBREW[max(0, self.combo_tipo_homebrew.current())]
+        filtro = self.var_filtro_homebrew.get().strip().lower()
+        self.tree_homebrew.delete(*self.tree_homebrew.get_children())
+        visiveis = [f for f in catalogo
+                    if (tipo == "todos" or tipo in f["tipos"] or (tipo == "race" and "subrace" in f["tipos"]))
+                    and (not filtro or filtro in f"{f['autor']} {f['titulo']}".lower())]
+        # As escolhidas primeiro, para não se perderem no meio de centenas de fontes
+        visiveis.sort(key=lambda f: f["arquivo"] not in ativas)
+        for fonte in visiveis[:300]:
+            tipos = ", ".join(t(f"options.homebrew_tipo.{x}") for x in fonte["tipos"] if x != "subrace")
+            self.tree_homebrew.insert("", "end", iid=fonte["arquivo"],
+                                      values=("☑" if fonte["arquivo"] in ativas else "☐", fonte["autor"], fonte["titulo"], tipos))
+        if not catalogo:
+            texto = t("options.homebrew_vazio")
+        else:
+            texto = t("options.homebrew_estado", ativas=len(ativas), total=len(catalogo), mostrando=min(len(visiveis), 300))
+        self.lbl_homebrew.config(text=texto)
+
+    def _buscar_catalogo_homebrew(self):
+        if acoes.homebrew_atualizar_catalogo(
+                ao_concluir=lambda _: (self._exibir_homebrew(), self.app.toast(t("options.homebrew_catalogo_ok"))),
+                ao_falhar=lambda e: messagebox.showerror(t("options.homebrew_titulo"), t("options.homebrew_erro", erro=e))):
+            self.lbl_homebrew.config(text=t("options.homebrew_buscando"))
+
+    def _clique_homebrew(self, evento):
+        if self.tree_homebrew.identify_column(evento.x) != "#1":
+            return
+        arquivo = self.tree_homebrew.identify_row(evento.y)
+        if not arquivo:
+            return
+        if arquivo in acoes.homebrew_fontes():
+            acoes.homebrew_desativar(arquivo)
+            self._exibir_homebrew()
+            self._salvo()
+        elif acoes.homebrew_ativar(arquivo,
+                                   ao_concluir=lambda _: (self._exibir_homebrew(), self._salvo()),
+                                   ao_falhar=lambda e: messagebox.showerror(t("options.homebrew_titulo"), t("options.homebrew_erro", erro=e))):
+            self.tree_homebrew.set(arquivo, "ativo", "⏳")
+        else:
+            self.app.toast(t("options.homebrew_ocupado"))
 
     def _campo_copiavel(self, pai, var):
         linha = ttk.Frame(pai)

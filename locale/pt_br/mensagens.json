@@ -228,5 +228,7 @@
   "foundry.log_porta_ocupada": "🎲 A ponte do Foundry não ligou na porta {porta}: {erro}",
   "foundry.log_ligada": "🎲 Ponte do Foundry ligada na porta {porta}.",
   "foundry.log_desligada": "🎲 Ponte do Foundry desligada.",
-  "gemini.teste_vazio": "O modelo respondeu vazio."
+  "gemini.teste_vazio": "O modelo respondeu vazio.",
+  "foundry.fonte_homebrew": "Fonte: {fonte}",
+  "foundry.log_homebrew_ativada": "🎲 Fonte de homebrew baixada: {fonte}"
 }
