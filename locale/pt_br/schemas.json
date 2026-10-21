@@ -207,5 +207,7 @@
   "schema.LojaFoundry.nome": "Nome da loja",
   "schema.LojaFoundry.dono": "Nome do dono ou atendente",
   "schema.LojaFoundry.descricao": "Descrição da loja para os jogadores",
-  "schema.LojaFoundry.itens": "Os itens à venda"
+  "schema.LojaFoundry.itens": "Os itens à venda",
+  "schema.AtaqueFoundry.fonte": "Crédito exato da opção homebrew usada, copiado da lista (vazio se não veio de lá)",
+  "schema.HabilidadeFoundry.fonte": "Crédito exato da opção homebrew usada, copiado da lista (vazio se não veio de lá)"
 }

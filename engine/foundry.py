@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 import core.ai_utils as au
 import core.propriedades as propriedades
 import engine.expander as ex
+import engine.homebrew as homebrew
 import engine.project_utils as pu
 from core.i18n import t
 from core.prompts import carregar_prompt
@@ -58,6 +59,7 @@ class AtaqueFoundry(BaseModel):
     dados_faces: int = Field(description="Faces do dado de dano: 4, 6, 8, 10 ou 12 (o 6 de 1d6)")
     tipo_dano: TipoDano = Field(description="Tipo do dano")
     descricao: str = Field(description="Efeitos extras do ataque além do dano (vazio se não houver)")
+    fonte: str = Field(description="Crédito exato da opção homebrew usada, copiado da lista (vazio se não veio de lá)")
 
 
 class HabilidadeFoundry(BaseModel):
@@ -65,6 +67,7 @@ class HabilidadeFoundry(BaseModel):
     ativacao: Literal["passive", "action", "bonus", "reaction", "legendary"] = Field(
         description="passive para traços, action, bonus, reaction ou legendary para o que se usa")
     descricao: str = Field(description="Texto completo da regra")
+    fonte: str = Field(description="Crédito exato da opção homebrew usada, copiado da lista (vazio se não veio de lá)")
 
 
 class FichaFoundry(BaseModel):
@@ -199,19 +202,29 @@ def _pasta_cache() -> Path:
     return pasta
 
 
-def _arquivo_cache(tipo: str, caminho: Path) -> Path:
-    chave = hashlib.sha1(f"{tipo}|{caminho}|{caminho.stat().st_mtime_ns}".encode("utf-8")).hexdigest()[:20]
+def _arquivo_cache(tipo: str, caminho: Path, extra: str = "") -> Path:
+    chave = hashlib.sha1(f"{tipo}|{caminho}|{caminho.stat().st_mtime_ns}{extra}".encode("utf-8")).hexdigest()[:20]
     return _pasta_cache() / f"{tipo}_{chave}.json"
+
+
+def _opcoes_homebrew(texto: str) -> str:
+    """O bloco de opções homebrew para o prompt da ficha (vazio sem fontes escolhidas ou sem nada relacionado)."""
+    opcoes = homebrew.candidatos(texto)
+    return carregar_prompt("foundry_homebrew", opcoes=homebrew.texto_para_prompt(opcoes)) if opcoes else ""
 
 
 def _gerar(tipo: str, relativo: str, esquema, prompt: str, forcar: bool) -> dict:
     caminho = caminho_do_arquivo(relativo)
-    cache = _arquivo_cache(tipo, caminho)
+    # As fontes de homebrew escolhidas entram na chave do cache da ficha: trocá-las gera a ficha de novo
+    cache = _arquivo_cache(tipo, caminho, homebrew.assinatura() if tipo == "ficha" else "")
     if cache.exists() and not forcar:
         return json.loads(cache.read_text(encoding="utf-8"))
     texto = caminho.read_text(encoding="utf-8", errors="ignore")
+    variaveis = {"arquivo": caminho.stem, "conteudo": texto}
+    if tipo == "ficha":
+        variaveis["homebrew"] = _opcoes_homebrew(texto)
     resposta = au.ask_ai(
-        contents=carregar_prompt(f"foundry_{prompt}_usuario", arquivo=caminho.stem, conteudo=texto),
+        contents=carregar_prompt(f"foundry_{prompt}_usuario", **variaveis),
         system_instruction=carregar_prompt(f"foundry_{prompt}_sistema"),
         temperature=0.3, response_schema=esquema, use_world_context=True)
     dados = esquema.model_validate_json(ex.remover_markdown_fences(str(resposta))).model_dump()
@@ -230,10 +243,11 @@ def gerar_ficha(relativo: str, forcar: bool = False) -> dict:
     dados = _gerar("ficha", relativo, FichaFoundry, "ficha", forcar)
     dados["biografia_publica_html"] = _html(dados.get("biografia_publica", ""))
     dados["biografia_mestre_html"] = _html(dados.get("biografia_mestre", ""))
-    for habilidade in dados.get("habilidades", []):
-        habilidade["descricao_html"] = _html(habilidade.get("descricao", ""))
-    for ataque in dados.get("ataques", []):
-        ataque["descricao_html"] = _html(ataque.get("descricao", ""))
+    for item in dados.get("habilidades", []) + dados.get("ataques", []):
+        item["descricao_html"] = _html(item.get("descricao", ""))
+        if item.get("fonte"):
+            # Crédito do autor do homebrew no fim da descrição
+            item["descricao_html"] += f"<p><em>{html.escape(t('foundry.fonte_homebrew', fonte=item['fonte']))}</em></p>"
     return dados
 
 

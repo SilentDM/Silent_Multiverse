@@ -104,6 +104,26 @@ class TesteInterface(unittest.TestCase):
             finally:
                 fechar(root)
 
+    def test_lista_de_homebrew_nas_opcoes(self):
+        import engine.homebrew as homebrew
+        from tests.test_homebrew import baixar_falso
+        homebrew.atualizar_catalogo(baixar=baixar_falso)
+        homebrew.ativar_fonte("creature/Dragonix; Monster Manual Expanded.json", baixar=baixar_falso)
+        root, janela = self._montar("pt_br")
+        try:
+            opcoes = janela.paginas["options"]
+            opcoes._exibir_homebrew()
+            linhas = [opcoes.tree_homebrew.item(i, "values") for i in opcoes.tree_homebrew.get_children()]
+            self.assertEqual(linhas[0][0], "☑")                                   # as escolhidas primeiro
+            self.assertEqual(linhas[0][1], "Dragonix")
+            self.assertEqual(len(linhas), 2)
+            opcoes.var_filtro_homebrew.set("beast")
+            opcoes._exibir_homebrew()
+            self.assertEqual(len(opcoes.tree_homebrew.get_children()), 1)
+        finally:
+            fechar(root)
+            homebrew.desativar_fonte("creature/Dragonix; Monster Manual Expanded.json")
+
     def test_opcao_de_tirar_rascunho_so_para_rascunhos(self):
         (self.raiz_projeto / "Rascunho.md").write_text("---\nstatus: rascunho\n---\n# R", encoding="utf-8")
         root, janela = self._montar("pt_br")

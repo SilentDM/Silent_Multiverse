@@ -9,3 +9,4 @@ REGRAS:
 - Use os códigos do dnd5e pedidos no formato (tamanho, tipo de criatura, perícias, tipos de dano).
 - Biografia pública: só o que os jogadores poderiam saber. Biografia do Mestre: tudo, inclusive segredos.
 - Escreva nomes, descrições e biografias no idioma do projeto.
+- Deixe o campo fonte vazio, a não ser que a habilidade venha da lista de opções homebrew.

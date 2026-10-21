@@ -24,7 +24,7 @@ FICHA = {
     "visao_escuro_pes": 60, "idiomas": ["Comum"], "resistencias": [], "imunidades": [], "imunidades_condicao": [],
     "ataques": [{"nome": "Martelo", "alcance": "melee", "classificacao": "weapon", "alcance_pes": 5,
                  "alcance_longo_pes": 0, "dados_quantidade": 1, "dados_faces": 8, "tipo_dano": "bludgeoning",
-                 "descricao": ""}],
+                 "descricao": "", "fonte": ""}],
     "habilidades": [], "biografia_publica": "Taverneiro caolho.", "biografia_mestre": "Deve um favor.\n\nMente sobre o olho.",
 }
 LOJA = {"nome": "Forja de Brasa", "dono": "Borin", "descricao": "Cheira a carvão.",
