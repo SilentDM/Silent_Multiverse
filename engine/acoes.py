@@ -407,10 +407,16 @@ def deve_auto_expandir(caminho: str) -> bool:
     return any(tag in conteudo for tag in pu.TAG_ALVO)
 
 
-def executar_benchmark_modelos(ao_concluir=None, ao_falhar=None) -> bool:
-    """Testa e reordena os modelos Gemini (página Performance). ao_concluir recebe a lista nova."""
+def atualizar_lista_modelos(ao_concluir=None, ao_falhar=None) -> bool:
+    """Busca o catálogo de modelos Gemini sem mandar mensagens (página Performance). ao_concluir recebe a lista nova."""
     import core.modelos_gemini as modelos
-    return _iniciar("benchmark", modelos.executar_benchmark, ao_concluir=ao_concluir, ao_falhar=ao_falhar)
+    return _iniciar("benchmark", modelos.atualizar_lista, ao_concluir=ao_concluir, ao_falhar=ao_falhar)
+
+
+def testar_modelo(nome: str, ao_concluir=None, ao_falhar=None) -> bool:
+    """Testa um único modelo (1 pedido da cota dele). ao_concluir recebe {"ok", "tempo", "erro", "descanso_ate"}."""
+    import core.modelos_gemini as modelos
+    return _iniciar("teste_modelo", modelos.testar, nome, ao_concluir=ao_concluir, ao_falhar=ao_falhar)
 
 
 # ----------------------------------------------------------------------

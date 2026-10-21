@@ -28,7 +28,7 @@
 - No topo da barra lateral, clique no ícone 📁 e escolha a pasta com seus arquivos .md (uma pasta vazia começa um projeto novo). Um cofre do Obsidian funciona do jeito que está.
 - Os projetos recentes ficam na lista para trocar rápido.
 ## 5) Teste os modelos
-- Em Opções → IA (Gemini), clique em "Testar Modelos". O programa testa os modelos disponíveis e os ordena por velocidade e confiabilidade.
+- Em Opções → IA (Gemini), clique em "Buscar Modelos". O programa busca os modelos disponíveis, sem gastar cota, e vai ordenando-os por velocidade e confiabilidade conforme você usa.
 > Pronto! Abra um arquivo no Editor, escreva uma tag <-- TODO: e rode o Expander para ver a IA trabalhando.
 
 # 2. PASTAS DO PROJETO E DE DADOS
@@ -50,7 +50,7 @@
 - Seus arquivos de lore nunca são traduzidos. O conteúdo novo gerado pela IA segue o idioma escolhido.
 - Os templates e guias de estilo iniciais que você não editou mudam para o novo idioma; os seus e os editados são mantidos.
 - Os marcadores funcionam nos dois idiomas: status: segredo ou status: secret, [segredo] ou [secret], status: rascunho ou status: draft.
-- Glossário: Silent, Nexus, WorldBuilder e Expander são nomes do programa e ficam iguais nos dois idiomas. Em português, Roleplay aparece como Interpretação, In-Character como Em Personagem, Benchmark como Testar Modelos e Preset como Predefinição. Lore, token e Markdown ficam como estão.
+- Glossário: Silent, Nexus, WorldBuilder e Expander são nomes do programa e ficam iguais nos dois idiomas. Em português, Roleplay aparece como Interpretação, In-Character como Em Personagem e Preset como Predefinição. Lore, token e Markdown ficam como estão.
 
 # 4. EDITOR
 ## Árvore de arquivos
@@ -219,9 +219,11 @@ As Opções têm quatro abas. Tudo salva sozinho; um "✓ Salvo" no topo confirm
 - Cada ficha e loja só é gerada de novo pela IA se o arquivo mudar (economiza a cota gratuita). Para forçar, marque Gerar de novo com a IA na janela do módulo.
 
 # 12. MODELOS DO GEMINI (Opções → IA)
-- Testar Modelos testa todos os modelos Gemini disponíveis e os ordena por tempo de resposta e taxa de sucesso.
+- Buscar Modelos traz a lista de modelos Gemini da sua chave sem enviar nenhuma mensagem, então não gasta a cota diária. A ordem inicial vem da capacidade de cada modelo.
+- Cada pedido de verdade registra o tempo de resposta e o sucesso do modelo, e a ordem se ajusta sozinha com o uso. O histórico continua quando você busca a lista de novo.
+- O botão 🧪 Testar de cada cartão manda uma mensagem curta só para aquele modelo (gasta 1 pedido da cota dele).
 - O modo Automático usa essa ordem; o modo Manual deixa você definir a sua.
-- Se um modelo falhar ou atingir o limite, o programa tenta o próximo automaticamente.
+- Se um modelo falhar, o programa tenta o próximo automaticamente. Se ele estiver sem cota (erro 429), isso não conta como falha: o cartão mostra "Sem cota até…" e o modelo é pulado até a cota voltar (a diária volta à meia-noite do horário do Pacífico, por volta das 4h ou 5h em Brasília).
 
 # 13. BOT DO DISCORD
 ## Criando o bot (uma vez)
@@ -265,7 +267,7 @@ As Opções têm quatro abas. Tudo salva sozinho; um "✓ Salvo" no topo confirm
 
 # 17. SOLUÇÃO DE PROBLEMAS
 - "O Windows protegeu o computador" na primeira execução: clique em "Mais informações" → "Executar assim mesmo". Isso acontece com programas novos que ainda não têm assinatura digital.
-- A IA não responde: confira a chave em Opções → IA, use Testar Modelos e veja o Log de Atividades. Um erro "429" ou "quota" significa que o limite da chave foi atingido; espere ou use outro modelo.
+- A IA não responde: confira a chave em Opções → IA, veja o Log de Atividades e a página de modelos. Um erro "429" ou "quota" significa que o limite daquele modelo foi atingido; o programa passa para o próximo e volta a ele quando a cota renovar.
 - O bot fica offline: confira o token, o Message Content Intent e o Log de Atividades; reinicie o programa depois de salvar o token.
 - Um arquivo está travado: a IA está trabalhando nele. Espere a tarefa terminar ou clique no ✕ dela na barra de status.
 - A visualização não aparece: falta o componente de visualização (tkinterweb); a versão publicada já o inclui.

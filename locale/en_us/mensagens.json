@@ -156,11 +156,11 @@
   "gemini.log_sem_chave_ranking": "No GOOGLE_API_KEY set. Skipping model ranking.",
   "gemini.log_verificando_modelos": "Checking the models available for worldbuilding...",
   "gemini.log_modelos_ok": "Available model list OK!",
-  "gemini.log_atualizando_modelos": "Testing and ranking the API models...",
+  "gemini.log_atualizando_modelos": "Fetching the API model catalog (no messages sent)...",
   "gemini.log_erro_listar": "Error listing API models: {erro}",
-  "gemini.log_nenhum_modelo": "No compatible model answered the benchmark.",
-  "gemini.log_ranking_ok": "{total} valid models ranked for worldbuilding!",
-  "gemini.log_rate_limit": "Rate limit hit on model {modelo}. Trying the next one...",
+  "gemini.log_nenhum_modelo": "No compatible model in the API catalog.",
+  "gemini.log_ranking_ok": "{total} models available for worldbuilding. The order adjusts with use.",
+  "gemini.log_rate_limit": "😴 {modelo} is out of quota; set aside until {hora}. Trying the next one...",
   "gemini.log_timeout": "⏱️ Timeout on model {modelo} after {segundos}s. Trying the next one...",
   "gemini.log_erro_modelo": "Error on model {modelo}: {erro}",
   "gemini.log_sem_contexto": "World context unavailable: {erro}",
@@ -227,5 +227,6 @@
   "foundry.log_erro": "🎲 Error in Foundry's request: {erro}",
   "foundry.log_porta_ocupada": "🎲 The Foundry bridge did not start on port {porta}: {erro}",
   "foundry.log_ligada": "🎲 Foundry bridge on at port {porta}.",
-  "foundry.log_desligada": "🎲 Foundry bridge off."
+  "foundry.log_desligada": "🎲 Foundry bridge off.",
+  "gemini.teste_vazio": "The model answered with nothing."
 }

@@ -156,11 +156,11 @@
   "gemini.log_sem_chave_ranking": "Nenhuma GOOGLE_API_KEY configurada. Pulando o ranking de modelos.",
   "gemini.log_verificando_modelos": "Verificando os modelos disponíveis para Worldbuilding...",
   "gemini.log_modelos_ok": "Lista de modelos disponíveis OK!",
-  "gemini.log_atualizando_modelos": "Testando e ranqueando os modelos da API...",
+  "gemini.log_atualizando_modelos": "Buscando o catálogo de modelos da API (sem enviar mensagens)...",
   "gemini.log_erro_listar": "Erro ao listar modelos da API: {erro}",
-  "gemini.log_nenhum_modelo": "Nenhum modelo compatível respondeu ao teste.",
-  "gemini.log_ranking_ok": "{total} modelos válidos ranqueados para Worldbuilding!",
-  "gemini.log_rate_limit": "Limite de uso atingido no modelo {modelo}. Tentando o próximo...",
+  "gemini.log_nenhum_modelo": "Nenhum modelo compatível no catálogo da API.",
+  "gemini.log_ranking_ok": "{total} modelos disponíveis para Worldbuilding. A ordem se ajusta com o uso.",
+  "gemini.log_rate_limit": "😴 {modelo} está sem cota; fica de lado até {hora}. Tentando o próximo...",
   "gemini.log_timeout": "⏱️ Tempo esgotado no modelo {modelo} após {segundos}s. Tentando o próximo...",
   "gemini.log_erro_modelo": "Erro no modelo {modelo}: {erro}",
   "gemini.log_sem_contexto": "Contexto do mundo indisponível: {erro}",
@@ -227,5 +227,6 @@
   "foundry.log_erro": "🎲 Erro no pedido do Foundry: {erro}",
   "foundry.log_porta_ocupada": "🎲 A ponte do Foundry não ligou na porta {porta}: {erro}",
   "foundry.log_ligada": "🎲 Ponte do Foundry ligada na porta {porta}.",
-  "foundry.log_desligada": "🎲 Ponte do Foundry desligada."
+  "foundry.log_desligada": "🎲 Ponte do Foundry desligada.",
+  "gemini.teste_vazio": "O modelo respondeu vazio."
 }

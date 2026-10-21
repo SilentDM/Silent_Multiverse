@@ -6,7 +6,7 @@ import core.modelos_gemini as modelos
 import engine.acoes as acoes
 import ui.theme as tema
 from core.i18n import t
-from ui.widgets import PaginaBase
+from ui.widgets import Dica, PaginaBase
 
 LARGURA_CARTAO = 340
 
@@ -25,7 +25,7 @@ class PaginaModelos(PaginaBase):
         ttk.Label(titulo, text=t("models.subtitulo"), font=("Segoe UI", 9), foreground=tema.SUAVE).pack(anchor=tk.W, pady=(3, 0))
         botoes = ttk.Frame(topo)
         botoes.pack(side=tk.RIGHT)
-        ttk.Button(botoes, text=t("models.btn_benchmark"), command=self._benchmark).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(botoes, text=t("models.btn_lista"), command=self._buscar_lista).pack(side=tk.LEFT, padx=(0, 5))
         ttk.Button(botoes, text=t("models.btn_atualizar"), command=self.atualizar).pack(side=tk.LEFT)
 
         modo = ttk.Frame(self)
@@ -59,18 +59,38 @@ class PaginaModelos(PaginaBase):
             return
         self.lista = modelos.listar()
         if not self.lista:
-            self._mensagem(t("models.sem_teste"))
+            self._mensagem(t("models.sem_lista"))
             return
         self._desenhar(forcar=True)
 
-    def _benchmark(self):
+    def _buscar_lista(self):
         if not modelos.tem_chave():
             self.app.toast(t("models.toast_sem_chave"))
             return
-        if acoes.executar_benchmark_modelos(
-                ao_concluir=lambda _: (self.app.toast(t("models.toast_benchmark_ok")), self.atualizar()),
-                ao_falhar=lambda e: self.app.toast(t("models.toast_benchmark_erro"))):
-            self.app.toast(t("models.toast_benchmark_inicio"))
+        if acoes.atualizar_lista_modelos(
+                ao_concluir=lambda _: (self.app.toast(t("models.toast_lista_ok")), self.atualizar()),
+                ao_falhar=lambda e: self.app.toast(t("models.toast_lista_erro"))):
+            self.app.toast(t("models.toast_lista_inicio"))
+
+    def _testar(self, nome):
+        if not modelos.tem_chave():
+            self.app.toast(t("models.toast_sem_chave"))
+            return
+        if acoes.testar_modelo(nome,
+                               ao_concluir=lambda r: self._teste_concluido(nome, r),
+                               ao_falhar=lambda e: self.app.toast(t("models.toast_teste_erro", erro=e))):
+            self.app.toast(t("models.toast_teste_inicio", nome=nome))
+        else:
+            self.app.toast(t("models.toast_teste_ocupado"))
+
+    def _teste_concluido(self, nome, resultado):
+        if resultado["ok"]:
+            self.app.toast(t("models.toast_teste_ok", nome=nome, tempo=f"{resultado['tempo']:.2f}"))
+        elif resultado["descanso_ate"]:
+            self.app.toast(t("models.toast_teste_sem_cota", nome=nome, hora=modelos.hora_do_descanso(resultado["descanso_ate"])))
+        else:
+            self.app.toast(t("models.toast_teste_falhou", nome=nome))
+        self.atualizar()
 
     def _mudar_modo(self):
         modelos.definir_modo(self.var_modo.get())
@@ -128,11 +148,14 @@ class PaginaModelos(PaginaBase):
         rank = t("models.principal") if principal else t("models.fallback", rank=indice + 1)
         tk.Label(cabeca, text=rank, bg=fundo, fg=tema.VERDE if principal else tema.SUAVE,
                  font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
+        caixa = tk.Frame(cabeca, bg=fundo)
+        caixa.pack(side=tk.RIGHT)
+        estilo = dict(bg="#252526", font=("Segoe UI", 7, "bold"), bd=0, padx=4, pady=0,
+                      activebackground="#333333", activeforeground="#ffffff")
+        botao_teste = tk.Button(caixa, text=t("models.btn_testar"), fg=tema.AZUL, command=lambda: self._testar(m["id"]), **estilo)
+        botao_teste.pack(side=tk.LEFT, padx=1)
+        Dica(botao_teste, t("models.dica_testar"))
         if manual:
-            caixa = tk.Frame(cabeca, bg=fundo)
-            caixa.pack(side=tk.RIGHT)
-            estilo = dict(bg="#252526", font=("Segoe UI", 7, "bold"), bd=0, padx=4, pady=0,
-                          activebackground="#333333", activeforeground="#ffffff")
             if not principal:
                 tk.Button(caixa, text="⭐ #1", fg=tema.AMARELO, command=lambda: self._principal(indice), **estilo).pack(side=tk.LEFT, padx=1)
                 tk.Button(caixa, text="▲", fg="#ffffff", command=lambda: self._mover(indice, -1), **estilo).pack(side=tk.LEFT, padx=1)
@@ -141,15 +164,22 @@ class PaginaModelos(PaginaBase):
 
         tk.Label(conteudo, text=m["nome"], bg=fundo, fg="#ffffff", font=("Segoe UI", 11, "bold"), anchor="w").pack(fill=tk.X, pady=(4, 0))
         tk.Label(conteudo, text=m["id"], bg=fundo, fg="#666666", font=("Consolas", 8), anchor="w").pack(fill=tk.X, pady=(0, 8))
+        if m["descanso_ate"]:
+            tk.Label(conteudo, text=t("models.descansando", hora=modelos.hora_do_descanso(m["descanso_ate"])), bg=fundo,
+                     fg=tema.AMARELO, font=("Segoe UI", 8, "bold"), anchor="w").pack(fill=tk.X, pady=(0, 6))
 
         grade = tk.Frame(conteudo, bg=fundo)
         grade.pack(fill=tk.X, pady=(4, 0))
         grade.columnconfigure(0, weight=1)
         grade.columnconfigure(1, weight=1)
-        cor_taxa = tema.VERDE if m["taxa"] >= 80 else tema.AMARELO if m["taxa"] >= 50 else tema.VERMELHO
+        if m["taxa"] is None:
+            cor_taxa, taxa = tema.SUAVE, t("models.sem_uso")
+        else:
+            cor_taxa = tema.VERDE if m["taxa"] >= 80 else tema.AMARELO if m["taxa"] >= 50 else tema.VERMELHO
+            taxa = f"{m['taxa']:.0f}% ({m['sucessos']}/{m['tentativas']})"
         metricas = [
-            (t("models.tempo_medio"), f"{m['tempo']:.2f}s", tema.AZUL),
-            (t("models.sucesso"), f"{m['taxa']:.0f}% ({m['sucessos']}/{m['tentativas']})", cor_taxa),
+            (t("models.tempo_medio"), f"{m['tempo']:.2f}s" if m["tempo"] is not None else "—", tema.AZUL),
+            (t("models.sucesso"), taxa, cor_taxa),
             (t("models.max_tokens"), f"{m['tokens']:,}", tema.TEXTO),
             (t("models.score"), f"{m['score']:,}", "#d97706"),
         ]
