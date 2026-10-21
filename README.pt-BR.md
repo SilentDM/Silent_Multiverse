@@ -130,7 +130,7 @@ Para alterar um texto ou prompt, edite nos **dois** idiomas (os testes conferem 
 Requer Windows e Python 3.14 (a versão com que o projeto é testado).
 
 ```bash
-git clone https://github.com/SilentDM/Silent_Multiverse.git
+git clone https://github.com/SilentDM/silent-multiverse.git
 cd Silent_Multiverse
 python -m venv venv
 venv\Scripts\activate
