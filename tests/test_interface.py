@@ -263,6 +263,48 @@ class TesteInterface(unittest.TestCase):
         finally:
             fechar(root)
 
+    def test_arquivo_aberto_bloqueado_pela_ia_nao_trava(self):
+        """Antes: abrir o arquivo bloqueado selecionava a árvore, que abria o arquivo de novo... sem parar."""
+        valia = str(self.raiz_projeto / "Valia.md")
+        root, janela = self._montar("pt_br")
+        try:
+            editor = janela.paginas["editor"]
+            editor.ir_para(valia)
+            chamadas = []
+            original = editor.ir_para
+            # Depois de 50 chamadas o ciclo é cortado, para o teste falhar em vez de travar se o defeito voltar
+            editor.ir_para = lambda *a, **k: chamadas.append(a) or (original(*a, **k) if len(chamadas) < 50 else None)
+            ex.marcar_processamento(valia, True)                       # o Expander pega o arquivo aberto
+            editor.atualizar_arvore()
+            fim = time.monotonic() + 1.0
+            while time.monotonic() < fim:
+                root.update()
+            self.assertLess(len(chamadas), 5)                           # antes: centenas por segundo
+            self.assertIsNone(editor.sessao.arquivo_atual)              # mostra o aviso "IA trabalhando"
+            (self.raiz_projeto / "Valia.md").write_text("# Valia\nTexto da IA.", encoding="utf-8")
+            ex.marcar_processamento(valia, False)                       # a IA terminou
+            editor._vigiar_projeto()
+            self.assertEqual(editor.sessao.arquivo_atual, valia)        # reabre sozinho, com o texto novo
+            self.assertIn("Texto da IA.", editor._texto_editor())
+        finally:
+            ex.marcar_processamento(valia, False)
+            fechar(root)
+
+    def test_menu_ia_completo(self):
+        from core.i18n import t
+        root, janela = self._montar("pt_br")
+        try:
+            editor = janela.paginas["editor"]
+            editor.ir_para(str(self.raiz_projeto / "Valia.md"))
+            editor._preparar_menu_ia()                     # antes parava no separador (TypeError)
+            menu = editor.menu_ia
+            self.assertEqual(menu.index("end"), 7)          # 7 ações + 1 separador
+            self.assertEqual(menu.type(5), "separator")
+            self.assertEqual(menu.entrycget(6, "label"), t("editor.menu_perguntar_silent"))
+            self.assertEqual(menu.entrycget(7, "label"), t("editor.menu_historico"))
+        finally:
+            fechar(root)
+
     def test_editor_abas_busca_autocompletar_e_painel(self):
         (self.raiz_projeto / "Thorvald.md").write_text("# Thorvald\nstatus: segredo\nRei. <-- TODO: x", encoding="utf-8")
         (self.raiz_projeto / "Valia.md").write_text("# Valia\n## Cidades\nGovernada por [[Thorvald]] e [[Fantasma]].",
