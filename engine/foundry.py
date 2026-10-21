@@ -2,7 +2,7 @@
 Conteúdo do projeto para o módulo do Foundry (sistema dnd5e): fichas de NPC, lojas e imagens.
 
 A IA preenche um formato pensado para o Foundry (números separados, códigos do dnd5e: tamanhos,
-perícias, tipos de dano), e o SilentModule (funcionalidade Silent Nexus, no Foundry) o converte em Atores
+perícias, tipos de dano), e o Silent Module (funcionalidade Silent Nexus, no Foundry) o converte em Atores
 e Itens. As respostas ficam em cache pela data do arquivo, para não gastar a cota gratuita do Gemini
 gerando de novo a mesma ficha.
 """
@@ -262,7 +262,7 @@ def gerar_loja(relativo: str, forcar: bool = False) -> dict:
 # ----------------------------------------------------------------------
 # O SILENTMODULE NO FOUNDRY
 # ----------------------------------------------------------------------
-# Quem usa a ponte é o SilentModule (funcionalidade Silent Nexus), instalado à parte no Foundry.
+# Quem usa a ponte é o Silent Module (funcionalidade Silent Nexus), instalado à parte no Foundry.
 ID_MODULO = "silent-module"
 
 

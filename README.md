@@ -1,4 +1,4 @@
-# 🜂 Silent Multiverse Nexus
+# 🜂 Silent Multiverse
 
 **English** | [Português (Brasil)](README.pt-BR.md)
 
@@ -11,7 +11,7 @@
 ![Obsidian Compatible](https://img.shields.io/badge/Obsidian-Vault%20Compatible-7A3EE8?style=for-the-badge&logo=obsidian)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-**Silent Multiverse Nexus** is a toolkit for Game Masters, writers and setting creators. You write your world in plain Markdown files (fully compatible with **Obsidian**), and the program helps you expand, organize, audit and share it, with Google Gemini doing the heavy lifting and a Discord bot that answers your players **without spoiling your secrets**.
+**Silent Multiverse** is a toolkit for Game Masters, writers and setting creators. You write your world in plain Markdown files (fully compatible with **Obsidian**), and the program helps you expand, organize, audit and share it, with Google Gemini doing the heavy lifting and a Discord bot that answers your players **without spoiling your secrets**.
 
 Available in **English** and **Brazilian Portuguese**: the interface and everything the AI writes follow the language you pick.
 
@@ -130,7 +130,7 @@ To change a text or prompt, edit it in **both** languages (the tests check that 
 Requires Windows and Python 3.14 (the version the project is tested with).
 
 ```bash
-git clone https://github.com/SilentDM/Silent_Multiverse.git
+git clone https://github.com/SilentDM/silent-multiverse.git
 cd Silent_Multiverse
 python -m venv venv
 venv\Scripts\activate
@@ -173,7 +173,7 @@ This creates `dist/SilentMultiverse.exe` and `dist/SilentMultiverse-<version>-wi
 
 ## Legal notice
 
-Silent Multiverse Nexus is an independent, unofficial fan tool. It is **not affiliated with, endorsed, sponsored or approved by Wizards of the Coast LLC**.
+Silent Multiverse is an independent, unofficial fan tool. It is **not affiliated with, endorsed, sponsored or approved by Wizards of the Coast LLC**.
 
 *Dungeons & Dragons* and *D&D* are trademarks of Wizards of the Coast LLC. *Tormenta20* is a trademark of Jambô Editora. *Pathfinder* is a trademark of Paizo Inc. These names are used only to describe rules compatibility. The program contains no rules text or content from these games.
 

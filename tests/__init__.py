@@ -1,5 +1,5 @@
 """
-Testes automáticos do Silent Multiverse Nexus.
+Testes automáticos do Silent Multiverse.
 
 Rodar (na pasta do projeto, com o venv):
     venv\\Scripts\\python.exe -m unittest discover -s tests -v

@@ -1,5 +1,5 @@
 """
-Gera o executável do Silent Multiverse Nexus e o pacote .zip da release.
+Gera o executável do Silent Multiverse e o pacote .zip da release.
 
 Uso (com o venv ativo e requirements-build.txt instalado):
     python build.py               -> dist/SilentMultiverse.exe + dist/SilentMultiverse-<versão>-windows.zip

@@ -140,10 +140,10 @@ class TesteTelas(unittest.TestCase):
         root, janela, fechar = self._montar()
         try:
             assistente = AssistenteInicial(janela)
-            self.assertEqual(assistente.lbl_titulo.cget("text"), "Bem-vindo ao Silent Multiverse Nexus")
+            self.assertEqual(assistente.lbl_titulo.cget("text"), "Bem-vindo ao Silent Multiverse")
             assistente.var_idioma.set("en_us")
             assistente._idioma_escolhido()
-            self.assertEqual(assistente.lbl_titulo.cget("text"), "Welcome to Silent Multiverse Nexus")  # na hora
+            self.assertEqual(assistente.lbl_titulo.cget("text"), "Welcome to Silent Multiverse")  # na hora
             assistente._proximo()
             assistente.var_chave.set("chave-de-teste")
             assistente._proximo()

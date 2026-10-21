@@ -104,5 +104,5 @@ def criar_embed_help(prefixo: str = "!silent") -> discord.Embed:
     embed.add_field(name=tc("bot.ajuda_lore_titulo"), value=tc("bot.ajuda_lore", prefixo=prefixo), inline=False)
     embed.add_field(name=tc("bot.ajuda_dados_titulo"), value=tc("bot.ajuda_dados"), inline=False)
     embed.add_field(name=tc("bot.ajuda_sync_titulo"), value=tc("bot.ajuda_sync", prefixo=prefixo), inline=False)
-    embed.set_footer(text="Silent Multiverse Nexus Console")
+    embed.set_footer(text="Silent Multiverse Console")
     return embed
